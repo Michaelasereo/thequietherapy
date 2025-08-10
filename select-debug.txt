@@ -1,0 +1,1 @@
+The Select component has z-index: 50 and uses Radix UI Portal. The dropdowns should appear above other content.

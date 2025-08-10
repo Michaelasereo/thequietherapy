@@ -1,0 +1,3077 @@
+
+> my-v0-project@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.2.4
+   - Local:        http://localhost:3000
+   - Network:      http://172.20.10.2:3000
+
+ ✓ Starting...
+ ✓ Ready in 3.9s
+ ○ Compiling / ...
+ ✓ Compiled / in 6.6s (1026 modules)
+ ✓ Compiled in 514ms (441 modules)
+ GET / 200 in 7127ms
+ ○ Compiling /therapist/login ...
+ ✓ Compiled /therapist/login in 959ms (1293 modules)
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 200 in 1088ms
+ GET /therapist/login 200 in 37ms
+ GET /therapist/login 200 in 27ms
+ GET /therapist/login 200 in 24ms
+ GET /therapist/login 200 in 19ms
+ GET /therapist/login 200 in 11ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 12ms
+ GET /therapist/login 200 in 15ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 11ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 11ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 11ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 11ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 12ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 11ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 14ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 12ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 11ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 11ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 22ms
+ GET /therapist/login 200 in 14ms
+ GET /therapist/login 200 in 15ms
+ GET /therapist/login 200 in 17ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 12ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 12ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 11ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 11ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 5ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 10ms
+ GET /therapist/login 200 in 12ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 7ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 9ms
+ GET /therapist/login 200 in 8ms
+ GET /therapist/login 200 in 6ms
+ GET /therapist/login 200 in 16ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 108ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 31ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 31ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 29ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 30ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 27ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 29ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 29ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 30ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 30ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 29ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 29ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 26ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 29ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 28ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 26ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 28ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 26ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 27ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 20ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 27ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 26ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 25ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+ GET / 200 in 143ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1125ms (2192 modules)
+Error: Route "/dashboard" used `cookies().get('trpi_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at DashboardLayout (app/dashboard/layout.tsx:28:33)
+  26 |   // Simulate user data for the header
+  27 |   const cookieStore = cookies()
+> 28 |   const userCookie = cookieStore.get("trpi_user")?.value
+     |                                 ^
+  29 |   const user = userCookie ? JSON.parse(userCookie) : { name: "Michael", email: "michael@example.com" }
+  30 |
+  31 |   return (
+ GET /dashboard 200 in 1351ms
+ ✓ Compiled /dashboard/sessions in 323ms (2205 modules)
+ GET /dashboard/sessions 200 in 373ms
+ ✓ Compiled /dashboard/therapy in 392ms (2211 modules)
+ GET /dashboard/therapy 200 in 428ms
+ ✓ Compiled /dashboard/biodata in 324ms (2222 modules)
+ GET /dashboard/biodata 200 in 360ms
+ ✓ Compiled /dashboard/family-history in 223ms (2229 modules)
+ GET /dashboard/family-history 200 in 259ms
+ ✓ Compiled /dashboard/social-history in 232ms (2236 modules)
+ GET /dashboard/social-history 200 in 264ms
+ ○ Compiling /dashboard/medical-history ...
+ ✓ Compiled /dashboard/medical-history in 516ms (2277 modules)
+ GET /dashboard/medical-history 200 in 572ms
+ GET /dashboard 200 in 33ms
+ GET /dashboard 200 in 10ms
+ GET /dashboard 200 in 18ms
+ GET /dashboard 200 in 10ms
+Error: Route "/dashboard" used `cookies().delete('trpi_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at logoutAction (actions/auth.ts:37:19)
+  35 |
+  36 | export async function logoutAction() {
+> 37 |   cookies().delete("trpi_user")
+     |                   ^
+  38 |   redirect("/login")
+  39 | }
+  40 |
+ ✓ Compiled /login in 395ms (2284 modules)
+ GET /login 200 in 429ms
+ POST /dashboard 303 in 711ms
+ GET / 200 in 90ms
+ ✓ Compiled in 1149ms (2200 modules)
+ GET / 200 in 205ms
+ GET / 200 in 221ms
+ ✓ Compiled /_not-found in 346ms (2190 modules)
+ GET /book 404 in 403ms
+ GET /book 404 in 46ms
+ GET / 200 in 194ms
+ GET /book 404 in 11ms
+ GET /book 404 in 29ms
+ GET / 200 in 109ms
+Error: Route "/dashboard" used `cookies().get('trpi_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at DashboardLayout (app/dashboard/layout.tsx:28:33)
+  26 |   // Simulate user data for the header
+  27 |   const cookieStore = cookies()
+> 28 |   const userCookie = cookieStore.get("trpi_user")?.value
+     |                                 ^
+  29 |   const user = userCookie ? JSON.parse(userCookie) : { name: "Michael", email: "michael@example.com" }
+  30 |
+  31 |   return (
+ GET /dashboard 200 in 414ms
+ GET /dashboard 200 in 23ms
+ ○ Compiling /dashboard/sessions ...
+ ✓ Compiled /dashboard/sessions in 757ms (1203 modules)
+ GET /dashboard/sessions 200 in 841ms
+ ✓ Compiled /dashboard/therapy in 206ms (1208 modules)
+ GET /dashboard/therapy 200 in 255ms
+Error: Route "/dashboard/therapy" used `cookies().get('trpi_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at DashboardLayout (app/dashboard/layout.tsx:28:33)
+  26 |   // Simulate user data for the header
+  27 |   const cookieStore = cookies()
+> 28 |   const userCookie = cookieStore.get("trpi_user")?.value
+     |                                 ^
+  29 |   const user = userCookie ? JSON.parse(userCookie) : { name: "Michael", email: "michael@example.com" }
+  30 |
+  31 |   return (
+ GET /dashboard/therapy 200 in 260ms
+ ✓ Compiled in 1025ms (2205 modules)
+ ✓ Compiled in 658ms (2205 modules)
+ ✓ Compiled in 315ms (1006 modules)
+ ✓ Compiled in 367ms (2205 modules)
+ ✓ Compiled in 300ms (1006 modules)
+ ✓ Compiled in 288ms (2205 modules)
+ ✓ Compiled in 237ms (1006 modules)
+ ✓ Compiled in 464ms (1006 modules)
+ ○ Compiling /therapist/login ...
+ ✓ Compiled /therapist/login in 937ms (1225 modules)
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 1249ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 37ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 31ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 30ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 37ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 31ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 38ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 39ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 60ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 31ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 37ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 27ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 26ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 71ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 33ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 30ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 26ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 25ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 25ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 19ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 19ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 20ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 27ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+ ✓ Compiled /_not-found in 445ms (2221 modules)
+ GET /therapist 404 in 526ms
+ GET / 200 in 242ms
+ GET / 200 in 150ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 71ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 35ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 37ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 39ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 32ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 33ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 30ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 30ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 27ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 28ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 28ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 27ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 30ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 25ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 31ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 19ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 25ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 20ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 20ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 20ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 77ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 74ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 33ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 132ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 27ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 26ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 22ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 25ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 19ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 23ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 20ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 20ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 19ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 24ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 19ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 19ms
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 21ms
+ ✓ Compiled in 308ms (1009 modules)
+Error: Route "/therapist/login" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistRootLayout (app/therapist/layout.tsx:21:42)
+  19 |   // Authentication check for therapist side
+  20 |   const cookieStore = cookies()
+> 21 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  22 |   const isAuthenticated = therapistUserCookie ? true : false
+  23 |
+  24 |   console.log("Therapist Layout - isAuthenticated:", isAuthenticated)
+Therapist Layout - isAuthenticated: false
+Therapist Layout - therapistUserCookie: Cookie NOT found
+ GET /therapist/login 307 in 114ms
+ ✓ Compiled in 1049ms (2196 modules)
+ GET /therapist/login 200 in 891ms
+ ✓ Compiled in 252ms (1000 modules)
+ GET /therapist/login 200 in 13ms
+ GET /therapist/login 200 in 91ms
+ GET / 200 in 232ms
+ GET /therapist/login 200 in 92ms
+ ✓ Compiled in 1108ms (2210 modules)
+ GET /therapist/login 200 in 75ms
+ ✓ Compiled in 758ms (2210 modules)
+ GET /therapist/login 200 in 72ms
+ ✓ Compiled in 485ms (2210 modules)
+ GET /therapist/login 200 in 32ms
+ ✓ Compiled in 917ms (2210 modules)
+ GET /therapist/login 200 in 22ms
+ ✓ Compiled in 835ms (2210 modules)
+ GET /therapist/login 200 in 53ms
+ ✓ Compiled in 739ms (2210 modules)
+ GET /therapist/login 200 in 30ms
+ GET /therapist/login 200 in 172ms
+therapistLoginAction called with: { email: 'michael@opportunedesignco.com' }
+Error: Route "/therapist/login" used `cookies().set('trpi_therapist_user', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at therapistLoginAction (actions/therapist-auth.ts:30:14)
+  28 |     }
+  29 |
+> 30 |     cookies().set("trpi_therapist_user", JSON.stringify(user), {
+     |              ^
+  31 |       httpOnly: true,
+  32 |       secure: process.env.NODE_ENV === "production",
+  33 |       maxAge: 60 * 60 * 24 * 7, // 1 week
+Cookie 'trpi_therapist_user' set successfully. Redirecting to dashboard.
+ ○ Compiling /therapist/dashboard ...
+ ✓ Compiled /therapist/dashboard in 1106ms (2229 modules)
+Error: Route "/therapist/dashboard" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard 200 in 1385ms
+ POST /therapist/login 303 in 1645ms
+ ✓ Compiled /therapist/dashboard/availability in 460ms (2193 modules)
+ GET /therapist/dashboard/availability 200 in 555ms
+ ○ Compiling /therapist/dashboard/client-sessions ...
+ ✓ Compiled /therapist/dashboard/client-sessions in 544ms (2177 modules)
+ GET /therapist/dashboard/client-sessions 200 in 632ms
+ ✓ Compiled /therapist/dashboard/earnings in 372ms (2186 modules)
+ GET /therapist/dashboard/earnings 200 in 429ms
+ GET /therapist/dashboard/client-sessions 200 in 14ms
+ GET /therapist/dashboard/availability 200 in 17ms
+ GET /therapist/dashboard/client-sessions 200 in 15ms
+ GET /therapist/dashboard/earnings 200 in 39ms
+ GET /therapist/dashboard 200 in 67ms
+ GET /therapist/dashboard/availability 200 in 13ms
+ GET /therapist/dashboard/availability 200 in 12ms
+ GET /therapist/dashboard 200 in 56ms
+ GET /therapist/dashboard/availability 200 in 19ms
+ GET /therapist/dashboard/client-sessions 200 in 9ms
+ GET /therapist/dashboard/earnings 200 in 28ms
+ GET /therapist/dashboard 200 in 55ms
+ ✓ Compiled in 1155ms (2169 modules)
+Error: Route "/therapist/dashboard" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard 200 in 102ms
+ ✓ Compiled in 1022ms (2169 modules)
+Error: Route "/therapist/dashboard" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard 200 in 751ms
+Error: Route "/therapist/dashboard" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard 200 in 67ms
+ ✓ Compiled in 666ms (2169 modules)
+Error: Route "/therapist/dashboard" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard 200 in 139ms
+ ○ Compiling /therapist/dashboard/clients ...
+ ✓ Compiled /therapist/dashboard/clients in 1108ms (2166 modules)
+ GET /therapist/dashboard/clients 200 in 1198ms
+Error: Route "/therapist/dashboard/clients" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/clients 200 in 347ms
+ ✓ Compiled in 1274ms (2174 modules)
+ ✓ Compiled in 458ms (2174 modules)
+ ✓ Compiled in 671ms (2174 modules)
+Error: Route "/therapist/dashboard/clients" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/clients 200 in 338ms
+ ○ Compiling /therapist/dashboard/clients/[id] ...
+ ✓ Compiled /therapist/dashboard/clients/[id] in 908ms (2185 modules)
+Error: Route "/therapist/dashboard/clients/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at eval (app/therapist/dashboard/clients/[id]/page.tsx:11:62)
+    at Array.find (<anonymous>)
+    at TherapistClientDetailsPage (app/therapist/dashboard/clients/[id]/page.tsx:11:34)
+   9 |
+  10 | export default function TherapistClientDetailsPage({ params }: { params: { id: string } }) {
+> 11 |   const client = therapistClients.find((c) => c.id === params.id)
+     |                                                              ^
+  12 |   if (!client) return notFound()
+  13 |
+  14 |   const totalSessions = client.sessions.length
+Error: Route "/therapist/dashboard/clients/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at eval (app/therapist/dashboard/clients/[id]/page.tsx:11:62)
+    at Array.find (<anonymous>)
+    at TherapistClientDetailsPage (app/therapist/dashboard/clients/[id]/page.tsx:11:34)
+   9 |
+  10 | export default function TherapistClientDetailsPage({ params }: { params: { id: string } }) {
+> 11 |   const client = therapistClients.find((c) => c.id === params.id)
+     |                                                              ^
+  12 |   if (!client) return notFound()
+  13 |
+  14 |   const totalSessions = client.sessions.length
+ GET /therapist/dashboard/clients/c2 200 in 1016ms
+ GET /therapist/dashboard/clients/c1 200 in 1649ms
+Error: Route "/therapist/dashboard/clients/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at eval (app/therapist/dashboard/clients/[id]/page.tsx:11:62)
+    at Array.find (<anonymous>)
+    at TherapistClientDetailsPage (app/therapist/dashboard/clients/[id]/page.tsx:11:34)
+   9 |
+  10 | export default function TherapistClientDetailsPage({ params }: { params: { id: string } }) {
+> 11 |   const client = therapistClients.find((c) => c.id === params.id)
+     |                                                              ^
+  12 |   if (!client) return notFound()
+  13 |
+  14 |   const totalSessions = client.sessions.length
+ GET /therapist/dashboard/clients/c3 200 in 19ms
+ ✓ Compiled in 1187ms (1798 modules)
+Error: Route "/therapist/dashboard/clients/[id]" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/clients/c3 200 in 118ms
+ GET /therapist/dashboard/clients 200 in 32ms
+ GET /therapist/dashboard/clients/c2 200 in 11ms
+ ✓ Compiled in 667ms (1798 modules)
+Error: Route "/therapist/dashboard/clients/[id]" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/clients/c2 200 in 43ms
+ GET /therapist/dashboard/clients 200 in 32ms
+ GET /therapist/dashboard/clients/c2 200 in 12ms
+ GET /therapist/dashboard/clients 200 in 9ms
+ GET /therapist/dashboard/clients/c1 200 in 68ms
+ GET /therapist/dashboard/clients 200 in 19ms
+ GET /therapist/dashboard/clients 200 in 11ms
+ GET /therapist/dashboard/clients 200 in 10ms
+ GET /therapist/dashboard/clients/c2 200 in 20ms
+ GET /therapist/dashboard/clients 200 in 48ms
+ GET /therapist/dashboard/availability 200 in 38ms
+ GET /therapist/dashboard/client-sessions 200 in 44ms
+ GET /therapist/dashboard/clients 200 in 12ms
+ GET /therapist/dashboard/clients/c2 200 in 16ms
+ GET /therapist/dashboard/clients 200 in 13ms
+ ○ Compiling /therapist/dashboard ...
+ ✓ Compiled /therapist/dashboard in 641ms (1154 modules)
+ GET /therapist/dashboard 200 in 683ms
+ GET /therapist/dashboard 200 in 19ms
+ GET /therapist/dashboard 200 in 57ms
+ GET /therapist/dashboard/clients 200 in 79ms
+ GET /therapist/dashboard/availability 200 in 16ms
+ GET /therapist/dashboard/earnings 200 in 22ms
+ GET /therapist/dashboard/client-sessions 200 in 14ms
+ GET /therapist/dashboard/availability 200 in 14ms
+ GET /therapist/dashboard/clients 200 in 14ms
+ GET /therapist/dashboard/earnings 200 in 10ms
+ GET /therapist/dashboard 200 in 9ms
+ GET /therapist/dashboard/clients 200 in 76ms
+ GET /therapist/dashboard/clients/c1 200 in 28ms
+ GET /therapist/dashboard/clients 200 in 20ms
+ GET /therapist/dashboard/clients 200 in 10ms
+ GET /therapist/dashboard/availability 200 in 15ms
+ GET /therapist/dashboard/client-sessions 200 in 11ms
+ GET /therapist/dashboard 200 in 12ms
+ GET /therapist/dashboard/clients 200 in 56ms
+ GET /therapist/dashboard/clients/c1 200 in 33ms
+ GET /therapist/dashboard/availability 200 in 40ms
+ GET /therapist/dashboard/client-sessions 200 in 33ms
+ GET /therapist/dashboard/client-sessions 200 in 12ms
+ GET /therapist/dashboard/earnings 200 in 16ms
+ ✓ Compiled in 1203ms (2179 modules)
+Error: Route "/therapist/dashboard/earnings" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/earnings 200 in 54ms
+ ✓ Compiled in 545ms (1032 modules)
+Error: Route "/therapist/dashboard/earnings" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/earnings 200 in 38ms
+ ✓ Compiled in 752ms (2179 modules)
+Error: Route "/therapist/dashboard/earnings" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/earnings 200 in 81ms
+ ✓ Compiled in 464ms (2179 modules)
+Error: Route "/therapist/dashboard/earnings" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/earnings 200 in 41ms
+ ✓ Compiled in 749ms (2179 modules)
+Error: Route "/therapist/dashboard/earnings" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/earnings 200 in 36ms
+ ○ Compiling /therapist/dashboard/clients ...
+ ✓ Compiled /therapist/dashboard/clients in 991ms (1154 modules)
+ GET /therapist/dashboard/clients 200 in 1068ms
+ GET /therapist/dashboard/clients/c1 200 in 37ms
+ ✓ Compiled in 901ms (2186 modules)
+Error: Route "/therapist/dashboard/clients/[id]" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/clients/c1 200 in 192ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 691ms (2176 modules)
+ GET /therapist/dashboard/verification 404 in 727ms
+ GET /therapist/dashboard/verification 404 in 68ms
+Error: Route "/therapist/dashboard/clients/[id]" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+Error: Route "/therapist/dashboard/clients/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistClientDetailsPage (app/therapist/dashboard/clients/[id]/page.tsx:18:93)
+  16 |
+  17 | export default function TherapistClientDetailsPage({ params }: { params: { id: string } }) {
+> 18 |   const baseClient = useMemo(() => therapistClients.find((c) => c.id === params.id), [params.id])
+     |                                                                                             ^
+  19 |   if (!baseClient) return notFound()
+  20 |
+  21 |   const [notes, setNotes] = useState(baseClient.notes)
+Error: Route "/therapist/dashboard/clients/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistClientDetailsPage.useMemo[baseClient] (app/therapist/dashboard/clients/[id]/page.tsx:18:80)
+    at Array.find (<anonymous>)
+    at TherapistClientDetailsPage.useMemo[baseClient] (app/therapist/dashboard/clients/[id]/page.tsx:18:52)
+    at TherapistClientDetailsPage (app/therapist/dashboard/clients/[id]/page.tsx:18:28)
+  16 |
+  17 | export default function TherapistClientDetailsPage({ params }: { params: { id: string } }) {
+> 18 |   const baseClient = useMemo(() => therapistClients.find((c) => c.id === params.id), [params.id])
+     |                                                                                ^
+  19 |   if (!baseClient) return notFound()
+  20 |
+  21 |   const [notes, setNotes] = useState(baseClient.notes)
+ GET /therapist/dashboard/clients/c1 200 in 423ms
+ GET /therapist/dashboard/availability 200 in 66ms
+ ✓ Compiled in 1073ms (2190 modules)
+ GET /therapist/dashboard/clients 200 in 406ms
+Error: Route "/therapist/dashboard/clients" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/clients 200 in 31ms
+ GET /therapist/dashboard/availability 200 in 12ms
+Error: Route "/therapist/dashboard/availability" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/availability 200 in 126ms
+ ✓ Compiled in 747ms (2190 modules)
+ ✓ Compiled in 1327ms (2186 modules)
+ GET /therapist/dashboard/clients 200 in 122ms
+Error: Route "/therapist/dashboard/clients" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/clients 200 in 27ms
+Error: Route "/therapist/dashboard/clients" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/clients 200 in 28ms
+ GET /therapist/dashboard 200 in 20ms
+ GET /therapist/dashboard/availability 200 in 15ms
+ GET /therapist/dashboard/client-sessions 200 in 23ms
+ GET /therapist/dashboard/earnings 200 in 13ms
+ ✓ Compiled /therapist/dashboard/verification in 485ms (2180 modules)
+ GET /therapist/dashboard/verification 200 in 521ms
+ GET /therapist/dashboard/earnings 200 in 51ms
+ GET /therapist/dashboard/verification 200 in 10ms
+ GET /therapist/dashboard/earnings 200 in 10ms
+ GET /therapist/dashboard/client-sessions 200 in 13ms
+ GET /therapist/dashboard/availability 200 in 35ms
+ GET /therapist/dashboard/availability 200 in 10ms
+ GET /therapist/dashboard/clients 200 in 16ms
+ GET /therapist/dashboard 200 in 16ms
+ GET /therapist/dashboard/clients 200 in 15ms
+ GET /therapist/dashboard/clients/c1 200 in 22ms
+ GET /therapist/dashboard 200 in 27ms
+ GET /therapist/dashboard/availability 200 in 36ms
+ GET /therapist/dashboard 200 in 20ms
+ GET /therapist/dashboard/clients 200 in 64ms
+ GET /therapist/dashboard/availability 200 in 10ms
+ GET /therapist/dashboard/client-sessions 200 in 7ms
+ GET /therapist/dashboard/earnings 200 in 58ms
+ GET /therapist/dashboard/verification 200 in 13ms
+ GET /therapist/dashboard 200 in 12ms
+ GET /therapist/dashboard/clients 200 in 12ms
+ GET /therapist/dashboard/clients 200 in 52ms
+ GET /therapist/dashboard/availability 200 in 14ms
+ GET /therapist/dashboard/client-sessions 200 in 12ms
+ GET /therapist/dashboard/earnings 200 in 50ms
+ GET /therapist/dashboard/verification 200 in 12ms
+ GET /therapist/dashboard 200 in 18ms
+ GET /therapist/dashboard/clients 200 in 17ms
+ GET /therapist/dashboard/clients/c1 200 in 16ms
+ GET /therapist/dashboard/clients 200 in 13ms
+ GET /therapist/dashboard/clients/c2 200 in 13ms
+ GET /therapist/dashboard/earnings 200 in 28ms
+ GET /therapist/dashboard/verification 200 in 12ms
+ GET /therapist/dashboard 200 in 58ms
+ GET /therapist/dashboard/clients 200 in 61ms
+ GET /therapist/dashboard/availability 200 in 12ms
+ GET /therapist/dashboard/client-sessions 200 in 15ms
+ GET /therapist/dashboard/earnings 200 in 11ms
+ GET /therapist/dashboard/verification 200 in 13ms
+ GET /therapist/dashboard/clients 200 in 9ms
+ GET /therapist/dashboard 200 in 16ms
+ GET /therapist/dashboard 200 in 54ms
+ GET /therapist/dashboard/clients 200 in 17ms
+ GET /therapist/dashboard/availability 200 in 12ms
+ GET /therapist/dashboard/client-sessions 200 in 14ms
+ GET /therapist/dashboard/earnings 200 in 9ms
+ GET /therapist/dashboard/verification 200 in 9ms
+ GET /therapist/dashboard 200 in 40ms
+ GET /therapist/dashboard/client-sessions 200 in 57ms
+ ✓ Compiled in 1845ms (2182 modules)
+Error: Route "/therapist/dashboard/client-sessions" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/client-sessions 200 in 88ms
+ ✓ Compiled in 733ms (2181 modules)
+Error: Route "/therapist/dashboard/client-sessions" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/client-sessions 200 in 33ms
+ ✓ Compiled in 804ms (2181 modules)
+Error: Route "/therapist/dashboard/client-sessions" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/client-sessions 200 in 569ms
+Error: Route "/therapist/dashboard/client-sessions" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/client-sessions 200 in 14ms
+ ✓ Compiled in 871ms (2181 modules)
+Error: Route "/therapist/dashboard/client-sessions" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/client-sessions 200 in 87ms
+ ✓ Compiled in 732ms (2181 modules)
+Error: Route "/therapist/dashboard/client-sessions" used `cookies().get('trpi_therapist_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at TherapistDashboardLayout (app/therapist/dashboard/layout.tsx:16:42)
+  14 | export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
+  15 |   const cookieStore = cookies()
+> 16 |   const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+     |                                          ^
+  17 |   const isAuthenticated = therapistUserCookie ? true : false
+  18 |
+  19 |   if (!isAuthenticated) {
+ GET /therapist/dashboard/client-sessions 200 in 68ms
+ GET /therapist/dashboard/clients 200 in 85ms
+ GET /therapist/dashboard/client-sessions 200 in 11ms
+ ○ Compiling /therapist/dashboard/earnings ...
+ ✓ Compiled /therapist/dashboard/earnings in 685ms (1153 modules)
+ GET /therapist/dashboard/earnings 200 in 747ms
+ ○ Compiling /therapist/dashboard/verification ...
+ ✓ Compiled /therapist/dashboard/verification in 691ms (1160 modules)
+ GET /therapist/dashboard/verification 200 in 742ms
+ GET /therapist/dashboard/availability 200 in 16ms
+ ○ Compiling /therapist/dashboard/video-call ...
+ ✓ Compiled /therapist/dashboard/video-call in 734ms (2187 modules)
+ GET /therapist/dashboard/video-call 200 in 785ms
+ GET /therapist/dashboard 200 in 61ms
+ GET /therapist/dashboard/availability 200 in 20ms
+ GET /therapist/dashboard 200 in 13ms
+ GET /therapist/dashboard/clients 200 in 61ms
+ GET /therapist/dashboard/client-sessions 200 in 22ms
+ GET /therapist/dashboard/earnings 200 in 16ms
+ GET /therapist/dashboard/verification 200 in 14ms
+ GET /therapist/dashboard/availability 200 in 11ms
+ GET /therapist/dashboard/video-call 200 in 8ms
+ GET /therapist/dashboard 200 in 12ms
+ ○ Compiling / ...
+ ✓ Compiled / in 925ms (1235 modules)
+ GET / 200 in 1199ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 659ms (1260 modules)
+Error: Route "/dashboard" used `cookies().get('trpi_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at DashboardLayout (app/dashboard/layout.tsx:28:33)
+  26 |   // Simulate user data for the header
+  27 |   const cookieStore = cookies()
+> 28 |   const userCookie = cookieStore.get("trpi_user")?.value
+     |                                 ^
+  29 |   const user = userCookie ? JSON.parse(userCookie) : { name: "Michael", email: "michael@example.com" }
+  30 |
+  31 |   return (
+ GET /dashboard 200 in 769ms
+ ✓ Compiled /dashboard/therapy in 281ms (1265 modules)
+ GET /dashboard/therapy 200 in 349ms
+ ✓ Compiled /dashboard/sessions in 217ms (1271 modules)
+ GET /dashboard/sessions 200 in 255ms
+ GET /dashboard 200 in 18ms
+ ✓ Compiled /dashboard/biodata in 338ms (1278 modules)
+ GET /dashboard/biodata 200 in 390ms
+ ✓ Compiled /dashboard/family-history in 225ms (1283 modules)
+ GET /dashboard/family-history 200 in 263ms
+ ✓ Compiled /dashboard/social-history in 234ms (1288 modules)
+ GET /dashboard/social-history 200 in 280ms
+ ✓ Compiled /dashboard/medical-history in 298ms (1329 modules)
+ GET /dashboard/medical-history 200 in 364ms
+ GET /dashboard 200 in 39ms
+ GET /dashboard/sessions 200 in 61ms
+ GET /dashboard/biodata 200 in 16ms
+ GET /dashboard/family-history 200 in 15ms
+ GET /dashboard/social-history 200 in 16ms
+ GET /dashboard/medical-history 200 in 20ms
+ GET /dashboard 200 in 10ms
+ GET /dashboard 200 in 10ms
+ GET /dashboard/sessions 200 in 51ms
+ GET /dashboard/therapy 200 in 22ms
+ GET /dashboard/biodata 200 in 27ms
+ GET /dashboard/family-history 200 in 8ms
+ GET /dashboard/social-history 200 in 8ms
+ GET /dashboard/medical-history 200 in 60ms
+ GET /dashboard 200 in 11ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 998ms (2280 modules)
+ GET /dashboard/therapist/dashbaord 404 in 1133ms
+ GET /dashboard/therapist/dashboard 404 in 65ms
+ GET /dashboard/therapist/login 404 in 72ms
+ GET /dashboard/therapist/login 404 in 46ms
+ GET /dashboard/therapist/dashboard 404 in 41ms
+ GET /dashboard/therapist/dashbaord 404 in 33ms
+Error: Route "/dashboard" used `cookies().get('trpi_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at DashboardLayout (app/dashboard/layout.tsx:28:33)
+  26 |   // Simulate user data for the header
+  27 |   const cookieStore = cookies()
+> 28 |   const userCookie = cookieStore.get("trpi_user")?.value
+     |                                 ^
+  29 |   const user = userCookie ? JSON.parse(userCookie) : { name: "Michael", email: "michael@example.com" }
+  30 |
+  31 |   return (
+ GET /dashboard 200 in 276ms
+ GET /dashboard/medical-history 200 in 37ms
+ GET /dashboard/social-history 200 in 48ms
+ GET /dashboard/family-history 200 in 58ms
+ GET /dashboard/biodata 200 in 21ms
+ GET /dashboard/therapy 200 in 30ms
+ GET /dashboard/sessions 200 in 18ms
+ GET /dashboard 200 in 78ms
+ GET /dashboard/sessions 200 in 22ms
+ GET /dashboard/therapy 200 in 14ms
+ GET /dashboard/biodata 200 in 7ms
+ GET /dashboard/family-history 200 in 33ms
+ GET /dashboard/social-history 200 in 18ms
+ GET /dashboard/medical-history 200 in 29ms
+ GET /dashboard 200 in 13ms
+ GET /dashboard/therapist/dashboard/clients 404 in 131ms
+ GET /dashboard/therapist/dashboard 404 in 42ms
+ GET /dashboard/therapist/dashboard 404 in 31ms
+ GET /dashboard/therapist 404 in 98ms
+ GET /dashboard/therapist/dashboard 404 in 33ms
+ GET /dashboard/therapist/dashboard/clients 404 in 36ms
+Error: Route "/dashboard" used `cookies().get('trpi_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at DashboardLayout (app/dashboard/layout.tsx:28:33)
+  26 |   // Simulate user data for the header
+  27 |   const cookieStore = cookies()
+> 28 |   const userCookie = cookieStore.get("trpi_user")?.value
+     |                                 ^
+  29 |   const user = userCookie ? JSON.parse(userCookie) : { name: "Michael", email: "michael@example.com" }
+  30 |
+  31 |   return (
+ GET /dashboard 200 in 168ms
+ GET /dashboard 200 in 9ms
+ GET /dashboard 200 in 9ms
+Error: Route "/dashboard" used `cookies().delete('trpi_user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at logoutAction (actions/auth.ts:37:19)
+  35 |
+  36 | export async function logoutAction() {
+> 37 |   cookies().delete("trpi_user")
+     |                   ^
+  38 |   redirect("/login")
+  39 | }
+  40 |
+ ○ Compiling /login ...
+ ✓ Compiled /login in 938ms (1244 modules)
+ GET /login 200 in 1040ms
+ POST /dashboard 303 in 1345ms
+ ○ Compiling /register ...
+ ✓ Compiled /register in 634ms (2249 modules)
+ GET /register 200 in 901ms
+ GET /login 200 in 71ms
+ GET /login 200 in 260ms
+ ✓ Compiled in 1736ms (1038 modules)
+ GET /login 200 in 40ms
+ ✓ Compiled in 493ms (1038 modules)
+ GET /login 200 in 26ms
+ ✓ Compiled in 488ms (1038 modules)
+ GET /login 200 in 21ms
+ GET /login 200 in 93ms
+ ✓ Compiled in 3.8s (1038 modules)
+ ✓ Compiled in 1143ms (1038 modules)
+ ✓ Compiled in 673ms (1038 modules)
+ ✓ Compiled in 2.3s (1846 modules)
+ ✓ Compiled in 1138ms (1846 modules)
+ ✓ Compiled in 1585ms (1846 modules)
+ ✓ Compiled in 946ms (1846 modules)
+ ✓ Compiled in 1682ms (1846 modules)
+ ✓ Compiled in 901ms (1846 modules)
+ ✓ Compiled in 688ms (1038 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/macbook/Desktop/trpi-app/.next/cache/webpack/server-development/0.pack.gz_' -> '/Users/macbook/Desktop/trpi-app/.next/cache/webpack/server-development/0.pack.gz'

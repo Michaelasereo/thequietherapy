@@ -1,0 +1,108 @@
+"use client"
+
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { toast } from "@/components/ui/use-toast"
+
+const formSchema = z.object({
+  idUpload: z.any().refine((file) => file?.length > 0, "ID document is required."),
+  mdcnCode: z.string().min(5, { message: "MDCN code must be at least 5 characters." }),
+})
+
+type DocumentVerificationFormValues = z.infer<typeof formSchema>
+
+interface Step2DocumentVerificationProps {
+  onNext: (data: DocumentVerificationFormValues) => void
+  onBack: () => void
+  initialData?: DocumentVerificationFormValues
+}
+
+export default function Step2DocumentVerification({ onNext, onBack, initialData }: Step2DocumentVerificationProps) {
+  const form = useForm<DocumentVerificationFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: initialData || {
+      idUpload: undefined,
+      mdcnCode: "",
+    },
+  })
+
+  async function onSubmit(data: DocumentVerificationFormValues) {
+    try {
+      const res = await fetch("/api/verify-mdcn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mdcnCode: data.mdcnCode }),
+      })
+      const json = await res.json()
+      if (!json.ok) {
+        toast({
+          title: "Verification failed",
+          description: "Please check your MDCN code and try again.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      toast({
+        title: "Documents Uploaded",
+        description: "Verification successful. Proceeding...",
+      })
+      onNext(data)
+    } catch (e) {
+      toast({
+        title: "Network error",
+        description: "Unable to verify MDCN code right now.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-4 md:p-6">
+        <h3 className="text-xl font-semibold mb-4">Step 2: Document Verification</h3>
+        <FormField
+          control={form.control}
+          name="idUpload"
+          render={({ field: { value, onChange, ...fieldProps } }) => (
+            <FormItem>
+              <FormLabel>Upload ID Document (e.g., License, Passport)</FormLabel>
+              <FormControl>
+                <Input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(event) => onChange(event.target.files)}
+                  {...fieldProps}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="mdcnCode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>MDCN Code</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your MDCN code" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-between gap-4">
+          <Button type="button" variant="outline" onClick={onBack}>
+            Back
+          </Button>
+          <Button type="submit">Next</Button>
+        </div>
+      </form>
+    </Form>
+  )
+}
