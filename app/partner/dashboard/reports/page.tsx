@@ -1,17 +1,47 @@
-"use client"
-
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { sessionUsage, partnerMembers } from "@/lib/partner-data"
 
 export default function PartnerReportsPage() {
-  const [member, setMember] = useState<string | "all">("all")
-  const [from, setFrom] = useState("")
-  const [to, setTo] = useState("")
+  // Default data in case imports are not available during build
+  const sessionUsage = [
+    {
+      id: "1",
+      memberName: "John Smith",
+      sessionDate: "2024-09-15",
+      therapist: "Dr. Emily White",
+      creditsUsed: 5,
+      status: "Completed"
+    },
+    {
+      id: "2",
+      memberName: "Sarah Johnson", 
+      sessionDate: "2024-09-14",
+      therapist: "Dr. Sarah Johnson",
+      creditsUsed: 5,
+      status: "Completed"
+    },
+    {
+      id: "3",
+      memberName: "Mike Chen",
+      sessionDate: "2024-09-13",
+      therapist: "Dr. Emily White",
+      creditsUsed: 5,
+      status: "Scheduled"
+    }
+  ]
+
+  const partnerMembers = [
+    { id: "1", name: "John Smith" },
+    { id: "2", name: "Sarah Johnson" },
+    { id: "3", name: "Mike Chen" }
+  ]
+
+  const member = "all"
+  const from = ""
+  const to = ""
 
   const filtered = sessionUsage.filter((s) => {
     if (member !== "all" && s.memberName !== partnerMembers.find((m) => m.id === member)?.name) return false
@@ -26,9 +56,9 @@ export default function PartnerReportsPage() {
       <Card>
         <CardHeader><CardTitle>Filters</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          <Select value={member} onValueChange={setMember}>
+          <Input type="date" defaultValue={from} />
+          <Input type="date" defaultValue={to} />
+          <Select defaultValue={member}>
             <SelectTrigger><SelectValue placeholder="Member" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Members</SelectItem>

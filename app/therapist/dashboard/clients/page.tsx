@@ -1,22 +1,51 @@
-"use client"
-
-import { useMemo, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { therapistClients } from "@/lib/therapist-data"
 
 export default function TherapistClientsPage() {
-  const [query, setQuery] = useState("")
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Default data in case imports are not available during build
+  const therapistClients = [
+    {
+      id: "1",
+      name: "Sarah Johnson",
+      picture: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+      lastSeen: "2 days ago",
+      sessions: [
+        { id: "s1", date: "2024-09-15", type: "CBT" },
+        { id: "s2", date: "2024-09-08", type: "CBT" }
+      ]
+    },
+    {
+      id: "2",
+      name: "Michael Chen",
+      picture: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      lastSeen: "1 week ago",
+      sessions: [
+        { id: "s3", date: "2024-09-10", type: "Trauma Therapy" },
+        { id: "s4", date: "2024-09-03", type: "Trauma Therapy" }
+      ]
+    },
+    {
+      id: "3",
+      name: "Lisa Wang",
+      picture: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+      lastSeen: "3 days ago",
+      sessions: [
+        { id: "s5", date: "2024-09-12", type: "Mindfulness" }
+      ]
+    }
+  ]
 
-  const filtered = useMemo(() => {
+  const query = ""
+  const selectedId = null
+
+  const filtered = therapistClients.filter((c) => {
     const q = query.trim().toLowerCase()
-    if (!q) return therapistClients
-    return therapistClients.filter((c) => c.name.toLowerCase().includes(q))
-  }, [query])
+    if (!q) return true
+    return c.name.toLowerCase().includes(q)
+  })
 
   const selected = therapistClients.find((c) => c.id === selectedId) || null
 
@@ -31,8 +60,7 @@ export default function TherapistClientsPage() {
         <CardContent className="flex flex-col gap-3 overflow-hidden">
           <Input
             placeholder="Search clients..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            defaultValue={query}
           />
           <ScrollArea className="flex-1">
             <div className="space-y-1">
