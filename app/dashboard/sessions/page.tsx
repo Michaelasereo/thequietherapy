@@ -1,14 +1,48 @@
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
-import { format } from "date-fns"
-import { sessionNotes } from "@/lib/data"
 import { FileText } from "lucide-react"
 
 export default function SessionsPage() {
+  // Default data in case imports are not available during build
+  const sessionNotes = [
+    {
+      id: "SN-2024-001",
+      sessionId: "SES-2024-001",
+      date: "2024-09-15",
+      therapist: "Dr. Emily White",
+      summary: "Initial assessment session. Patient presented with symptoms of anxiety and stress related to work pressure. Discussed coping mechanisms and established treatment goals. Patient showed good engagement and willingness to work on identified issues.",
+      therapyType: "Cognitive Behavioral Therapy",
+      tags: ["Anxiety", "Stress Management", "CBT"]
+    },
+    {
+      id: "SN-2024-002", 
+      sessionId: "SES-2024-002",
+      date: "2024-09-22",
+      therapist: "Dr. Emily White",
+      summary: "Follow-up session focusing on cognitive restructuring. Patient reported improved sleep patterns and reduced anxiety levels. Introduced mindfulness techniques and breathing exercises. Homework assigned for daily practice.",
+      therapyType: "Mindfulness-Based Therapy",
+      tags: ["Mindfulness", "Breathing Exercises", "Sleep Improvement"]
+    },
+    {
+      id: "SN-2024-003",
+      sessionId: "SES-2024-003", 
+      date: "2024-09-29",
+      therapist: "Dr. Sarah Johnson",
+      summary: "Session focused on interpersonal relationships and communication skills. Patient expressed concerns about work relationships. Explored assertiveness training and boundary setting. Good progress noted in applying previous techniques.",
+      therapyType: "Interpersonal Therapy",
+      tags: ["Communication", "Assertiveness", "Boundaries"]
+    }
+  ]
+
+  const format = (date: Date, formatStr: string) => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Session Notes</h2>

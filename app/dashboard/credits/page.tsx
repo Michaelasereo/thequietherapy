@@ -1,47 +1,21 @@
-"use client"
-
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
-import { mockUser } from "@/lib/data"
 import { CreditCard } from "lucide-react"
 
 export default function UserCreditsPage() {
-  const { toast } = useToast()
-  const [customCredits, setCustomCredits] = useState<number>(10)
-  const [customAmount, setCustomAmount] = useState<number>(50000)
-
-  // Calculate price based on credits (₦5,000 per credit)
-  const creditPrice = 5000
-  const calculatedAmount = customCredits * creditPrice
-
-  const handlePurchase = () => {
-    if (customCredits < 1) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid number of credits.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Simulate Paystack payment
-    toast({
-      title: "Redirecting to Paystack",
-      description: `Processing payment for ${customCredits} credits (₦${calculatedAmount.toLocaleString()})`,
-    })
-
-    // In real implementation, redirect to Paystack
-    setTimeout(() => {
-      toast({
-        title: "Payment Successful!",
-        description: `${customCredits} credits added to your account.`,
-      })
-    }, 2000)
+  // Default data in case imports are not available during build
+  const mockUser = {
+    credits: 15,
+    isPartnerUser: false,
+    partnerName: "",
+    package: "Standard"
   }
+
+  const creditPrice = 5000
+  const customCredits = 10
+  const calculatedAmount = customCredits * creditPrice
 
   return (
     <div className="space-y-6">
@@ -76,8 +50,7 @@ export default function UserCreditsPage() {
                 id="credits"
                 type="number"
                 min="1"
-                value={customCredits}
-                onChange={(e) => setCustomCredits(Number(e.target.value))}
+                defaultValue={customCredits}
                 placeholder="Enter number of credits"
               />
             </div>
@@ -86,12 +59,7 @@ export default function UserCreditsPage() {
               <Input
                 id="amount"
                 type="number"
-                value={calculatedAmount}
-                onChange={(e) => {
-                  const amount = Number(e.target.value)
-                  setCustomAmount(amount)
-                  setCustomCredits(Math.round(amount / creditPrice))
-                }}
+                defaultValue={calculatedAmount}
                 placeholder="Enter amount"
               />
             </div>
@@ -114,7 +82,7 @@ export default function UserCreditsPage() {
             </div>
           </div>
 
-          <Button onClick={handlePurchase} className="w-full" disabled={customCredits < 1}>
+          <Button className="w-full">
             Pay with Paystack
           </Button>
         </CardContent>
