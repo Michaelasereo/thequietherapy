@@ -1,5 +1,3 @@
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,11 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Shield, User, Bell, Lock, Save, Camera, Key, Eye, EyeOff } from "lucide-react"
-import { useState } from "react"
 
 export default function AdminProfilePage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
 
   return (
     <div className="space-y-6">
@@ -123,7 +118,7 @@ export default function AdminProfilePage() {
                   <div className="relative">
                     <Input 
                       id="currentPassword" 
-                      type={showPassword ? "text" : "password"}
+                      type="password"
                       placeholder="Enter current password"
                     />
                     <Button
@@ -131,13 +126,8 @@ export default function AdminProfilePage() {
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      <Eye className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -146,7 +136,7 @@ export default function AdminProfilePage() {
                   <div className="relative">
                     <Input 
                       id="newPassword" 
-                      type={showNewPassword ? "text" : "password"}
+                      type="password"
                       placeholder="Enter new password"
                     />
                     <Button
@@ -154,13 +144,8 @@ export default function AdminProfilePage() {
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
                     >
-                      {showNewPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      <Eye className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
