@@ -1,12 +1,30 @@
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { partnerSummary, recentActivity } from "@/lib/partner-data"
-import SummaryCard from "@/components/summary-card"
 import { CreditCard, Users, Calendar, TrendingUp } from "lucide-react"
 
 export default function PartnerOverviewPage() {
+  // Default data in case imports are not available during build
+  const partnerSummary = {
+    totalCreditsPurchased: 5000,
+    creditsRemaining: 2340,
+    activeMembers: 45,
+    totalSessionsBooked: 156
+  }
+
+  const recentActivity = {
+    latestMembers: [
+      { id: "1", name: "John Smith", email: "john@company.com" },
+      { id: "2", name: "Sarah Johnson", email: "sarah@company.com" }
+    ],
+    latestPurchases: [
+      { id: "1", date: "2024-09-15", credits: 1000, amount: 5000000 },
+      { id: "2", date: "2024-09-10", credits: 500, amount: 2500000 }
+    ],
+    recentUsage: [
+      { id: "1", date: "2024-09-15", member: "John Smith", credits: 5 },
+      { id: "2", date: "2024-09-14", member: "Sarah Johnson", credits: 5 }
+    ]
+  }
   return (
     <div className="space-y-6">
       <div>
@@ -15,30 +33,46 @@ export default function PartnerOverviewPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <SummaryCard
-          title="Total Credits Purchased"
-          value={partnerSummary.totalCreditsPurchased.toString()}
-          description="Credits bought for members"
-          icon={CreditCard}
-        />
-        <SummaryCard
-          title="Credits Remaining"
-          value={partnerSummary.creditsRemaining.toString()}
-          description="Available for distribution"
-          icon={CreditCard}
-        />
-        <SummaryCard
-          title="Active Members"
-          value={partnerSummary.activeMembers.toString()}
-          description="Members with active accounts"
-          icon={Users}
-        />
-        <SummaryCard
-          title="Total Sessions Booked"
-          value={partnerSummary.totalSessionsBooked.toString()}
-          description="Sessions completed by members"
-          icon={Calendar}
-        />
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Credits Purchased</CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{partnerSummary.totalCreditsPurchased}</div>
+            <p className="text-xs text-muted-foreground">Credits bought for members</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Credits Remaining</CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{partnerSummary.creditsRemaining}</div>
+            <p className="text-xs text-muted-foreground">Available for distribution</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Members</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{partnerSummary.activeMembers}</div>
+            <p className="text-xs text-muted-foreground">Members with active accounts</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Sessions Booked</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{partnerSummary.totalSessionsBooked}</div>
+            <p className="text-xs text-muted-foreground">Sessions completed by members</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

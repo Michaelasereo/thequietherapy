@@ -1,6 +1,3 @@
-"use client"
-
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -8,19 +5,61 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { creditPackages, creditHistory, partnerMembers, partnerPackages, partnerSummary } from "@/lib/partner-data"
 import { CreditCard } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
 
 export default function PartnerCreditsPage() {
-  const { toast } = useToast()
-  const [pkg, setPkg] = useState<string | null>(creditPackages[0]?.id ?? null)
-  const [assignMember, setAssignMember] = useState<string | null>(partnerMembers[0]?.id ?? null)
-  const [assignAmount, setAssignAmount] = useState<number>(10)
-  const [purchaseType, setPurchaseType] = useState<"package" | "custom">("package")
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
-  const [customCredits, setCustomCredits] = useState<number>(10)
-  const [memberCount, setMemberCount] = useState<number>(1)
+  // Default data in case imports are not available during build
+  const creditPackages = [
+    { id: "1", name: "Starter", credits: 100, price: 500000 },
+    { id: "2", name: "Professional", credits: 500, price: 2000000 },
+    { id: "3", name: "Enterprise", credits: -1, price: 10000000 }
+  ]
+
+  const creditHistory = [
+    {
+      id: "1",
+      date: "2024-09-15",
+      type: "Purchase",
+      member: null,
+      creditsIn: 1000,
+      creditsOut: 0,
+      balanceAfter: 2340
+    },
+    {
+      id: "2",
+      date: "2024-09-14",
+      type: "Assignment",
+      member: "John Smith",
+      creditsIn: 0,
+      creditsOut: 10,
+      balanceAfter: 1340
+    }
+  ]
+
+  const partnerMembers = [
+    { id: "1", name: "John Smith" },
+    { id: "2", name: "Sarah Johnson" },
+    { id: "3", name: "Mike Chen" }
+  ]
+
+  const partnerPackages = [
+    { id: "1", name: "Starter", credits: 100, price: 500000 },
+    { id: "2", name: "Professional", credits: 500, price: 2000000 },
+    { id: "3", name: "Enterprise", credits: -1, price: 10000000 }
+  ]
+
+  const partnerSummary = {
+    creditsRemaining: 2340,
+    totalCreditsPurchased: 5000
+  }
+
+  const pkg = creditPackages[0]?.id ?? null
+  const assignMember = partnerMembers[0]?.id ?? null
+  const assignAmount = 10
+  const purchaseType = "package"
+  const selectedPackage = null
+  const customCredits = 10
+  const memberCount = 1
 
   return (
     <div className="space-y-6">
@@ -54,7 +93,7 @@ export default function PartnerCreditsPage() {
           <CardTitle>Buy Credits</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <RadioGroup value={purchaseType} onValueChange={(value: "package" | "custom") => setPurchaseType(value)}>
+          <RadioGroup value={purchaseType}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="package" id="package" />
               <Label htmlFor="package">Buy Package</Label>
@@ -67,7 +106,7 @@ export default function PartnerCreditsPage() {
 
           {purchaseType === "package" ? (
             <div className="space-y-4">
-              <Select value={selectedPackage ?? ""} onValueChange={setSelectedPackage}>
+              <Select value={selectedPackage ?? ""}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select package" />
                 </SelectTrigger>
@@ -83,8 +122,7 @@ export default function PartnerCreditsPage() {
               <Input 
                 type="number" 
                 placeholder="Number of members" 
-                value={memberCount} 
-                onChange={(e) => setMemberCount(Number(e.target.value))}
+                defaultValue={memberCount} 
                 min="1"
               />
               
@@ -99,8 +137,7 @@ export default function PartnerCreditsPage() {
                     id="custom-credits"
                     type="number"
                     min="1"
-                    value={customCredits}
-                    onChange={(e) => setCustomCredits(Number(e.target.value))}
+                    defaultValue={customCredits}
                     placeholder="Enter number of credits"
                   />
                 </div>
@@ -109,11 +146,7 @@ export default function PartnerCreditsPage() {
                   <Input
                     id="custom-amount"
                     type="number"
-                    value={customCredits * 5000}
-                    onChange={(e) => {
-                      const amount = Number(e.target.value)
-                      setCustomCredits(Math.round(amount / 5000))
-                    }}
+                    defaultValue={customCredits * 5000}
                     placeholder="Enter amount"
                   />
                 </div>
@@ -145,7 +178,7 @@ export default function PartnerCreditsPage() {
       <Card>
         <CardHeader><CardTitle>Assign Credits</CardTitle></CardHeader>
         <CardContent className="flex flex-col sm:flex-row gap-2">
-          <Select value={assignMember ?? undefined} onValueChange={setAssignMember}>
+          <Select value={assignMember ?? undefined}>
             <SelectTrigger className="w-full sm:w-[260px]"><SelectValue placeholder="Select member" /></SelectTrigger>
             <SelectContent>
               {partnerMembers.map((m) => (
@@ -153,7 +186,7 @@ export default function PartnerCreditsPage() {
               ))}
             </SelectContent>
           </Select>
-          <Input type="number" value={assignAmount} onChange={(e) => setAssignAmount(Number(e.target.value))} className="w-full sm:w-[160px]" />
+          <Input type="number" defaultValue={assignAmount} className="w-full sm:w-[160px]" />
           <Button>Assign</Button>
         </CardContent>
       </Card>

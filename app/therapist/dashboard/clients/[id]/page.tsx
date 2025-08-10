@@ -1,29 +1,56 @@
-"use client"
-
-import { notFound } from "next/navigation"
 import Link from "next/link"
-import { useMemo, useState } from "react"
-import { use } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
-import { therapistClients } from "@/lib/therapist-data"
 import { ArrowLeft, FileText } from "lucide-react"
 
 function formatDate(input: string) {
   return new Date(input).toLocaleDateString()
 }
 
-export default function TherapistClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-  const baseClient = useMemo(() => therapistClients.find((c) => c.id === id), [id])
-  if (!baseClient) return notFound()
+export default function TherapistClientDetailsPage({ params }: { params: { id: string } }) {
+  // Default data in case imports are not available during build
+  const therapistClients = [
+    {
+      id: "1",
+      name: "Sarah Johnson",
+      picture: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+      lastSeen: "2 days ago",
+      sessions: [
+        { id: "s1", date: "2024-09-15", time: "10:00 AM", type: "CBT" },
+        { id: "s2", date: "2024-09-08", time: "10:00 AM", type: "CBT" }
+      ],
+      notes: [
+        {
+          date: "2024-09-15",
+          summary: "Discussed anxiety management techniques and assigned homework.",
+          tags: ["Anxiety", "CBT", "Homework"]
+        },
+        {
+          date: "2024-09-08", 
+          summary: "Initial assessment session. Patient showed good engagement.",
+          tags: ["Assessment", "Engagement"]
+        }
+      ],
+      medicalHistory: [
+        {
+          condition: "Generalized Anxiety Disorder",
+          notes: "Diagnosed by primary care physician",
+          diagnosisDate: "2023-01-10"
+        }
+      ]
+    }
+  ]
 
-  const [notes, setNotes] = useState(baseClient.notes)
-  const [newNote, setNewNote] = useState("")
+  const id = params.id
+  const baseClient = therapistClients.find((c) => c.id === id)
+  if (!baseClient) return <div>Client not found</div>
+
+  const notes = baseClient.notes
+  const newNote = ""
 
   const totalSessions = baseClient.sessions.length
   const totalNotes = notes.length

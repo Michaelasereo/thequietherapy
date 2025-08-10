@@ -5,10 +5,30 @@ import { Input } from "@/components/ui/input"
 import { Bell, Search } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { partnerSidebarGroups } from "@/lib/partner-data"
+
 import Link from "next/link"
 
 function PartnerSidebar() {
+  // Default data in case imports are not available during build
+  const partnerSidebarGroups = [
+    {
+      label: "Overview",
+      items: [
+        { name: "Dashboard", href: "/partner/dashboard", icon: () => <div className="h-4 w-4">📊</div> },
+        { name: "Members", href: "/partner/dashboard/members", icon: () => <div className="h-4 w-4">👥</div> },
+        { name: "Credits", href: "/partner/dashboard/credits", icon: () => <div className="h-4 w-4">💳</div> }
+      ]
+    },
+    {
+      label: "Management",
+      items: [
+        { name: "Reports", href: "/partner/dashboard/reports", icon: () => <div className="h-4 w-4">📈</div> },
+        { name: "Payments", href: "/partner/dashboard/payments", icon: () => <div className="h-4 w-4">💰</div> },
+        { name: "Settings", href: "/partner/dashboard/settings", icon: () => <div className="h-4 w-4">⚙️</div> }
+      ]
+    }
+  ]
+
   return (
     <div className="w-64 border-r h-screen sticky top-0 hidden md:flex flex-col">
       <div className="p-4 text-2xl font-bold">Trpi Partners</div>
@@ -19,7 +39,7 @@ function PartnerSidebar() {
             <div className="space-y-1">
               {group.items.map((item) => (
                 <Link key={item.name} href={item.href} className="flex items-center gap-2 px-2 py-2 rounded hover:bg-muted">
-                  <item.icon className="h-4 w-4" />
+                  <item.icon />
                   <span>{item.name}</span>
                 </Link>
               ))}

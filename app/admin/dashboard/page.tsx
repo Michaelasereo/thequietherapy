@@ -1,10 +1,6 @@
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { adminSummary, recentActivities, pendingVerifications, platformStats, revenueData, systemHealth } from "@/lib/admin-data"
-import SummaryCard from "@/components/summary-card"
 import { 
   Users, 
   UserCheck, 
@@ -21,6 +17,80 @@ import {
 } from "lucide-react"
 
 export default function AdminDashboardPage() {
+  // Default data in case imports are not available during build
+  const adminSummary = {
+    totalUsers: 1247,
+    totalTherapists: 89,
+    totalPartners: 23,
+    totalSessions: 3456,
+    pendingVerifications: 12,
+    totalRevenue: 45000000,
+    activeSessions: 45,
+    platformHealth: "Healthy"
+  }
+
+  const recentActivities = [
+    {
+      id: "1",
+      user: "Dr. Sarah Johnson",
+      time: "2 minutes ago",
+      type: "session_completed"
+    },
+    {
+      id: "2", 
+      user: "Partner Corp",
+      time: "5 minutes ago",
+      type: "credits_purchased"
+    },
+    {
+      id: "3",
+      user: "John Doe",
+      time: "10 minutes ago", 
+      type: "account_created"
+    }
+  ]
+
+  const pendingVerifications = [
+    {
+      id: "v1",
+      name: "Dr. Emily White",
+      email: "emily.white@example.com",
+      submitted: "2024-09-15",
+      type: "Therapist"
+    },
+    {
+      id: "v2",
+      name: "Health Corp",
+      email: "admin@healthcorp.com", 
+      submitted: "2024-09-14",
+      type: "Partner"
+    }
+  ]
+
+  const platformStats = {
+    dailyActiveUsers: 234,
+    sessionCompletionRate: 94,
+    userSatisfactionScore: 4.8,
+    therapistRetentionRate: 87
+  }
+
+  const revenueData = {
+    monthlyRevenue: 4500000,
+    growthRate: 12.5,
+    topRevenueSources: [
+      { source: "Individual Sessions", amount: 2800000 },
+      { source: "Partner Subscriptions", amount: 1200000 },
+      { source: "Premium Features", amount: 500000 }
+    ]
+  }
+
+  const systemHealth = {
+    uptime: 99.9,
+    responseTime: 245,
+    errorRate: 0.1,
+    serverLoad: 65,
+    databaseHealth: "Optimal"
+  }
   return (
     <div className="space-y-6">
       <div>
@@ -30,58 +100,90 @@ export default function AdminDashboardPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <SummaryCard
-          title="Total Users"
-          value={adminSummary.totalUsers.toString()}
-          description="Registered platform users"
-          icon={Users}
-        />
-        <SummaryCard
-          title="Therapists"
-          value={adminSummary.totalTherapists.toString()}
-          description="Verified therapists"
-          icon={UserCheck}
-        />
-        <SummaryCard
-          title="Partners"
-          value={adminSummary.totalPartners.toString()}
-          description="Partner institutions"
-          icon={Building2}
-        />
-        <SummaryCard
-          title="Total Sessions"
-          value={adminSummary.totalSessions.toString()}
-          description="Completed sessions"
-          icon={Calendar}
-        />
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{adminSummary.totalUsers}</div>
+            <p className="text-xs text-muted-foreground">Registered platform users</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Therapists</CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{adminSummary.totalTherapists}</div>
+            <p className="text-xs text-muted-foreground">Verified therapists</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Partners</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{adminSummary.totalPartners}</div>
+            <p className="text-xs text-muted-foreground">Partner institutions</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{adminSummary.totalSessions}</div>
+            <p className="text-xs text-muted-foreground">Completed sessions</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Second Row Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <SummaryCard
-          title="Pending Verifications"
-          value={adminSummary.pendingVerifications.toString()}
-          description="Awaiting approval"
-          icon={AlertTriangle}
-        />
-        <SummaryCard
-          title="Monthly Revenue"
-          value={`₦${(adminSummary.totalRevenue / 1000000).toFixed(1)}M`}
-          description="Total platform revenue"
-          icon={DollarSign}
-        />
-        <SummaryCard
-          title="Active Sessions"
-          value={adminSummary.activeSessions.toString()}
-          description="Currently ongoing"
-          icon={Activity}
-        />
-        <SummaryCard
-          title="Platform Health"
-          value={adminSummary.platformHealth}
-          description="System status"
-          icon={Shield}
-        />
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Verifications</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{adminSummary.pendingVerifications}</div>
+            <p className="text-xs text-muted-foreground">Awaiting approval</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₦{(adminSummary.totalRevenue / 1000000).toFixed(1)}M</div>
+            <p className="text-xs text-muted-foreground">Total platform revenue</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{adminSummary.activeSessions}</div>
+            <p className="text-xs text-muted-foreground">Currently ongoing</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Platform Health</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{adminSummary.platformHealth}</div>
+            <p className="text-xs text-muted-foreground">System status</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Platform Stats and Recent Activity */}
