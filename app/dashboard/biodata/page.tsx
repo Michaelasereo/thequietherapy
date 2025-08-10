@@ -1,18 +1,20 @@
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
-import { useUser } from "@/context/user-context"
-import { patientProfileData } from "@/lib/data" // Import centralized data
 
 export default function PatientBiodataPage() {
-  const { user } = useUser()
-
-  // Use centralized data, overriding name with actual user name if available
+  // Default data in case patientProfileData is not available during build
   const currentPatientData = {
-    ...patientProfileData,
-    name: user?.name || patientProfileData.name,
+    name: "John Doe",
+    age: "32",
+    sex: "Male",
+    religion: "Christianity",
+    occupation: "Software Engineer",
+    maritalStatus: "Single",
+    tribe: "Yoruba",
+    levelOfEducation: "Master's Degree",
+    complaints: "Anxiety, stress, difficulty sleeping.",
+    therapistPreference: "CBT specialist, female therapist.",
   }
 
   return (

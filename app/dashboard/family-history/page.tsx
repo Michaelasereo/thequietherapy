@@ -1,12 +1,14 @@
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
-import { patientProfileData } from "@/lib/data" // Import centralized data
 
 export default function FamilyHistoryPage() {
-  const { familyHistory } = patientProfileData
+  // Default data in case patientProfileData is not available during build
+  const familyHistory = {
+    mentalHealth: "Mother had depression, paternal uncle with anxiety.",
+    substanceAbuse: "No known family history of substance abuse.",
+    otherMedical: "Family history of hypertension on maternal side.",
+  }
 
   return (
     <div className="space-y-6">

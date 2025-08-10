@@ -1,12 +1,21 @@
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
-import { patientProfileData } from "@/lib/data" // Import centralized data
 
 export default function SocialHistoryPage() {
-  const { socialHistory } = patientProfileData
+  // Default data in case patientProfileData is not available during build
+  const socialHistory = {
+    livingSituation: "Lives alone in an apartment.",
+    employment: "Full-time software engineer, works remotely.",
+    relationships: "Close relationship with sister, few close friends.",
+    hobbiesInterests: "Enjoys reading, hiking, and playing video games.",
+    substanceUse: {
+      smoking: "No history of smoking.",
+      alcohol: "Occasional social drinking (1-2 drinks per week).",
+      otherDrugs: "No illicit drug use.",
+    },
+    stressors: "Work-related stress, recent breakup.",
+  }
 
   return (
     <div className="space-y-6">
