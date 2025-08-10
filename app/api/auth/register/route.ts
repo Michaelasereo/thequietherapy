@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
-import { sendVerificationEmail } from '@/lib/email';
 import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
@@ -58,8 +57,13 @@ export async function POST(request: NextRequest) {
 
     // Send verification email via Resend
     try {
-      await sendVerificationEmail(email, verificationToken);
-      console.log('Email sent successfully to:', email);
+      if (process.env.RESEND_API_KEY) {
+        const { sendVerificationEmail } = await import('@/lib/email');
+        await sendVerificationEmail(email, verificationToken);
+        console.log('Email sent successfully to:', email);
+      } else {
+        console.log('RESEND_API_KEY not available, skipping email');
+      }
     } catch (emailError) {
       console.error('Email error:', emailError);
       // Don't fail the registration if email fails
