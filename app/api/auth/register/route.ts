@@ -4,10 +4,19 @@ import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if environment variables are available
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Missing Supabase environment variables');
+      return NextResponse.json(
+        { error: 'Server configuration error - missing Supabase credentials' },
+        { status: 500 }
+      );
+    }
+
     // Create Supabase client inside the function
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
     const { fullName, email, password } = await request.json();
@@ -57,12 +66,12 @@ export async function POST(request: NextRequest) {
 
     // Send verification email via Resend
     try {
-      if (process.env.RESEND_API_KEY) {
+      if (!process.env.RESEND_API_KEY) {
+        console.log('RESEND_API_KEY not available, skipping email');
+      } else {
         const { sendVerificationEmail } = await import('@/lib/email');
         await sendVerificationEmail(email, verificationToken);
         console.log('Email sent successfully to:', email);
-      } else {
-        console.log('RESEND_API_KEY not available, skipping email');
       }
     } catch (emailError) {
       console.error('Email error:', emailError);
