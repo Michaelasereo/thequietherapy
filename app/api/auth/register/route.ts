@@ -3,13 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 import { sendVerificationEmail } from '@/lib/email';
 import { randomUUID } from 'crypto';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export async function POST(request: NextRequest) {
   try {
+    // Create Supabase client inside the function
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
     const { fullName, email, password } = await request.json();
 
     // Add a small delay to avoid rate limiting
