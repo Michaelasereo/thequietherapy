@@ -5,6 +5,10 @@ import { randomUUID } from 'crypto';
 export async function POST(request: NextRequest) {
   try {
     // Check if environment variables are available
+    console.log('Environment variables check:');
+    console.log('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET');
+    console.log('SUPABASE_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
+    
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.error('Missing Supabase environment variables');
       return NextResponse.json(
