@@ -14,12 +14,15 @@ function createTransporter() {
       user: process.env.BREVO_SMTP_USER,
       pass: process.env.BREVO_SMTP_PASS,
     },
+    tls: {
+      rejectUnauthorized: false
+    }
   });
 }
 
 export async function sendVerificationEmail(email: string, token: string) {
   const transporter = createTransporter();
-  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3008'}/api/auth/verify-email?email=${email}&token=${token}`;
+  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/verify-email?email=${email}&token=${token}`;
   
   const mailOptions = {
     from: 'Trpi <noreply@trpi.com>',
@@ -58,7 +61,7 @@ export async function sendVerificationEmail(email: string, token: string) {
 
 export async function sendPasswordResetEmail(email: string, token: string) {
   const transporter = createTransporter();
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3008'}/reset-password?token=${token}`;
+  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
   
   const mailOptions = {
     from: 'Trpi <noreply@trpi.com>',
