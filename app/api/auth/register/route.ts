@@ -19,20 +19,25 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
-    const { fullName, email, password } = await request.json();
+    const body = await request.json();
+    console.log('Registration request body:', body);
+    
+    const { fullName, email, password } = body;
 
     // Add a small delay to avoid rate limiting
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Validate input
     if (!fullName || !email || !password) {
+      console.log('Missing fields:', { fullName: !!fullName, email: !!email, password: !!password });
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: fullName, email, and password are required' },
         { status: 400 }
       );
     }
 
     // Create user in Supabase Auth
+    console.log('Attempting Supabase signup for email:', email);
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -44,12 +49,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
-      console.error('Auth error:', authError);
+      console.error('Supabase auth error:', authError);
       return NextResponse.json(
-        { error: authError.message },
+        { error: `Authentication failed: ${authError.message}` },
         { status: 400 }
       );
     }
+
+    console.log('Supabase auth successful, user ID:', authData.user?.id);
 
     // Generate verification token
     const verificationToken = randomUUID();
