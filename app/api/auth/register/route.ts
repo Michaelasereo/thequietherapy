@@ -71,10 +71,10 @@ export async function POST(request: NextRequest) {
       console.error('Update error:', updateError);
     }
 
-    // Send verification email via Resend
+    // Send verification email via Brevo
     try {
-      if (!process.env.RESEND_API_KEY) {
-        console.log('RESEND_API_KEY not available, skipping email');
+      if (!process.env.BREVO_SMTP_USER || !process.env.BREVO_SMTP_PASS) {
+        console.log('Brevo SMTP credentials not available, skipping email');
       } else {
         const { sendVerificationEmail } = await import('@/lib/email');
         await sendVerificationEmail(email, verificationToken);
