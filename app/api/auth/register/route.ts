@@ -78,11 +78,11 @@ export async function POST(request: NextRequest) {
     // Generate verification token
     const verificationToken = randomUUID();
 
-    // Store verification token in database (you might want to create a separate table for this)
-    // For now, we'll use the user's metadata
-    const { error: updateError } = await supabase.auth.updateUser({
-      data: { verification_token: verificationToken }
-    });
+    // Store verification token in database
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({ verification_token: verificationToken })
+      .eq('id', userId);
 
     if (updateError) {
       console.error('Update error:', updateError);
@@ -100,28 +100,6 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       console.error('Email error:', emailError);
       // Don't fail the registration if email fails
-    }
-
-    // Create user profile in users table using service role key for bypassing RLS
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    const { error: profileError } = await supabaseAdmin
-      .from('users')
-      .insert({
-        id: authData.user?.id,
-        email: email,
-        full_name: fullName,
-        user_type: 'individual',
-        is_verified: false,
-        credits: 10, // Give new users 10 credits
-        package_type: 'Basic'
-      });
-
-    if (profileError) {
-      console.error('Profile creation error:', profileError);
     }
 
     return NextResponse.json({
