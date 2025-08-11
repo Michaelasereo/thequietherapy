@@ -43,27 +43,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create user in Supabase Auth
-    console.log('Attempting Supabase signup for email:', email);
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
+    // Create user profile in users table using service role key for bypassing RLS
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-    if (authError) {
-      console.error('Supabase auth error:', authError);
+    // Generate a unique user ID
+    const userId = crypto.randomUUID();
+
+    // Create user profile directly in the database
+    const { error: profileError } = await supabaseAdmin
+      .from('users')
+      .insert({
+        id: userId,
+        email: email,
+        full_name: fullName,
+        user_type: 'individual',
+        is_verified: false,
+        credits: 10, // Give new users 10 credits
+        package_type: 'Basic'
+      });
+
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
       return NextResponse.json(
-        { error: `Authentication failed: ${authError.message}` },
+        { error: 'Failed to create user profile' },
         { status: 400 }
       );
     }
 
-    console.log('Supabase auth successful, user ID:', authData.user?.id);
+    console.log('User profile created successfully, user ID:', userId);
 
     // Generate verification token
     const verificationToken = randomUUID();
@@ -118,7 +128,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Registration successful. Please check your email for verification.',
       user: {
-        id: authData.user?.id,
+        id: userId,
         email: email,
         full_name: fullName
       }
