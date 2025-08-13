@@ -47,7 +47,7 @@ export async function createMagicLink(data: MagicLinkData): Promise<{ success: b
     }
 
     // Send magic link email
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/verify-magic-link?token=${token}`;
+    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3003'}/api/auth/verify-magic-link?token=${token}`;
     
     const emailResult = await sendMagicLinkEmail(data.email, verificationUrl, data.type, data.metadata);
 

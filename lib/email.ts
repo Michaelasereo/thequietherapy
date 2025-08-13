@@ -32,7 +32,7 @@ export async function sendVerificationEmail(email: string, token: string) {
     return { success: false, error: 'Email service not configured' };
   }
   
-  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/verify-email?email=${email}&token=${token}`;
+  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3003'}/api/auth/verify-email?email=${email}&token=${token}`;
   
   const senderEmail = process.env.SENDER_EMAIL || 'noreply@trpi.com';
   
@@ -79,7 +79,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     return { success: false, error: 'Email service not configured' };
   }
   
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3003'}/reset-password?token=${token}`;
   
   const senderEmail = process.env.SENDER_EMAIL || 'noreply@trpi.com';
   
