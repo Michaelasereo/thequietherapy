@@ -17,7 +17,7 @@ import {
   getCompletePatientProfile,
   getCurrentUserId
 } from '@/lib/patient-data'
-import { toast } from '@/hooks/use-toast'
+import { toast } from '@/components/ui/use-toast'
 
 interface UsePatientDataReturn {
   // State

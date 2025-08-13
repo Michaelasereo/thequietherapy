@@ -24,7 +24,7 @@ import {
   getPatientBiodataById
 } from "@/lib/patient-data"
 import { checkTherapistClientAccess } from "@/lib/therapist-data"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "@/components/ui/use-toast"
 
 export default function PatientMedicalHistoryPage() {
   const params = useParams()
