@@ -6,17 +6,13 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false, // Keep this false to catch actual errors
   },
-
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb'
-    }
-  },
-  images: {
-    domains: ['localhost'],
-    unoptimized: true
-  },
   webpack: (config, { isServer }) => {
+    // Ensure path resolution works correctly for Netlify
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname, './'),
+    }
+    
     if (!isServer) {
       // Don't resolve 'fs' module on the client to prevent this error on build --> Error: Can't resolve 'fs'
       config.resolve.fallback = {
@@ -42,6 +38,15 @@ const nextConfig = {
     ]
     
     return config;
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb'
+    }
+  },
+  images: {
+    domains: ['localhost'],
+    unoptimized: true
   },
 }
 
