@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Brain, LogOut } from "lucide-react"
+import { LogOut, Check } from "lucide-react"
 import React from "react"
+import { Logo } from "@/components/ui/logo"
 import {
   Sidebar,
   SidebarContent,
@@ -18,21 +19,40 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { therapistDashboardSidebarGroups, therapistDashboardBottomNavItems } from "@/lib/therapist-data"
+import { Badge } from "@/components/ui/badge"
 import { useTherapistUser } from "@/context/therapist-user-context"
+import { useTherapistSidebarState } from "@/hooks/useTherapistDashboardState"
 import { therapistLogoutAction } from "@/actions/therapist-auth"
 
 export default function TherapistDashboardSidebar() {
   const pathname = usePathname()
   const { therapistUser } = useTherapistUser()
+  const {
+    notificationsCount,
+    unreadMessages,
+    handleItemClick,
+    handleItemToggle,
+    setHover
+  } = useTherapistSidebarState()
+
+  // Simple isActive function using pathname
+  const isActive = (href: string) => pathname === href
 
   return (
-    <Sidebar className="bg-sidebar-background text-sidebar-foreground" collapsible="icon">
+    <Sidebar 
+      className="bg-sidebar-background text-sidebar-foreground" 
+      collapsible="icon"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
       <SidebarHeader className="p-4">
         <Link href="/therapist/dashboard" className="flex items-center gap-2 font-bold text-2xl">
-          <Brain className="h-7 w-7 text-primary" />
-          <span className="group-data-[state=collapsed]:hidden">Trpi</span>
+          <Logo size="md" variant="light" />
         </Link>
       </SidebarHeader>
+      
+
+      
       <SidebarContent className="flex-1 overflow-auto">
         <SidebarGroup>
           <SidebarGroupContent>
@@ -46,9 +66,9 @@ export default function TherapistDashboardSidebar() {
                     <SidebarMenuItem key={item.name}>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname === item.href}
+                        isActive={isActive(item.href)}
                         className={
-                          pathname === item.href
+                          isActive(item.href)
                             ? "bg-sidebar-active-bg text-sidebar-active-foreground hover:bg-sidebar-active-bg hover:text-sidebar-active-foreground"
                             : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         }
@@ -56,6 +76,16 @@ export default function TherapistDashboardSidebar() {
                         <Link href={item.href}>
                           <item.icon className="h-5 w-5" />
                           <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
+                          {item.name === 'Notifications' && notificationsCount > 0 && (
+                            <Badge variant="destructive" className="ml-auto text-xs">
+                              {notificationsCount}
+                            </Badge>
+                          )}
+                          {item.name === 'Messages' && unreadMessages > 0 && (
+                            <Badge variant="secondary" className="ml-auto text-xs">
+                              {unreadMessages}
+                            </Badge>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -76,9 +106,9 @@ export default function TherapistDashboardSidebar() {
             <SidebarMenuItem key={item.name}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href}
+                isActive={isActive(item.href)}
                 className={
-                  pathname === item.href
+                  isActive(item.href)
                     ? "bg-sidebar-active-bg text-sidebar-active-foreground hover:bg-sidebar-active-bg hover:text-sidebar-active-foreground"
                     : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }

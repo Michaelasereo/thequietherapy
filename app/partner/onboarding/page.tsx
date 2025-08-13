@@ -12,6 +12,8 @@ import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
 import { Building2, ArrowLeft, ArrowRight, CheckCircle, Mail } from "lucide-react"
 import Link from "next/link"
+import { useActionState } from "react"
+import { partnerOnboardingAction } from "@/actions/partner-auth"
 
 const institutionTypes = [
   "Hospital",
@@ -26,20 +28,20 @@ const institutionTypes = [
 export default function PartnerOnboardingPage() {
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
+  const [state, formAction, isPending] = useActionState(partnerOnboardingAction, null)
   const [formData, setFormData] = useState({
-    institutionName: "",
+    organizationName: "",
     institutionType: "",
     website: "",
     address: "",
     phone: "",
     email: "",
-    password: "",
-    confirmPassword: "",
     licenseNumber: "",
     acceptTerms: false,
     acceptPrivacy: false,
-    adminName: "",
-    adminEmail: ""
+    contactName: "",
+    employeeCount: "",
+    industry: ""
   })
 
   const progress = (currentStep / 3) * 100
@@ -50,7 +52,7 @@ export default function PartnerOnboardingPage() {
 
   const handleNext = () => {
     if (currentStep === 1) {
-      if (!formData.institutionName || !formData.institutionType || !formData.email || !formData.password) {
+      if (!formData.organizationName || !formData.institutionType || !formData.email || !formData.phone || !formData.contactName || !formData.employeeCount || !formData.industry) {
         toast({
           title: "Missing required fields",
           description: "Please fill in all required fields.",
@@ -58,21 +60,13 @@ export default function PartnerOnboardingPage() {
         })
         return
       }
-      if (formData.password !== formData.confirmPassword) {
-        toast({
-          title: "Passwords don't match",
-          description: "Please ensure your passwords match.",
-          variant: "destructive",
-        })
-        return
-      }
     }
     
     if (currentStep === 2) {
-      if (!formData.acceptTerms || !formData.acceptPrivacy || !formData.adminName || !formData.adminEmail) {
+      if (!formData.acceptTerms || !formData.acceptPrivacy) {
         toast({
           title: "Missing required fields",
-          description: "Please accept terms and provide admin details.",
+          description: "Please accept terms and privacy policy.",
           variant: "destructive",
         })
         return
@@ -91,15 +85,31 @@ export default function PartnerOnboardingPage() {
   }
 
   const handleSubmit = () => {
+    const fd = new FormData()
+    fd.append("organizationName", formData.organizationName)
+    fd.append("contactName", formData.contactName)
+    fd.append("email", formData.email)
+    fd.append("phone", formData.phone)
+    fd.append("employeeCount", formData.employeeCount)
+    fd.append("industry", formData.institutionType)
+    fd.append("termsAccepted", formData.acceptTerms ? "on" : "")
+    formAction(fd)
+  }
+
+  // Handle form state
+  if (state?.error) {
     toast({
-      title: "Onboarding Complete!",
-      description: "Redirecting to your partner dashboard...",
+      title: "Onboarding Failed",
+      description: state.error,
+      variant: "destructive",
     })
-    
-    // Redirect directly to partner dashboard
-    setTimeout(() => {
-      window.location.href = "/partner/dashboard"
-    }, 2000)
+  }
+
+  if (state?.success) {
+    toast({
+      title: "Onboarding Initiated!",
+      description: state.success,
+    })
   }
 
   return (
@@ -159,12 +169,12 @@ export default function PartnerOnboardingPage() {
                 <h3 className="text-lg font-semibold">Institution Profile Setup</h3>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="institutionName">Institution Name *</Label>
+                  <Label htmlFor="organizationName">Organization Name *</Label>
                   <Input
-                    id="institutionName"
-                    placeholder="Enter your institution name"
-                    value={formData.institutionName}
-                    onChange={(e) => handleInputChange("institutionName", e.target.value)}
+                    id="organizationName"
+                    placeholder="Enter your organization name"
+                    value={formData.organizationName}
+                    onChange={(e) => handleInputChange("organizationName", e.target.value)}
                   />
                 </div>
 
@@ -227,38 +237,45 @@ export default function PartnerOnboardingPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="licenseNumber">License / CAC Registration Number</Label>
+                    <Label htmlFor="phone">Phone Number *</Label>
                     <Input
-                      id="licenseNumber"
-                      placeholder="Optional"
-                      value={formData.licenseNumber}
-                      onChange={(e) => handleInputChange("licenseNumber", e.target.value)}
+                      id="phone"
+                      type="tel"
+                      placeholder="+234 XXX XXX XXXX"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password *</Label>
+                    <Label htmlFor="contactName">Contact Person Name *</Label>
                     <Input
-                      id="password"
-                      type="password"
-                      placeholder="Create a strong password"
-                      value={formData.password}
-                      onChange={(e) => handleInputChange("password", e.target.value)}
+                      id="contactName"
+                      placeholder="Full name of contact person"
+                      value={formData.contactName}
+                      onChange={(e) => handleInputChange("contactName", e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                    />
+                    <Label htmlFor="employeeCount">Number of Employees *</Label>
+                    <Select value={formData.employeeCount} onValueChange={(value) => handleInputChange("employeeCount", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select employee count" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1-10">1-10</SelectItem>
+                        <SelectItem value="11-50">11-50</SelectItem>
+                        <SelectItem value="51-200">51-200</SelectItem>
+                        <SelectItem value="201-500">201-500</SelectItem>
+                        <SelectItem value="500+">500+</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
+
+
 
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <p className="text-sm text-muted-foreground">
@@ -307,31 +324,7 @@ export default function PartnerOnboardingPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Institution Admin Details</h4>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="adminName">Admin Name *</Label>
-                        <Input
-                          id="adminName"
-                          placeholder="Full name of the admin"
-                          value={formData.adminName}
-                          onChange={(e) => handleInputChange("adminName", e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="adminEmail">Admin Email *</Label>
-                        <Input
-                          id="adminEmail"
-                          type="email"
-                          placeholder="admin@yourcompany.com"
-                          value={formData.adminEmail}
-                          onChange={(e) => handleInputChange("adminEmail", e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
+
 
                   <div className="bg-muted/50 p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground">
@@ -399,8 +392,8 @@ export default function PartnerOnboardingPage() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit}>
-                  Complete Onboarding
+                <Button onClick={handleSubmit} disabled={isPending}>
+                  {isPending ? "Sending..." : "Complete Onboarding"}
                   <CheckCircle className="ml-2 h-4 w-4" />
                 </Button>
               )}

@@ -1,8 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, startTransition } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Brain } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Mail, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import Step1BasicDetails from "@/components/therapist-enrollment-steps/step-1-basic-details"
 import Step2DocumentVerification from "@/components/therapist-enrollment-steps/step-2-document-verification"
@@ -15,10 +17,42 @@ import { useToast } from "@/components/ui/use-toast"
 
 export default function TherapistEnrollmentPage() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [formData, setFormData] = useState<any>({})
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [enrollmentEmail, setEnrollmentEmail] = useState("")
+  const [formData, setFormData] = useState<any>({
+    fullName: "",
+    email: "",
+    phone: "",
+    mdcnCode: "",
+    specialization: [],
+    languages: [],
+    termsAccepted: false
+  })
   const { toast } = useToast()
 
   const [state, formAction, isPending] = useActionState(therapistEnrollAction, null)
+
+  // Handle state changes from the server action
+  useEffect(() => {
+    console.log("State changed:", state) // Debug log
+    
+    if (state?.error) {
+      console.log("Error state detected:", state.error) // Debug log
+      toast({
+        title: "Enrollment Failed",
+        description: state.error,
+        variant: "destructive",
+      })
+    } else if (state?.success) {
+      console.log("Success state detected, showing modal") // Debug log
+      setEnrollmentEmail(formData.email)
+      setShowSuccessModal(true)
+      toast({
+        title: "Enrollment Successful!",
+        description: "Please check your email to complete the process.",
+      })
+    }
+  }, [state, toast, formData.email])
 
   const handleNext = (data: any) => {
     setFormData((prev: any) => ({ ...prev, ...data }))
@@ -48,22 +82,16 @@ export default function TherapistEnrollmentPage() {
       }
     }
 
-    // Call the server action
-    await formAction(submitFormData)
-
-    if (state?.error) {
-      toast({
-        title: "Enrollment Failed",
-        description: state.error,
-        variant: "destructive",
-      })
-    } else {
-      // Server action handles redirect on success
-      toast({
-        title: "Enrollment Successful!",
-        description: "Welcome to Trpi! Redirecting to your dashboard...",
-      })
+    console.log("FormData entries:")
+    for (let [key, value] of submitFormData.entries()) {
+      console.log(`${key}:`, value)
     }
+
+    console.log("Calling formAction...")
+    // Call the server action using startTransition
+    startTransition(() => {
+      formAction(submitFormData)
+    })
   }
 
   const renderStep = () => {
@@ -87,16 +115,60 @@ export default function TherapistEnrollmentPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
-          <Link href="/" className="flex items-center justify-center gap-2 font-bold text-2xl mb-2">
-            <Brain className="h-7 w-7 text-primary" />
-            Trpi (Therapist)
-          </Link>
           <CardTitle className="text-2xl">Therapist Enrollment</CardTitle>
           <CardDescription>Join our network of compassionate therapists.</CardDescription>
         </CardHeader>
         <BookingProgress currentStep={currentStep} totalSteps={4} labels={stepLabels} />
         <CardContent className="p-0">{renderStep()}</CardContent>
       </Card>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Enrollment Submitted Successfully!
+            </DialogTitle>
+            <DialogDescription>
+              We've sent a verification email to complete your enrollment.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+              <Mail className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="font-medium text-blue-900">Check Your Email</p>
+                <p className="text-sm text-blue-700">{enrollmentEmail}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>📧 Look for an email from Trpi</p>
+              <p>🔗 Click the verification link in the email</p>
+              <p>✅ Complete your account setup</p>
+              <p>⏳ Your application will be reviewed by our admin team</p>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowSuccessModal(false)} 
+                className="flex-1"
+                variant="outline"
+              >
+                Close
+              </Button>
+              <Button 
+                onClick={() => window.location.href = "/therapist/login"} 
+                className="flex-1"
+              >
+                Go to Login
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

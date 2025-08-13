@@ -1,3 +1,5 @@
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,8 +17,14 @@ import {
   BarChart3,
   Shield
 } from "lucide-react"
+import { useAdminData, useAdminCardState, useAdminButtonState, useAdminNotificationState } from '@/hooks/useAdminDashboardState';
+import { useCrossDashboardBroadcast } from '@/hooks/useCrossDashboardSync';
 
 export default function AdminDashboardPage() {
+  const { adminData, systemUsers, stats, settings, fetchAdminData, fetchSystemUsers, fetchStats, fetchSettings } = useAdminData();
+  const { addNotification } = useAdminNotificationState();
+  const { broadcastSystemAlert } = useCrossDashboardBroadcast();
+
   // Default data in case imports are not available during build
   const adminSummary = {
     totalUsers: 1247,
@@ -91,6 +99,26 @@ export default function AdminDashboardPage() {
     serverLoad: 65,
     databaseHealth: "Optimal"
   }
+
+  const handleSystemMaintenance = (maintenanceMode: boolean) => {
+    // Update local state
+    // ... existing maintenance update logic ...
+
+    // Broadcast to all dashboards
+    broadcastSystemAlert(
+      maintenanceMode ? 'maintenance_started' : 'maintenance_ended',
+      maintenanceMode ? 'System maintenance has started' : 'System maintenance has ended',
+      ['user', 'therapist', 'partner', 'admin']
+    );
+
+    // Add notification
+    addNotification({
+      type: 'warning',
+      title: 'System Maintenance',
+      message: maintenanceMode ? 'Maintenance mode activated' : 'Maintenance mode deactivated',
+      duration: 5000
+    });
+  };
   return (
     <div className="space-y-6">
       <div>

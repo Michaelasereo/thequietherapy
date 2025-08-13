@@ -8,33 +8,44 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { Building2, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { useActionState } from "react"
+import { partnerMagicLinkAction } from "@/actions/partner-auth"
 
 export default function PartnerAuthPage() {
   const { toast } = useToast()
   const [isNewPartner, setIsNewPartner] = useState<boolean | null>(null)
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [state, formAction, isPending] = useActionState(partnerMagicLinkAction, null)
 
   const handleExistingLogin = () => {
-    if (!email || !password) {
+    if (!email.trim()) {
       toast({
-        title: "Missing credentials",
-        description: "Please enter your email and password.",
+        title: "Missing email",
+        description: "Please enter your email address.",
         variant: "destructive",
       })
       return
     }
 
-    // Simulate login
+    const fd = new FormData()
+    fd.append("email", email)
+    formAction(fd)
+  }
+
+  // Handle form state
+  if (state?.error) {
     toast({
-      title: "Login Successful",
-      description: "Redirecting to partner dashboard...",
+      title: "Login Failed",
+      description: state.error,
+      variant: "destructive",
     })
-    
-    // In real app, redirect to partner dashboard
-    setTimeout(() => {
-      window.location.href = "/partner/dashboard"
-    }, 1000)
+  }
+
+  if (state?.success) {
+    toast({
+      title: "Magic Link Sent!",
+      description: state.success,
+    })
   }
 
   return (
@@ -107,7 +118,7 @@ export default function PartnerAuthPage() {
             <div className="space-y-4">
               <div className="text-center mb-6">
                 <h2 className="text-xl font-semibold mb-2">Partner Login</h2>
-                <p className="text-muted-foreground">Enter your business credentials</p>
+                <p className="text-muted-foreground">Enter your email to receive a secure login link</p>
               </div>
               
               <div className="space-y-4">
@@ -122,20 +133,13 @@ export default function PartnerAuthPage() {
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                
-                <Button onClick={handleExistingLogin} className="w-full">
-                  Sign In to Dashboard
+                <Button onClick={handleExistingLogin} className="w-full" disabled={isPending}>
+                  {isPending ? "Sending..." : "Send Magic Link"}
                 </Button>
+                
+                <div className="text-center text-sm text-muted-foreground">
+                  <p>We'll send you a secure link to access your dashboard.</p>
+                </div>
                 
                 <div className="text-center">
                   <Button 

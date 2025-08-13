@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,89 +16,79 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-// Mock therapist data
-const mockTherapists = [
+// Therapist data - will be populated with real data
+const mockTherapists: any[] = [
   {
-    id: "t1",
-    name: "Dr. Sarah Johnson",
-    email: "sarah@example.com",
-    specialization: "Cognitive Behavioral Therapy",
+    id: "1",
+    name: "Dr. Emily White",
+    email: "emily@example.com",
+    specialization: "Anxiety, Depression",
     status: "Active",
     verificationStatus: "Verified",
-    joinDate: "2024-01-10",
-    totalSessions: 45,
-    totalEarnings: 225000,
+    sessions: 45,
     rating: 4.8,
-    clients: 12,
-    availability: "Full-time",
+    joinDate: "2024-01-15",
     mdcnCode: "MDCN12345"
   },
   {
-    id: "t2",
-    name: "Dr. Michael Brown",
-    email: "michael@example.com",
-    specialization: "Family Therapy",
-    status: "Active",
-    verificationStatus: "Pending",
-    joinDate: "2024-01-15",
-    totalSessions: 23,
-    totalEarnings: 115000,
-    rating: 4.6,
-    clients: 8,
-    availability: "Part-time",
-    mdcnCode: "MDCN12346"
-  },
-  {
-    id: "t3",
-    name: "Dr. Emily White",
-    email: "emily@example.com",
+    id: "2", 
+    name: "Dr. John Smith",
+    email: "john@example.com",
     specialization: "Trauma Therapy",
-    status: "Inactive",
-    verificationStatus: "Verified",
-    joinDate: "2024-01-05",
-    totalSessions: 67,
-    totalEarnings: 335000,
-    rating: 4.9,
-    clients: 15,
-    availability: "Full-time",
-    mdcnCode: "MDCN12347"
-  },
-  {
-    id: "t4",
-    name: "Dr. David Wilson",
-    email: "david@example.com",
-    specialization: "Child Psychology",
-    status: "Active",
-    verificationStatus: "Verified",
+    status: "Pending",
+    verificationStatus: "Pending",
+    sessions: 0,
+    rating: 0,
     joinDate: "2024-01-20",
-    totalSessions: 18,
-    totalEarnings: 90000,
-    rating: 4.7,
-    clients: 6,
-    availability: "Part-time",
-    mdcnCode: "MDCN12348"
-  },
-  {
-    id: "t5",
-    name: "Dr. Lisa Chen",
-    email: "lisa@example.com",
-    specialization: "Anxiety & Depression",
-    status: "Active",
-    verificationStatus: "Verified",
-    joinDate: "2024-01-12",
-    totalSessions: 34,
-    totalEarnings: 170000,
-    rating: 4.5,
-    clients: 10,
-    availability: "Full-time",
-    mdcnCode: "MDCN12349"
+    mdcnCode: "MDCN67890"
   }
 ]
 
 export default function AdminTherapistsPage() {
-  const activeTherapists = mockTherapists.filter(t => t.status === "Active")
-  const verifiedTherapists = mockTherapists.filter(t => t.verificationStatus === "Verified")
-  const pendingVerifications = mockTherapists.filter(t => t.verificationStatus === "Pending")
+  const [therapists, setTherapists] = useState(mockTherapists)
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const activeTherapists = therapists.filter(t => t.status === "Active")
+  const verifiedTherapists = therapists.filter(t => t.verificationStatus === "Verified")
+  const pendingVerifications = therapists.filter(t => t.verificationStatus === "Pending")
+
+  const handleApproveTherapist = async (therapistId: string) => {
+    setIsLoading(true)
+    try {
+      // In real app, call API to approve therapist
+      setTherapists(prev => prev.map(t => 
+        t.id === therapistId 
+          ? { ...t, status: "Active", verificationStatus: "Verified" }
+          : t
+      ))
+      
+      // Show success message
+      console.log(`Therapist ${therapistId} approved successfully!`)
+    } catch (error) {
+      console.error('Error approving therapist:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRejectTherapist = async (therapistId: string) => {
+    setIsLoading(true)
+    try {
+      // In real app, call API to reject therapist
+      setTherapists(prev => prev.map(t => 
+        t.id === therapistId 
+          ? { ...t, status: "Inactive", verificationStatus: "Rejected" }
+          : t
+      ))
+      
+      // Show success message
+      console.log(`Therapist ${therapistId} rejected successfully!`)
+    } catch (error) {
+      console.error('Error rejecting therapist:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -176,6 +167,17 @@ export default function AdminTherapistsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-500" />
+              <div>
+                <div className="text-2xl font-bold">0</div>
+                <div className="text-sm text-muted-foreground">Pending Enrollments</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-green-500" />
               <div>
                 <div className="text-2xl font-bold">₦{mockTherapists.reduce((sum, t) => sum + t.totalEarnings, 0).toLocaleString()}</div>
@@ -185,6 +187,35 @@ export default function AdminTherapistsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pending Enrollments Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-yellow-500" />
+            Pending Therapist Enrollments
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Pending Enrollments</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              When therapists complete the enrollment process, they will appear here for manual verification.
+            </p>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>• MDCN codes will be verified manually</p>
+              <p>• Document uploads will be reviewed</p>
+              <p>• Approved therapists will be activated</p>
+            </div>
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-xs text-blue-700">
+                <strong>Note:</strong> Check the "All Therapists" table below for any unverified therapists that need approval.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Filters and Search */}
       <Card>
@@ -228,7 +259,7 @@ export default function AdminTherapistsPage() {
       {/* Therapists Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Therapists ({mockTherapists.length})</CardTitle>
+          <CardTitle>All Therapists ({therapists.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -246,7 +277,7 @@ export default function AdminTherapistsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockTherapists.map((therapist) => (
+              {therapists.map((therapist) => (
                 <TableRow key={therapist.id}>
                   <TableCell>
                     <div>
@@ -305,6 +336,26 @@ export default function AdminTherapistsPage() {
                           <Calendar className="mr-2 h-4 w-4" />
                           View Sessions
                         </DropdownMenuItem>
+                        {therapist.verificationStatus === "Pending" && (
+                          <>
+                            <DropdownMenuItem 
+                              className="text-green-600"
+                              onClick={() => handleApproveTherapist(therapist.id)}
+                              disabled={isLoading}
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Approve Therapist
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleRejectTherapist(therapist.id)}
+                              disabled={isLoading}
+                            >
+                              <XCircle className="mr-2 h-4 w-4" />
+                              Reject Therapist
+                            </DropdownMenuItem>
+                          </>
+                        )}
                         <DropdownMenuItem className="text-red-600">
                           <Trash2 className="mr-2 h-4 w-4" />
                           Suspend Account

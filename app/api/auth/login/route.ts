@@ -1,70 +1,122 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 Login API called');
+  
   try {
+    // Check if environment variables are available
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Missing Supabase environment variables');
+      return NextResponse.json(
+        { error: 'Server configuration error - missing Supabase credentials' },
+        { status: 500 }
+      );
+    }
+
     // Create Supabase client inside the function
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
-    const { email, password } = await request.json();
+    const body = await request.json();
+    console.log('Login request body:', body);
+    
+    const { email } = body;
 
     // Validate input
-    if (!email || !password) {
+    if (!email) {
+      console.log('Missing email field');
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required field: email' },
         { status: 400 }
       );
     }
 
-    // Sign in with Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (authError) {
-      console.error('Auth error:', authError);
-      return NextResponse.json(
-        { error: authError.message },
-        { status: 400 }
-      );
-    }
-
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase
+    // Check if user exists
+    const { data: existingUser, error: checkError } = await supabase
       .from('users')
-      .select('*')
-      .eq('id', authData.user?.id)
+      .select('id, email, full_name, is_verified')
+      .eq('email', email)
       .single();
 
-    if (profileError) {
-      console.error('Profile error:', profileError);
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      console.error('Error checking existing user:', checkError);
+      return NextResponse.json(
+        { error: 'Error checking user account' },
+        { status: 500 }
+      );
     }
 
-    // Create response with authentication cookie
-    const response = NextResponse.json({
+    if (!existingUser) {
+      console.log('User not found:', email);
+      return NextResponse.json(
+        { error: 'No account found with this email. Please create an account first.' },
+        { status: 404 }
+      );
+    }
+
+    // Generate magic link token
+    const magicLinkToken = randomUUID();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+    // Create admin client for database operations
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // Store magic link in database
+    const { error: magicLinkError } = await supabaseAdmin
+      .from('magic_links')
+      .insert({
+        email: email,
+        token: magicLinkToken,
+        type: 'login',
+        expires_at: expiresAt.toISOString(),
+        metadata: {
+          full_name: existingUser.full_name,
+          user_type: 'individual'
+        }
+      });
+
+    if (magicLinkError) {
+      console.error('Magic link creation error:', magicLinkError);
+      return NextResponse.json(
+        { error: 'Failed to create magic link' },
+        { status: 500 }
+      );
+    }
+
+    // Send magic link email via Brevo
+    try {
+      if (!process.env.BREVO_SMTP_USER || !process.env.BREVO_SMTP_PASS) {
+        console.log('Brevo SMTP credentials not available, skipping email');
+      } else {
+        const { sendMagicLinkEmail } = await import('@/lib/email');
+        const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/verify-magic-link?token=${magicLinkToken}`;
+        await sendMagicLinkEmail(email, verificationUrl, 'login', {
+          full_name: existingUser.full_name,
+          user_type: 'individual'
+        });
+        console.log('Magic link email sent successfully to:', email);
+      }
+    } catch (emailError) {
+      console.error('Email error:', emailError);
+      // Don't fail the login if email fails
+    }
+
+    return NextResponse.json({
       success: true,
-      message: 'Login successful',
-      user: authData.user,
-      profile: profile
+      message: 'Magic link sent to your email. Please check your inbox.',
+      user: {
+        id: existingUser.id,
+        email: existingUser.email,
+        full_name: existingUser.full_name
+      }
     });
-
-    // Set authentication cookie
-    response.cookies.set('trpi_user', JSON.stringify({
-      id: authData.user?.id,
-      email: authData.user?.email,
-      name: profile?.full_name || authData.user?.email?.split('@')[0]
-    }), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
-    });
-
-    return response;
 
   } catch (error) {
     console.error('Login error:', error);

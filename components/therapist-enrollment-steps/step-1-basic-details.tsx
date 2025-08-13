@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button"
 const formSchema = z.object({
   fullName: z.string().min(2, { message: "Full Name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   phone: z.string().min(10, { message: "Phone number is required." }),
 })
 
@@ -27,7 +26,6 @@ export default function Step1BasicDetails({ onNext, initialData }: Step1BasicDet
     defaultValues: initialData || {
       fullName: "",
       email: "",
-      password: "",
       phone: "",
     },
   })
@@ -66,19 +64,7 @@ export default function Step1BasicDetails({ onNext, initialData }: Step1BasicDet
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="********" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
         <FormField
           control={form.control}
           name="phone"

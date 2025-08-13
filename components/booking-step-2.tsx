@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import TherapistCard from "@/components/therapist-card"
 import TherapistProfileModal from "@/components/therapist-profile-modal"
-import { therapists } from "@/lib/data"
 
 interface BookingStep2Props {
   onNext: (therapistId: string) => void
@@ -19,7 +18,26 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
   const [filterAge, setFilterAge] = useState<string>("All")
   const [filterMaritalStatus, setFilterMaritalStatus] = useState<string>("All")
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [modalTherapist, setModalTherapist] = useState<(typeof therapists)[0] | null>(null)
+  const [modalTherapist, setModalTherapist] = useState<any>(null)
+  const [therapists, setTherapists] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch real therapist data
+  useEffect(() => {
+    fetch('/api/therapists')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          setTherapists(data.therapists)
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching therapists:', error)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [])
 
   const filteredTherapists = therapists.filter((therapist) => {
     const genderMatch = filterGender === "All" || therapist.gender === filterGender
@@ -80,7 +98,11 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTherapists.length > 0 ? (
+        {loading ? (
+          <div className="col-span-full text-center py-12">
+            <p className="text-muted-foreground mb-4">Loading therapists...</p>
+          </div>
+        ) : filteredTherapists.length > 0 ? (
           filteredTherapists.map((therapist) => (
             <TherapistCard
               key={therapist.id}
@@ -91,7 +113,10 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
             />
           ))
         ) : (
-          <p className="col-span-full text-center text-muted-foreground">No therapists match your filters.</p>
+          <div className="col-span-full text-center py-12">
+            <p className="text-muted-foreground mb-4">No therapists available at the moment.</p>
+            <p className="text-sm text-muted-foreground">Please check back later or contact support for assistance.</p>
+          </div>
         )}
       </div>
 

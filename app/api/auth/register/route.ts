@@ -3,14 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 Registration API called');
+  
   try {
     // Check if environment variables are available
     console.log('Environment variables check:');
     console.log('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET');
     console.log('SUPABASE_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
-    console.log('SUPABASE_URL value:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('SUPABASE_KEY length:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length);
-    console.log('SUPABASE_KEY starts with:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 20));
     
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.error('Missing Supabase environment variables');
@@ -29,16 +28,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Registration request body:', body);
     
-    const { fullName, email, password } = body;
+    const { firstName, email } = body;
 
     // Add a small delay to avoid rate limiting
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Validate input
-    if (!fullName || !email || !password) {
-      console.log('Missing fields:', { fullName: !!fullName, email: !!email, password: !!password });
+    // Validate input - removed password requirement for magic link auth
+    if (!firstName || !email) {
+      console.log('Missing fields:', { firstName: !!firstName, email: !!email });
       return NextResponse.json(
-        { error: 'Missing required fields: fullName, email, and password are required' },
+        { error: 'Missing required fields: firstName and email are required' },
         { status: 400 }
       );
     }
@@ -49,53 +48,88 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Generate a unique user ID
-    const userId = crypto.randomUUID();
-
-    // Create user profile directly in the database
-    const { error: profileError } = await supabaseAdmin
+    // Check if user already exists (only verified users)
+    const { data: existingUser, error: checkError } = await supabaseAdmin
       .from('users')
-      .insert({
-        id: userId,
-        email: email,
-        full_name: fullName,
-        user_type: 'individual',
-        is_verified: false,
-        credits: 10, // Give new users 10 credits
-        package_type: 'Basic'
-      });
+      .select('id, email, is_verified')
+      .eq('email', email)
+      .eq('is_verified', true)
+      .single();
 
-    if (profileError) {
-      console.error('Profile creation error:', profileError);
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      console.error('Error checking existing user:', checkError);
       return NextResponse.json(
-        { error: 'Failed to create user profile' },
+        { error: 'Error checking user account' },
+        { status: 500 }
+      );
+    }
+
+    if (existingUser) {
+      console.log('Verified user already exists:', existingUser.email);
+      return NextResponse.json(
+        { error: 'An account with this email already exists. Please try logging in instead.' },
         { status: 400 }
       );
     }
 
-    console.log('User profile created successfully, user ID:', userId);
+    // Check if there's already a pending magic link for this email
+    const { data: existingMagicLink, error: magicLinkCheckError } = await supabaseAdmin
+      .from('magic_links')
+      .select('*')
+      .eq('email', email)
+      .eq('type', 'signup')
+      .is('used_at', null)
+      .gt('expires_at', new Date().toISOString())
+      .single();
 
-    // Generate verification token
-    const verificationToken = randomUUID();
-
-    // Store verification token in database
-    const { error: updateError } = await supabaseAdmin
-      .from('users')
-      .update({ verification_token: verificationToken })
-      .eq('id', userId);
-
-    if (updateError) {
-      console.error('Update error:', updateError);
+    if (existingMagicLink) {
+      console.log('Pending magic link already exists for:', email);
+      return NextResponse.json(
+        { error: 'A verification email has already been sent to this address. Please check your email or wait before requesting another.' },
+        { status: 400 }
+      );
     }
 
-    // Send verification email via Brevo
+    console.log('No existing verified user or pending magic link found, proceeding with registration');
+
+    // Generate magic link token
+    const magicLinkToken = randomUUID();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+    // Store magic link in database
+    const { error: magicLinkError } = await supabaseAdmin
+      .from('magic_links')
+      .insert({
+        email: email,
+        token: magicLinkToken,
+        type: 'signup',
+        expires_at: expiresAt.toISOString(),
+        metadata: {
+          full_name: firstName,
+          user_type: 'individual'
+        }
+      });
+
+    if (magicLinkError) {
+      console.error('Magic link creation error:', magicLinkError);
+      return NextResponse.json(
+        { error: 'Failed to create magic link' },
+        { status: 400 }
+      );
+    }
+
+    // Send magic link email via Brevo
     try {
       if (!process.env.BREVO_SMTP_USER || !process.env.BREVO_SMTP_PASS) {
         console.log('Brevo SMTP credentials not available, skipping email');
       } else {
-        const { sendVerificationEmail } = await import('@/lib/email');
-        await sendVerificationEmail(email, verificationToken);
-        console.log('Email sent successfully to:', email);
+        const { sendMagicLinkEmail } = await import('@/lib/email');
+        const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/verify-magic-link?token=${magicLinkToken}`;
+        await sendMagicLinkEmail(email, verificationUrl, 'signup', {
+          full_name: firstName,
+          user_type: 'individual'
+        });
+        console.log('Magic link email sent successfully to:', email);
       }
     } catch (emailError) {
       console.error('Email error:', emailError);
@@ -105,11 +139,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Registration successful. Please check your email for verification.',
-      user: {
-        id: userId,
-        email: email,
-        full_name: fullName
-      }
+      email: email
     });
 
   } catch (error) {

@@ -1,18 +1,17 @@
 import type React from "react"
 import Link from "next/link"
-import { Brain } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 import { navLinks } from "@/lib/data"
 
 export default function Footer() {
   return (
-    <footer className="w-full py-12 md:py-16 lg:py-20 bg-gray-900 text-gray-50">
+    <footer className="w-full py-16 md:py-20 lg:py-24 bg-black text-white">
       <div className="container grid gap-8 px-4 md:px-6 md:grid-cols-3 lg:grid-cols-4">
-        <div className="space-y-4">
+        <div className="space-y-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-2xl">
-            <Brain className="h-7 w-7 text-primary" />
-            Trpi
+            <Logo size="md" variant="light" />
           </Link>
-          <p className="text-sm text-gray-400">Your trusted partner for mental well-being.</p>
+          <p className="text-gray-300 leading-relaxed">Your trusted partner for mental well-being.</p>
           <div className="flex gap-4">
             <Link href="#" className="text-gray-400 hover:text-gray-50 transition-colors">
               <FacebookIcon className="h-6 w-6" />
@@ -32,59 +31,59 @@ export default function Footer() {
             </Link>
           </div>
         </div>
-        <div className="grid gap-2">
-          <h3 className="text-lg font-semibold">Quick Links</h3>
-          <ul className="space-y-2">
+        <div className="grid gap-4">
+          <h3 className="text-lg font-semibold text-white">Quick Links</h3>
+          <ul className="space-y-3">
             {navLinks.map((link) => (
               <li key={link.name}>
-                <Link href={link.href} className="text-gray-400 hover:text-gray-50 transition-colors">
+                <Link href={link.href} className="text-gray-300 hover:text-white transition-colors">
                   {link.name}
                 </Link>
               </li>
             ))}
             <li>
-              <Link href="/login" className="text-gray-400 hover:text-gray-50 transition-colors">
+              <Link href="/login" className="text-gray-300 hover:text-white transition-colors">
                 Login
               </Link>
             </li>
             <li>
-              <Link href="/register" className="text-gray-400 hover:text-gray-50 transition-colors">
+              <Link href="/register" className="text-gray-300 hover:text-white transition-colors">
                 Register
               </Link>
             </li>
           </ul>
         </div>
-        <div className="grid gap-2">
-          <h3 className="text-lg font-semibold">Contact Us</h3>
-          <ul className="space-y-2 text-gray-400">
+        <div className="grid gap-4">
+          <h3 className="text-lg font-semibold text-white">Contact Us</h3>
+          <ul className="space-y-3 text-gray-300">
             <li>123 Therapy Lane, Wellness City, 90210</li>
-            <li>Email: info@trpi.com</li>
+            <li>Email: info@quiet.com</li>
             <li>Phone: (123) 456-7890</li>
           </ul>
         </div>
-        <div className="grid gap-2">
-          <h3 className="text-lg font-semibold">Legal</h3>
-          <ul className="space-y-2">
+        <div className="grid gap-4">
+          <h3 className="text-lg font-semibold text-white">Legal</h3>
+          <ul className="space-y-3">
             <li>
-              <Link href="#" className="text-gray-400 hover:text-gray-50 transition-colors">
+              <Link href="#" className="text-gray-300 hover:text-white transition-colors">
                 Privacy Policy
               </Link>
             </li>
             <li>
-              <Link href="#" className="text-gray-400 hover:text-gray-50 transition-colors">
+              <Link href="#" className="text-gray-300 hover:text-white transition-colors">
                 Terms of Service
               </Link>
             </li>
             <li>
-              <Link href="#" className="text-gray-400 hover:text-gray-50 transition-colors">
+              <Link href="#" className="text-gray-300 hover:text-white transition-colors">
                 Disclaimer
               </Link>
             </li>
           </ul>
         </div>
       </div>
-      <div className="container mt-8 border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
-        &copy; {new Date().getFullYear()} Trpi. All rights reserved.
+      <div className="container mt-12 border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
+        &copy; {new Date().getFullYear()} Quiet. All rights reserved.
       </div>
     </footer>
   )

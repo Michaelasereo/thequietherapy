@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Brain, Home, ArrowLeft } from 'lucide-react'
+import { Home, ArrowLeft } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 
 export default function NotFound() {
   return (
@@ -9,8 +10,7 @@ export default function NotFound() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-2 font-bold text-2xl mb-2">
-            <Brain className="h-7 w-7 text-primary" />
-            Trpi
+            <Logo size="md" variant="dark" />
           </div>
           <CardTitle className="text-2xl">Page Not Found</CardTitle>
           <CardDescription>

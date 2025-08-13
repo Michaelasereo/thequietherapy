@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
-import { Brain } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useRouter } from "next/navigation"
@@ -55,10 +55,9 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <Link href="/" className="flex items-center justify-center gap-2 font-bold text-2xl mb-2">
-            <Brain className="h-7 w-7 text-primary" />
-            Trpi
-          </Link>
+                  <Link href="/" className="flex items-center justify-center gap-2 font-bold text-2xl mb-2">
+          <Logo size="md" variant="dark" />
+        </Link>
           <CardTitle className="text-2xl">Create Account</CardTitle>
           <CardDescription>Sign up to start your therapy journey.</CardDescription>
         </CardHeader>

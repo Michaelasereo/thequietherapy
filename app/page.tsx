@@ -5,10 +5,11 @@ import WhyUs from "@/components/why-us"
 import ReviewsSection from "@/components/reviews-section"
 import FAQSection from "@/components/faq-section"
 import Footer from "@/components/footer"
+import ScrollToTop from "@/components/scroll-to-top"
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-[100dvh]">
+    <div className="flex flex-col min-h-[100dvh] bg-white">
       <LandingNavbar />
       <main className="flex-1">
         <HeroSection />
@@ -18,6 +19,7 @@ export default function LandingPage() {
         <FAQSection />
       </main>
       <Footer />
+      <ScrollToTop />
     </div>
   )
 }

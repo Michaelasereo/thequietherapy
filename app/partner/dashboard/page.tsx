@@ -1,8 +1,16 @@
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CreditCard, Users, Calendar, TrendingUp } from "lucide-react"
+import { usePartnerData, usePartnerCardState, usePartnerButtonState, usePartnerNotificationState } from '@/hooks/usePartnerDashboardState';
+import { useCrossDashboardBroadcast } from '@/hooks/useCrossDashboardSync';
 
 export default function PartnerOverviewPage() {
+  const { partnerInfo, memberStats, sessionStats, fetchPartnerData, fetchMembers, fetchSessions, fetchStats } = usePartnerData();
+  const { addSuccessNotification, addErrorNotification } = usePartnerNotificationState();
+  const { broadcastUserStatusChange } = useCrossDashboardBroadcast();
+
   // Default data in case imports are not available during build
   const partnerSummary = {
     totalCreditsPurchased: 5000,

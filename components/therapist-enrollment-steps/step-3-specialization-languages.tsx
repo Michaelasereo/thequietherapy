@@ -72,11 +72,12 @@ export default function Step3SpecializationLanguages({
                         <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
                           <FormControl>
                             <Checkbox
-                              checked={field.value?.includes(item)}
+                              checked={field.value?.includes(item) || false}
                               onCheckedChange={(checked) => {
+                                const currentValue = field.value || []
                                 return checked
-                                  ? field.onChange([...field.value, item])
-                                  : field.onChange(field.value?.filter((value) => value !== item))
+                                  ? field.onChange([...currentValue, item])
+                                  : field.onChange(currentValue.filter((value) => value !== item))
                               }}
                             />
                           </FormControl>
@@ -109,11 +110,12 @@ export default function Step3SpecializationLanguages({
                         <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
                           <FormControl>
                             <Checkbox
-                              checked={field.value?.includes(item)}
+                              checked={field.value?.includes(item) || false}
                               onCheckedChange={(checked) => {
+                                const currentValue = field.value || []
                                 return checked
-                                  ? field.onChange([...field.value, item])
-                                  : field.onChange(field.value?.filter((value) => value !== item))
+                                  ? field.onChange([...currentValue, item])
+                                  : field.onChange(currentValue.filter((value) => value !== item))
                               }}
                             />
                           </FormControl>

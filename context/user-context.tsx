@@ -31,11 +31,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (storedUser) {
       setUser(JSON.parse(storedUser))
       setIsAuthenticated(true)
-    } else {
-      // Temporarily set a default user for demonstration if no cookie is found
-      setUser({ id: "temp-user-123", name: "Michael", email: "temp@example.com" })
-      setIsAuthenticated(true)
     }
+    // No default user - user must be authenticated
   }, []) // Empty dependency array means this runs once on mount
 
   const logout = () => {

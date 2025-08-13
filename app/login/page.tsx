@@ -9,9 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
-import { Brain } from "lucide-react"
 import { useActionState } from "react" // Import useActionState
 import { loginAction } from "@/actions/auth" // Import the server action
+import { Logo } from "@/components/ui/logo"
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -48,8 +48,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="flex items-center justify-center gap-2 font-bold text-2xl mb-2">
-            <Brain className="h-7 w-7 text-primary" />
-            Trpi
+            <Logo size="md" variant="dark" />
           </Link>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>Enter your credentials to access your dashboard.</CardDescription>

@@ -9,6 +9,13 @@ type TherapistUser = {
   name: string
   email: string
   role: "therapist"
+  specialization?: string[]
+  licenseNumber?: string
+  phone?: string
+  languages?: string[]
+  bio?: string
+  hourlyRate?: number
+  status?: string
   // Add other therapist-specific properties as needed
 }
 
@@ -28,8 +35,32 @@ export function TherapistUserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedUser = Cookies.get("trpi_therapist_user")
     if (storedUser) {
-      setTherapistUser(JSON.parse(storedUser))
+      const userData = JSON.parse(storedUser)
+      setTherapistUser(userData)
       setIsAuthenticated(true)
+      
+      // Fetch additional therapist data from API
+      fetch('/api/therapist/profile')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.therapist) {
+            setTherapistUser({
+              ...userData,
+              name: data.therapist.full_name,
+              email: data.therapist.email,
+              specialization: data.therapist.specialization,
+              licenseNumber: data.therapist.license_number,
+              phone: data.therapist.phone,
+              languages: data.therapist.languages,
+              bio: data.therapist.bio,
+              hourlyRate: data.therapist.hourly_rate,
+              status: data.therapist.status
+            })
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching therapist profile:', error)
+        })
     } else {
       setTherapistUser(null)
       setIsAuthenticated(false)

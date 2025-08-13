@@ -30,8 +30,8 @@ export default function TherapistSettingsPage() {
     defaultValues: {
       name: therapistUser?.name ?? "",
       email: therapistUser?.email ?? "",
-      phone: "",
-      mdcnCode: "",
+      phone: therapistUser?.phone ?? "",
+      mdcnCode: therapistUser?.licenseNumber ?? "",
       sessionReminders: true,
       newClientAlerts: true,
       payoutNotifications: true,

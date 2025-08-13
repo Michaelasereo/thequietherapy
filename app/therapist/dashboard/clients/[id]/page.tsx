@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
-import { ArrowLeft, FileText } from "lucide-react"
+import { ArrowLeft, FileText, Stethoscope, Pill } from "lucide-react"
 
 function formatDate(input: string) {
   return new Date(input).toLocaleDateString()
@@ -68,12 +68,24 @@ export default function TherapistClientDetailsPage({ params }: { params: { id: s
         </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={baseClient.picture} alt={baseClient.name} className="h-16 w-16 rounded-full" />
-        <div>
-          <h1 className="text-2xl font-bold">{baseClient.name}</h1>
-          <p className="text-sm text-muted-foreground">Last seen {lastSeen}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={baseClient.picture} alt={baseClient.name} className="h-16 w-16 rounded-full" />
+          <div>
+            <h1 className="text-2xl font-bold">{baseClient.name}</h1>
+            <p className="text-sm text-muted-foreground">Last seen {lastSeen}</p>
+          </div>
+        </div>
+        
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href={`/therapist/dashboard/patient-medical-history/${id}`}>
+              <Stethoscope className="mr-2 h-4 w-4" />
+              Medical History
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -112,6 +124,40 @@ export default function TherapistClientDetailsPage({ params }: { params: { id: s
           </CardContent>
         </Card>
       </div>
+
+      {/* Quick Medical History Preview */}
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Stethoscope className="h-5 w-5" />
+            Medical History Preview
+          </CardTitle>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/therapist/dashboard/patient-medical-history/${id}`}>
+              Manage Medical History
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {baseClient.medicalHistory.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <Stethoscope className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No medical history recorded yet.</p>
+              <p className="text-sm">Click "Manage Medical History" to add diagnoses and medications.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {baseClient.medicalHistory.map((m, idx) => (
+                <div key={idx} className="p-3 rounded-md bg-muted/40">
+                  <div className="font-medium">{m.condition}</div>
+                  <div className="text-sm">{m.notes}</div>
+                  <div className="text-xs text-muted-foreground">Diagnosed: {m.diagnosisDate}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Sessions */}
       <Card className="shadow-sm">
@@ -208,30 +254,6 @@ export default function TherapistClientDetailsPage({ params }: { params: { id: s
                   </Card>
                 );
               })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Removed standalone Notes section; notes are previewed per-session */}
-
-      {/* Medical history */}
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle>Medical History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {baseClient.medicalHistory.length === 0 ? (
-            <p className="text-muted-foreground">No medical history available.</p>
-          ) : (
-            <div className="space-y-3">
-              {baseClient.medicalHistory.map((m, idx) => (
-                <div key={idx} className="p-3 rounded-md bg-muted/40">
-                  <div className="font-medium">{m.condition}</div>
-                  <div className="text-sm">{m.notes}</div>
-                  <div className="text-xs text-muted-foreground">Diagnosed: {m.diagnosisDate}</div>
-                </div>
-              ))}
             </div>
           )}
         </CardContent>

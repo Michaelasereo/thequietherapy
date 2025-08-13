@@ -1,3 +1,5 @@
+'use client';
+
 import type React from "react"
 import { Suspense } from "react"
 import { cookies } from "next/headers"
@@ -10,60 +12,71 @@ import { Bell, Search } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { TherapistUserProvider } from "@/context/therapist-user-context"
+import { TherapistDashboardProvider } from "@/context/therapist-dashboard-context"
+import { GlobalStateProvider } from '@/context/global-state-context';
+import { useCrossDashboardSync } from '@/hooks/useCrossDashboardSync';
+import { DebugToggle } from "@/components/ui/debug-panel"
 
-export default function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = cookies()
-  const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
-  const isAuthenticated = therapistUserCookie ? true : false
-
-  if (!isAuthenticated) {
-    redirect("/therapist/login")
-  }
-
-  const therapistUser = therapistUserCookie
-    ? JSON.parse(therapistUserCookie)
-    : { name: "Therapist", email: "therapist@example.com" }
-
+function TherapistDashboardLayoutContent({ children }: { children: React.ReactNode }) {
+  // Connect to global state
+  useCrossDashboardSync('therapist');
+  
   return (
-    <TherapistUserProvider>
-      <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex h-screen bg-white w-full">
         <TherapistDashboardSidebar />
-        <SidebarInset>
-          <Suspense fallback={<div>Loading...</div>}>
-            <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-card px-4 md:px-6">
-              <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
-              <div className="relative flex-1 max-w-md hidden md:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search everything..."
-                  className="w-full rounded-md bg-muted/50 pl-9 pr-12 text-sm focus:ring-0 focus:ring-offset-0"
-                />
-                <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-              </div>
-              <div className="ml-auto flex items-center gap-4">
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Bell className="h-5 w-5" />
-                  <span className="sr-only">Notifications</span>
-                </Button>
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                  <AvatarFallback>
-                    {therapistUser.name
-                      .split(" ")
-                      .map((n: string) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-            </header>
-            <div className="flex-1 p-4 md:p-6 bg-background">{children}</div>
-          </Suspense>
+        <SidebarInset className="w-full">
+          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2 px-4">
+              <SidebarTrigger />
+            </div>
+            <Separator orientation="vertical" className="mr-auto h-4" />
+            <div className="flex items-center gap-2 px-4">
+              <form className="ml-auto flex-1 sm:flex-initial">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search..."
+                    className="pl-8 sm:w-[300px]"
+                  />
+                </div>
+              </form>
+              <Button variant="outline" size="icon">
+                <Bell className="h-4 w-4" />
+              </Button>
+              <Avatar>
+                <AvatarImage src="/placeholder-user.jpg" />
+                <AvatarFallback>TH</AvatarFallback>
+              </Avatar>
+            </div>
+          </header>
+          <main className="flex-1 overflow-y-auto !bg-white w-full">
+            <div className="p-6 w-full">
+              {children}
+            </div>
+          </main>
         </SidebarInset>
-      </SidebarProvider>
-    </TherapistUserProvider>
-  )
+      </div>
+      <DebugToggle dashboardType="therapist" />
+    </SidebarProvider>
+  );
+}
+
+export default function TherapistDashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <GlobalStateProvider>
+      <TherapistUserProvider>
+        <TherapistDashboardProvider>
+          <TherapistDashboardLayoutContent>
+            {children}
+          </TherapistDashboardLayoutContent>
+        </TherapistDashboardProvider>
+      </TherapistUserProvider>
+    </GlobalStateProvider>
+  );
 }

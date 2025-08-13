@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Brain, LogOut, CreditCard } from "lucide-react"
+import { LogOut, CreditCard } from "lucide-react"
 import React from "react"
+import { Logo } from "@/components/ui/logo"
 import {
   Sidebar,
   SidebarContent,
@@ -18,21 +19,29 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { dashboardSidebarGroups, dashboardBottomNavItems, mockUser } from "@/lib/data"
+import { useSidebarState } from "@/hooks/useDashboardState"
+import { cn } from "@/lib/utils"
 // import { useUser } from "@/context/user-context" // Commented out for now
 import { logoutAction } from "@/actions/auth"
 
 export default function DashboardSidebar() {
   const pathname = usePathname()
+  const { 
+    isActive, 
+    isExpanded, 
+    handleItemClick, 
+    handleItemToggle
+  } = useSidebarState()
   // const { user } = useUser() // Commented out for now
 
   return (
     <Sidebar className="bg-sidebar-background text-sidebar-foreground" collapsible="icon">
       <SidebarHeader className="p-4">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-2xl">
-          <Brain className="h-7 w-7 text-primary" />
-          <span className="group-data-[state=collapsed]:hidden">Trpi</span>
+          <Logo size="md" variant="light" />
         </Link>
       </SidebarHeader>
+      
       <SidebarContent className="flex-1 overflow-auto">
         <SidebarGroup>
           <SidebarGroupContent>
@@ -42,24 +51,29 @@ export default function DashboardSidebar() {
                   <span className="group-data-[state=collapsed]:hidden">{group.label}</span>
                 </SidebarGroupLabel>
                 <SidebarMenu>
-                  {group.items.map((item) => (
-                    <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname === item.href}
-                        className={
-                          pathname === item.href
-                            ? "bg-sidebar-active-bg text-sidebar-active-foreground hover:bg-sidebar-active-bg hover:text-sidebar-active-foreground"
-                            : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        }
-                      >
-                        <Link href={item.href}>
-                          <item.icon className="h-5 w-5" />
-                          <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {group.items.map((item) => {
+                    const isItemActive = isActive(item.name) || pathname === item.href
+                    
+                    return (
+                      <SidebarMenuItem key={item.name}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isItemActive}
+                          onClick={() => handleItemClick(item.name)}
+                          className={
+                            isItemActive
+                              ? "bg-sidebar-active-bg text-sidebar-active-foreground hover:bg-sidebar-active-bg hover:text-sidebar-active-foreground"
+                              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          }
+                        >
+                          <Link href={item.href}>
+                            <item.icon className="h-5 w-5" />
+                            <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
                 </SidebarMenu>
                 {groupIndex < dashboardSidebarGroups.length - 1 && (
                   <SidebarSeparator className="my-2 mx-2 w-auto bg-sidebar-border" />
@@ -77,7 +91,11 @@ export default function DashboardSidebar() {
            </SidebarGroupLabel>
            <SidebarMenu>
              <SidebarMenuItem>
-               <SidebarMenuButton asChild>
+               <SidebarMenuButton 
+                 asChild
+                 isActive={isActive('credits') || pathname === '/dashboard/credits'}
+                 onClick={() => handleItemClick('credits')}
+               >
                  <Link href="/dashboard/credits">
                    <CreditCard className="h-5 w-5" />
                    <span className="group-data-[state=collapsed]:hidden">Buy Credits</span>
@@ -90,24 +108,29 @@ export default function DashboardSidebar() {
       <SidebarFooter className="p-4">
         <SidebarSeparator className="my-2 mx-2 w-auto bg-sidebar-border" />
         <SidebarMenu>
-          {dashboardBottomNavItems.map((item) => (
-            <SidebarMenuItem key={item.name}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href}
-                className={
-                  pathname === item.href
-                    ? "bg-sidebar-active-bg text-sidebar-active-foreground hover:bg-sidebar-active-bg hover:text-sidebar-active-foreground"
-                    : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                }
-              >
-                <Link href={item.href}>
-                  <item.icon className="h-5 w-5" />
-                  <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {dashboardBottomNavItems.map((item) => {
+            const isItemActive = isActive(item.name) || pathname === item.href
+            
+            return (
+              <SidebarMenuItem key={item.name}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isItemActive}
+                  onClick={() => handleItemClick(item.name)}
+                  className={
+                    isItemActive
+                      ? "bg-sidebar-active-bg text-sidebar-active-foreground hover:bg-sidebar-active-bg hover:text-sidebar-active-foreground"
+                      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }
+                >
+                  <Link href={item.href}>
+                    <item.icon className="h-5 w-5" />
+                    <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
           <SidebarMenuItem>
             <form action={logoutAction}>
               <SidebarMenuButton type="submit">

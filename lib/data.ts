@@ -14,6 +14,10 @@ import {
   FileText,
   UserCheck,
   BookOpen,
+  Leaf,
+  Stethoscope,
+  Eye,
+  List,
 } from "lucide-react"
 
 export const navLinks = [
@@ -25,24 +29,34 @@ export const navLinks = [
 
 export const coreServices = [
   {
-    icon: Brain,
-    title: "Personalized Therapy",
-    description: "Tailored sessions to meet your unique mental health needs.",
+    icon: Leaf,
+    title: "Patient-Focused Care",
+    description: "Quietly take notes in the background with Mpilo, allowing you to stay fully engaged in the conversation.",
   },
   {
-    icon: Users,
-    title: "Experienced Therapists",
-    description: "Connect with certified professionals specializing in various areas.",
+    icon: CheckCircle2,
+    title: "Keep everything compliant",
+    description: "Our HIPAA-compliant security protects patient information while generating notes that meet industry standards.",
   },
   {
-    icon: ShieldCheck,
-    title: "Confidential & Secure",
-    description: "Your privacy is our top priority with encrypted sessions.",
+    icon: Clock,
+    title: "Save loads of time",
+    description: "Spend up to 70% less time on paperwork. Get home on time with your work done.",
   },
   {
-    icon: MessageSquare,
-    title: "Flexible Scheduling",
-    description: "Book sessions at your convenience, anytime, anywhere.",
+    icon: List,
+    title: "Reduce mistakes, improve care",
+    description: "Get accurate, detailed notes every time. Spot patterns and make better decisions with reliable records.",
+  },
+  {
+    icon: Stethoscope,
+    title: "Works for all kinds of doctors",
+    description: "Whether you're fixing bones, treating kids, or doing check-ups, Mpilo learns how you like your notes.",
+  },
+  {
+    icon: Eye,
+    title: "Review notes in a snap",
+    description: "Check and approve your notes quickly. More time for patients, less for paperwork.",
   },
 ]
 
@@ -55,25 +69,76 @@ export const whyUsBenefits = [
   "Diverse range of specializations",
 ]
 
+export const whyUsFeatures = [
+  {
+    id: "secure",
+    name: "Secure",
+    icon: "🔒",
+    description: "End-to-end encrypted video calls and HIPAA-compliant data protection",
+    details: {
+      amount: "256-bit",
+      period: "Encryption",
+      status: "HIPAA Compliant",
+      statusColor: "bg-green-100 text-green-800"
+    }
+  },
+  {
+    id: "video",
+    name: "In-App Video",
+    icon: "📹",
+    description: "High-quality, low-latency video calls built directly into the platform",
+    details: {
+      amount: "HD Quality",
+      period: "Real-time",
+      status: "Live",
+      statusColor: "bg-blue-100 text-blue-800"
+    }
+  },
+  {
+    id: "payment",
+    name: "Payment Model",
+    icon: "💳",
+    description: "Flexible credit-based system with transparent pricing and no hidden fees",
+    details: {
+      amount: "Credits",
+      period: "Pay-as-you-go",
+      status: "Transparent",
+      statusColor: "bg-purple-100 text-purple-800"
+    }
+  },
+  {
+    id: "different",
+    name: "Why We're Different",
+    icon: "⭐",
+    description: "Personalized matching, expert therapists, and comprehensive mental health support",
+    details: {
+      amount: "100%",
+      period: "Personalized",
+      status: "Expert Vetted",
+      statusColor: "bg-orange-100 text-orange-800"
+    }
+  }
+]
+
 export const testimonials = [
   {
     quote:
       "Trpi has been a game-changer for my mental well-being. The platform is easy to use, and my therapist is incredibly supportive.",
-    name: "Sarah L.",
+    location: "Lagos, Nigeria",
     title: "Marketing Specialist",
     avatar: "/placeholder.svg?height=40&width=40",
   },
   {
     quote:
       "I appreciate the flexibility Trpi offers. I can book sessions around my busy schedule, and the quality of therapy is exceptional.",
-    name: "David K.",
+    location: "Nairobi, Kenya",
     title: "Software Engineer",
     avatar: "/placeholder.svg?height=40&width=40",
   },
   {
     quote:
       "Finding the right therapist felt daunting, but Trpi made it simple. Highly recommend their personalized approach.",
-    name: "Jessica M.",
+    location: "Accra, Ghana",
     title: "Student",
     avatar: "/placeholder.svg?height=40&width=40",
   },
@@ -107,63 +172,7 @@ export const faqs = [
   },
 ]
 
-export const therapists = [
-  {
-    id: "1",
-    name: "Dr. Emily White",
-    picture: "/placeholder.svg?height=100&width=100",
-    specialization: "Cognitive Behavioral Therapy (CBT)",
-    gender: "Female",
-    age: "40s",
-    maritalStatus: "Married",
-    bio: "Dr. Emily White is a licensed clinical psychologist with over 15 years of experience. She specializes in CBT for anxiety and depression, helping clients develop practical coping strategies. Her approach is empathetic and client-centered.",
-    availability: ["Mon", "Wed", "Fri"],
-  },
-  {
-    id: "2",
-    name: "Mr. John Davis",
-    picture: "/placeholder.svg?height=100&width=100",
-    specialization: "Trauma-Informed Therapy",
-    gender: "Male",
-    age: "50s",
-    maritalStatus: "Single",
-    bio: "Mr. John Davis is a compassionate therapist focusing on trauma recovery and PTSD. He uses a blend of EMDR and mindfulness techniques to support clients in their healing journey. He has a strong background in crisis intervention.",
-    availability: ["Tue", "Thu"],
-  },
-  {
-    id: "3",
-    name: "Ms. Sarah Chen",
-    picture: "/placeholder.svg?height=100&width=100",
-    specialization: "Relationship Counseling",
-    gender: "Female",
-    age: "30s",
-    maritalStatus: "Married",
-    bio: "Ms. Sarah Chen is an experienced relationship counselor, helping couples and individuals navigate communication challenges, conflict resolution, and intimacy issues. She fosters a safe and non-judgmental space for growth.",
-    availability: ["Mon", "Tue", "Wed"],
-  },
-  {
-    id: "4",
-    name: "Dr. Alex Rodriguez",
-    picture: "/placeholder.svg?height=100&width=100",
-    specialization: "Adolescent Therapy",
-    gender: "Male",
-    age: "30s",
-    maritalStatus: "Single",
-    bio: "Dr. Alex Rodriguez specializes in working with adolescents and young adults facing issues like identity, peer pressure, and academic stress. He employs a dynamic and engaging approach to build rapport with his younger clients.",
-    availability: ["Thu", "Fri"],
-  },
-  {
-    id: "5",
-    name: "Ms. Olivia Green",
-    picture: "/placeholder.svg?height=100&width=100",
-    specialization: "Anxiety & Stress Management",
-    gender: "Female",
-    age: "40s",
-    maritalStatus: "Divorced",
-    bio: "Ms. Olivia Green is dedicated to helping clients manage anxiety and stress through practical techniques and cognitive restructuring. She emphasizes building resilience and promoting overall well-being.",
-    availability: ["Mon", "Wed", "Fri"],
-  },
-]
+export const therapists: any[] = []
 
 // New structure for dashboard sidebar navigation
 export const dashboardSidebarGroups = [
@@ -174,6 +183,7 @@ export const dashboardSidebarGroups = [
   {
     label: "Therapy Sessions",
     items: [
+      { name: "Book a Session", href: "/dashboard/book", icon: Calendar },
       { name: "Sessions", href: "/dashboard/sessions", icon: Calendar },
       { name: "Go to Therapy", href: "/dashboard/therapy", icon: Video },
     ],
@@ -191,24 +201,24 @@ export const dashboardSidebarGroups = [
 
 export const dashboardBottomNavItems = [{ name: "Settings", href: "/dashboard/settings", icon: Settings }]
 
-// New mock data for dashboard summary cards
+// Dashboard summary cards - will be populated with real data
 export const dashboardSummaryCards = [
   {
     title: "Total Sessions",
-    value: "12",
-    description: "Sessions completed so far",
+    value: "0",
+    description: "Start your therapy journey",
     icon: CheckCircle2,
   },
   {
     title: "Upcoming Sessions",
-    value: "2",
-    description: "Scheduled for this month",
+    value: "0",
+    description: "Book your first session",
     icon: Calendar,
   },
   {
     title: "Progress Score",
-    value: "75%",
-    description: "Based on recent assessments",
+    value: "0%",
+    description: "Track your progress",
     icon: TrendingUp,
   },
   {

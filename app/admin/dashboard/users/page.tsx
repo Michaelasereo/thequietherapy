@@ -14,64 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-// Mock user data
-const mockUsers = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john@example.com",
-    type: "Individual",
-    status: "Active",
-    joinDate: "2024-01-15",
-    sessions: 5,
-    credits: 15,
-    partner: null
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    type: "Partner",
-    status: "Active",
-    joinDate: "2024-01-10",
-    sessions: 12,
-    credits: 8,
-    partner: "TechCorp Solutions"
-  },
-  {
-    id: "3",
-    name: "Mike Johnson",
-    email: "mike@example.com",
-    type: "Individual",
-    status: "Inactive",
-    joinDate: "2024-01-05",
-    sessions: 2,
-    credits: 0,
-    partner: null
-  },
-  {
-    id: "4",
-    name: "Sarah Wilson",
-    email: "sarah@example.com",
-    type: "Partner",
-    status: "Active",
-    joinDate: "2024-01-20",
-    sessions: 8,
-    credits: 12,
-    partner: "HealthCorp Ltd"
-  },
-  {
-    id: "5",
-    name: "David Brown",
-    email: "david@example.com",
-    type: "Individual",
-    status: "Active",
-    joinDate: "2024-01-12",
-    sessions: 3,
-    credits: 17,
-    partner: null
-  }
-]
+// User data - will be populated with real data
+const mockUsers: any[] = []
 
 export default function AdminUsersPage() {
   return (

@@ -4,7 +4,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Brain } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 import Link from "next/link"
 import BookingProgress from "@/components/booking-progress"
 import BookingStep1 from "@/components/booking-step-1"
@@ -50,8 +51,8 @@ export default function BookingPage() {
     // Handle booking completion
     console.log("Booking completed:", { patientData, selectedTherapistId })
     
-    // For demo purposes, redirect to dashboard
-    router.push("/dashboard")
+    // Redirect to authentication if not logged in, then dashboard
+    router.push("/auth?redirect=/dashboard&success=true")
   }
 
   const handleBack = () => {
@@ -109,8 +110,7 @@ export default function BookingPage() {
                 Back
               </Button>
               <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-                <Brain className="h-6 w-6 text-primary" />
-                Trpi
+                <Logo size="sm" variant="dark" />
               </Link>
             </div>
             <div className="text-sm text-muted-foreground">

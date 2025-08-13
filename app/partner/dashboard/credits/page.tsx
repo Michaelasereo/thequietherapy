@@ -53,11 +53,11 @@ export default function PartnerCreditsPage() {
     totalCreditsPurchased: 5000
   }
 
-  const pkg = creditPackages[0]?.id ?? null
-  const assignMember = partnerMembers[0]?.id ?? null
+  const pkg = creditPackages[0]?.id ?? ""
+  const assignMember = partnerMembers[0]?.id ?? ""
   const assignAmount = 10
   const purchaseType = "package"
-  const selectedPackage = null
+  const selectedPackage = ""
   const customCredits = 10
   const memberCount = 1
 

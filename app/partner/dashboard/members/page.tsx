@@ -45,7 +45,7 @@ export default function PartnerMembersPage() {
   const name = ""
   const email = ""
   const selected = {}
-  const selectedPackage = null
+  const selectedPackage = ""
   const csvData = ""
 
   // Calculate summary data

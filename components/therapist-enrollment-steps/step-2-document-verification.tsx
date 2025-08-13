@@ -10,7 +10,7 @@ import { toast } from "@/components/ui/use-toast"
 
 const formSchema = z.object({
   idUpload: z.any().refine((file) => file?.length > 0, "ID document is required."),
-  mdcnCode: z.string().min(5, { message: "MDCN code must be at least 5 characters." }),
+  mdcnCode: z.string().min(1, { message: "MDCN code is required." }),
 })
 
 type DocumentVerificationFormValues = z.infer<typeof formSchema>
@@ -31,34 +31,14 @@ export default function Step2DocumentVerification({ onNext, onBack, initialData 
   })
 
   async function onSubmit(data: DocumentVerificationFormValues) {
-    try {
-      const res = await fetch("/api/verify-mdcn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mdcnCode: data.mdcnCode }),
-      })
-      const json = await res.json()
-      if (!json.ok) {
-        toast({
-          title: "Verification failed",
-          description: "Please check your MDCN code and try again.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      toast({
-        title: "Documents Uploaded",
-        description: "Verification successful. Proceeding...",
-      })
-      onNext(data)
-    } catch (e) {
-      toast({
-        title: "Network error",
-        description: "Unable to verify MDCN code right now.",
-        variant: "destructive",
-      })
-    }
+    // For now, we'll just collect the MDCN code and verify manually later
+    // No API verification needed for shipping
+    
+    toast({
+      title: "Documents Uploaded",
+      description: "MDCN code recorded. We'll verify this manually. Proceeding...",
+    })
+    onNext(data)
   }
 
   return (
@@ -90,9 +70,12 @@ export default function Step2DocumentVerification({ onNext, onBack, initialData 
             <FormItem>
               <FormLabel>MDCN Code</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your MDCN code" {...field} />
+                <Input placeholder="Enter your MDCN registration number" {...field} />
               </FormControl>
               <FormMessage />
+              <p className="text-sm text-muted-foreground">
+                We'll verify this manually after submission.
+              </p>
             </FormItem>
           )}
         />

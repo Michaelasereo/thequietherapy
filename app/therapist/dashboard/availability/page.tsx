@@ -1,4 +1,5 @@
 "use client"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,8 @@ type AvailabilityFormValues = z.infer<typeof formSchema>
 
 export default function TherapistAvailabilityPage() {
   const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+  const [savedAvailability, setSavedAvailability] = useState<any[]>([])
 
   const form = useForm<AvailabilityFormValues>({
     resolver: zodResolver(formSchema),
@@ -42,9 +45,81 @@ export default function TherapistAvailabilityPage() {
     },
   })
 
-  function onSubmit(data: AvailabilityFormValues) {
-    console.log("Availability saved:", data)
-    toast({ title: "Availability Saved!", description: "Your availability settings have been updated." })
+  // Load existing availability
+  useEffect(() => {
+    fetch('/api/therapist/availability')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.availability) {
+          setSavedAvailability(data.availability)
+          // Update form with existing data
+          const availableDays = data.availability
+            .filter((day: any) => day.is_available)
+            .map((day: any) => {
+              const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+              return dayNames[day.day_of_week]
+            })
+          
+          if (availableDays.length > 0) {
+            form.setValue('availableDays', availableDays)
+            form.setValue('startTime', data.availability[0].start_time)
+            form.setValue('endTime', data.availability[0].end_time)
+            form.setValue('sessionDuration', data.availability[0].session_duration.toString())
+            form.setValue('maxSessionsPerDay', data.availability[0].max_sessions_per_day)
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error loading availability:', error)
+      })
+  }, [form])
+
+  async function onSubmit(data: AvailabilityFormValues) {
+    setIsLoading(true)
+    try {
+      // Convert form data to API format
+      const availability = daysOfWeek.map((day, index) => ({
+        dayOfWeek: index,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        isAvailable: data.availableDays.includes(day),
+        sessionDuration: parseInt(data.sessionDuration),
+        maxSessionsPerDay: data.maxSessionsPerDay
+      }))
+
+      const response = await fetch('/api/therapist/availability', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ availability })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({ 
+          title: "Availability Saved!", 
+          description: "Your availability settings have been updated." 
+        })
+        setSavedAvailability(result.data)
+      } else {
+        toast({ 
+          title: "Error", 
+          description: result.error || "Failed to save availability",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Error saving availability:', error)
+      toast({ 
+        title: "Error", 
+        description: "Failed to save availability",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -153,7 +228,9 @@ export default function TherapistAvailabilityPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full">Save Availability</Button>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save Availability"}
+              </Button>
             </form>
           </Form>
         </CardContent>

@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
+import PaystackPayment from "@/components/paystack-payment"
+import { formatAmountForDisplay } from "@/lib/paystack"
 
 interface BookingStep3Props {
   onBack: () => void
@@ -17,8 +19,10 @@ export default function BookingStep3({ onBack, onCheckout, selectedTherapistId }
   const { toast } = useToast()
   const [paymentMethod, setPaymentMethod] = useState<"credits" | "paystack">("credits")
   const [userCredits, setUserCredits] = useState(15) // Mock user credits
+  const [userEmail, setUserEmail] = useState("user@example.com") // Mock user email
 
-  const sessionCost = 5 // Credits per session
+  const sessionCost = 1 // Credits per session
+  const sessionPrice = 5000 // ₦5,000 per session
 
   const handleCheckout = () => {
     if (paymentMethod === "credits" && userCredits < sessionCost) {
@@ -30,16 +34,28 @@ export default function BookingStep3({ onBack, onCheckout, selectedTherapistId }
       return
     }
 
-    // Simulate payment process
+    // Handle credit payment
     if (paymentMethod === "credits") {
       setUserCredits(prev => prev - sessionCost)
+      toast({
+        title: "Payment Successful!",
+        description: "Session booked using credits.",
+      })
+      onCheckout()
     }
+    // Paystack payment is handled by the PaystackPayment component
+  }
 
+  const handlePaystackSuccess = (data: any) => {
     toast({
       title: "Payment Successful!",
-      description: `Session booked using ${paymentMethod === "credits" ? "credits" : "Paystack"}.`,
+      description: "Session booked successfully via Paystack.",
     })
     onCheckout()
+  }
+
+  const handlePaystackError = (error: string) => {
+    console.error('Paystack payment error:', error)
   }
 
   return (
@@ -75,7 +91,7 @@ export default function BookingStep3({ onBack, onCheckout, selectedTherapistId }
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span>Session Cost:</span>
-              <span>{paymentMethod === "credits" ? `${sessionCost} credits` : "₦2,500"}</span>
+              <span>{paymentMethod === "credits" ? `${sessionCost} credits` : formatAmountForDisplay(sessionPrice)}</span>
             </div>
             {paymentMethod === "credits" && (
               <div className="flex justify-between">
@@ -91,9 +107,27 @@ export default function BookingStep3({ onBack, onCheckout, selectedTherapistId }
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button onClick={handleCheckout} className="w-full md:w-auto">
-          Confirm & {paymentMethod === "credits" ? "Book" : "Pay"}
-        </Button>
+        {paymentMethod === "credits" ? (
+          <Button onClick={handleCheckout} className="w-full md:w-auto">
+            Confirm & Book
+          </Button>
+        ) : (
+          <PaystackPayment
+            amount={sessionPrice}
+            email={userEmail}
+            reference={`session_${selectedTherapistId}_${Date.now()}`}
+            metadata={{
+              type: 'session',
+              therapistId: selectedTherapistId,
+              // We'll create the session after payment is successful
+              createSession: true
+            }}
+            onSuccess={handlePaystackSuccess}
+            onError={handlePaystackError}
+            buttonText="Pay for Session"
+            className="w-full md:w-auto"
+          />
+        )}
       </div>
     </div>
   )
