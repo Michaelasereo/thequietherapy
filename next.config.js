@@ -6,6 +6,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false, // Keep this false to catch actual errors
   },
+
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb'
