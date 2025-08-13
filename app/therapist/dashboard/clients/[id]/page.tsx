@@ -11,7 +11,8 @@ function formatDate(input: string) {
   return new Date(input).toLocaleDateString()
 }
 
-export default function TherapistClientDetailsPage({ params }: { params: { id: string } }) {
+export default async function TherapistClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   // Default data in case imports are not available during build
   const therapistClients = [
     {
@@ -45,7 +46,7 @@ export default function TherapistClientDetailsPage({ params }: { params: { id: s
     }
   ]
 
-  const id = params.id
+  // id is already extracted from params above
   const baseClient = therapistClients.find((c) => c.id === id)
   if (!baseClient) return <div>Client not found</div>
 
