@@ -185,7 +185,7 @@ export function useUserSessions() {
       const { error } = await supabase
         .from('sessions')
         .update({ status: 'cancelled' })
-        .eq('id', session_id, sessionId)
+        .eq('id', sessionId)
         .eq('user_id', user.id)
 
       if (error) {

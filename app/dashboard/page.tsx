@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
 import { StatefulButton } from "@/components/ui/stateful-button"
 import { StatefulStatsCard } from "@/components/ui/stateful-card"
-import { CalendarIcon, Video, CheckCircle, CheckCircle2, TrendingUp, Clock, ArrowLeft } from "lucide-react"
+import { CalendarIcon, Video as VideoIcon, CheckCircle, CheckCircle2, TrendingUp, Clock, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
 import { useSearchParams } from "next/navigation"
@@ -85,7 +85,7 @@ export default function DashboardPage() {
   const searchParams = useSearchParams()
   const { state, fetchSessions } = useDashboard()
   const { addSuccessNotification } = useNotificationState()
-  const { broadcastEvent } = useCrossDashboardBroadcast();
+  // const { broadcastEvent } = useCrossDashboardBroadcast();
   
   // Booking state
   const [showBooking, setShowBooking] = useState(false)
@@ -328,13 +328,13 @@ export default function DashboardPage() {
                       {session.dailyRoomUrl && (
                         <Button variant="outline" size="sm" className="bg-transparent" asChild>
                           <a href={session.dailyRoomUrl} target="_blank" rel="noopener noreferrer">
-                            <Video className="mr-2 h-4 w-4" /> Join Video
+                            <VideoIcon className="mr-2 h-4 w-4" /> Join Video
                           </a>
                         </Button>
                       )}
                       <Button variant="outline" size="sm" className="bg-transparent" asChild>
                         <Link href={`/video-call?room=${session.id}&participant=${encodeURIComponent('User')}`}>
-                          <Video className="mr-2 h-4 w-4" /> Join Session
+                          <VideoIcon className="mr-2 h-4 w-4" /> Join Session
                         </Link>
                       </Button>
                     </div>

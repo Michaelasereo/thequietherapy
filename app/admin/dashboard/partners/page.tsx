@@ -299,20 +299,23 @@ export default function AdminPartnersPage() {
                   acc[partner.type] = (acc[partner.type] || 0) + 1
                   return acc
                 }, {} as Record<string, number>)
-              ).map(([type, count]) => (
-                <div key={type} className="flex items-center justify-between">
-                  <span className="text-sm">{type}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-32 bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full" 
-                        style={{ width: `${(count / mockPartners.length) * 100}%` }}
-                      ></div>
+              ).map(([type, count]) => {
+                const countNum = count as number
+                return (
+                  <div key={type} className="flex items-center justify-between">
+                    <span className="text-sm">{type}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full" 
+                          style={{ width: `${(countNum / mockPartners.length) * 100}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-medium">{countNum}</span>
                     </div>
-                    <span className="text-sm font-medium">{count}</span>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>

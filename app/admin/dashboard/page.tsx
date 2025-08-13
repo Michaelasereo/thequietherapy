@@ -21,8 +21,8 @@ import { useAdminData, useAdminCardState, useAdminButtonState, useAdminNotificat
 import { useCrossDashboardBroadcast } from '@/hooks/useCrossDashboardSync';
 
 export default function AdminDashboardPage() {
-  const { adminData, systemUsers, stats, settings, fetchAdminData, fetchSystemUsers, fetchStats, fetchSettings } = useAdminData();
-  const { addNotification } = useAdminNotificationState();
+  const { adminInfo, userStats, systemHealth, revenueStats, fetchAdminData, fetchSystemUsers, fetchSystemStats, fetchSystemSettings } = useAdminData();
+  const { addSystemAlert } = useAdminNotificationState();
   const { broadcastSystemAlert } = useCrossDashboardBroadcast();
 
   // Default data in case imports are not available during build
@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
     ]
   }
 
-  const systemHealth = {
+  const localSystemHealth = {
     uptime: 99.9,
     responseTime: 245,
     errorRate: 0.1,
@@ -106,18 +106,19 @@ export default function AdminDashboardPage() {
 
     // Broadcast to all dashboards
     broadcastSystemAlert(
-      maintenanceMode ? 'maintenance_started' : 'maintenance_ended',
-      maintenanceMode ? 'System maintenance has started' : 'System maintenance has ended',
-      ['user', 'therapist', 'partner', 'admin']
+      {
+        type: maintenanceMode ? 'maintenance_started' : 'maintenance_ended',
+        message: maintenanceMode ? 'System maintenance has started' : 'System maintenance has ended'
+      },
+      'admin'
     );
 
     // Add notification
-    addNotification({
-      type: 'warning',
-      title: 'System Maintenance',
-      message: maintenanceMode ? 'Maintenance mode activated' : 'Maintenance mode deactivated',
-      duration: 5000
-    });
+    addSystemAlert(
+      'System Maintenance',
+      maintenanceMode ? 'Maintenance mode activated' : 'Maintenance mode deactivated',
+      'medium'
+    );
   };
   return (
     <div className="space-y-6">
@@ -318,26 +319,26 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Uptime</div>
-                <div className="text-2xl font-bold">{systemHealth.uptime}%</div>
+                <div className="text-2xl font-bold">{localSystemHealth.uptime}%</div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Response Time</div>
-                <div className="text-2xl font-bold">{systemHealth.responseTime}ms</div>
+                <div className="text-2xl font-bold">{localSystemHealth.responseTime}ms</div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Error Rate</div>
-                <div className="text-2xl font-bold">{systemHealth.errorRate}%</div>
+                <div className="text-2xl font-bold">{localSystemHealth.errorRate}%</div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Server Load</div>
-                <div className="text-2xl font-bold">{systemHealth.serverLoad}%</div>
+                <div className="text-2xl font-bold">{localSystemHealth.serverLoad}%</div>
               </div>
             </div>
             <div className="pt-2 border-t">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Database Health</span>
                 <Badge variant="outline" className="text-green-600 border-green-600">
-                  {systemHealth.databaseHealth}
+                  {localSystemHealth.databaseHealth}
                 </Badge>
               </div>
             </div>

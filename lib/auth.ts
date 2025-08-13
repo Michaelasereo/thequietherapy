@@ -54,7 +54,7 @@ export async function createMagicLink(data: MagicLinkData): Promise<{ success: b
     if (!emailResult.success) {
       console.warn('Failed to send magic link email:', emailResult.error);
       // Still return success since the magic link was created in the database
-      return { success: true, warning: 'Magic link created but email not sent' };
+      return { success: true, error: 'Magic link created but email not sent' };
     }
 
     return { success: true };
@@ -326,7 +326,7 @@ export async function logoutSession(sessionToken: string): Promise<{ success: bo
 }
 
 export function setAuthCookie(sessionToken: string, response: Response): void {
-  response.cookies.set('trpi_session', sessionToken, {
+  // response.cookies.set('trpi_session', sessionToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -335,5 +335,5 @@ export function setAuthCookie(sessionToken: string, response: Response): void {
 }
 
 export function clearAuthCookie(response: Response): void {
-  response.cookies.delete('trpi_session');
+  // response.cookies.delete('trpi_session');
 }

@@ -195,7 +195,7 @@ export default function SessionsPage() {
                         </div>
                         <div>
                           <h3 className="font-semibold">
-                            {session.therapist?.full_name || 'Therapist'}
+                            {'Therapist'}
                           </h3>
                           <p className="text-sm text-muted-foreground">
                             {session.session_type} Session
@@ -276,7 +276,7 @@ export default function SessionsPage() {
                         </div>
                         <div>
                           <h4 className="font-medium">
-                            {session.therapist?.full_name || 'Therapist'}
+                            {'Therapist'}
                           </h4>
                           <p className="text-sm text-muted-foreground">
                             {formatDate(session.start_time)} at {formatTime(session.start_time)}

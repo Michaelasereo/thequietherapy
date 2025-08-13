@@ -18,7 +18,8 @@ export async function loginAction(formData: FormData) {
     }
 
     // Set the cookie on the server
-    cookies().set("trpi_user", JSON.stringify(user), {
+    const cookieStore = await cookies()
+    cookieStore.set("trpi_user", JSON.stringify(user), {
       httpOnly: true, // Important for security
       secure: process.env.NODE_ENV === "production", // Use secure in production
       maxAge: 60 * 60 * 24 * 7, // 1 week
@@ -34,6 +35,7 @@ export async function loginAction(formData: FormData) {
 }
 
 export async function logoutAction() {
-  cookies().delete("trpi_user")
+  const cookieStore = await cookies()
+  cookieStore.delete("trpi_user")
   redirect("/login")
 }

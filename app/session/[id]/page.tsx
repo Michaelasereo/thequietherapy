@@ -185,7 +185,7 @@ export default function SessionPage() {
               </div>
             </div>
             <div className="mt-4">
-              <p className="font-medium">{session.therapist?.full_name || 'Therapist'}</p>
+              <p className="font-medium">{'Therapist'}</p>
               <p className="text-sm text-muted-foreground">{session.session_type} Session</p>
             </div>
           </CardContent>
@@ -204,7 +204,7 @@ export default function SessionPage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Ready to Start Session</h3>
                 <p className="text-muted-foreground mb-6">
-                  Click the button below to start your therapy session with {session.therapist?.full_name || 'your therapist'}.
+                  Click the button below to start your therapy session with your therapist.
                 </p>
                 <Button onClick={handleStartCall} size="lg">
                   <Phone className="mr-2 h-4 w-4" />
