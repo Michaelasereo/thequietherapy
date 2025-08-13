@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
-import { useActionState } from "react" // Import useActionState
-import { loginAction } from "@/actions/auth" // Import the server action
+// import { useActionState } from "react" // Import useActionState
+// import { loginAction } from "@/actions/auth" // Import the server action
 import { Logo } from "@/components/ui/logo"
 
 const formSchema = z.object({
@@ -23,8 +23,8 @@ type LoginFormValues = z.infer<typeof formSchema>
 export default function LoginPage() {
   const { toast } = useToast()
 
-  // Use useActionState to handle the server action
-  const [state, formAction, isPending] = useActionState(loginAction, null)
+  // TODO: Implement login action when Next.js 15 action state is stable
+  const isPending = false
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -34,14 +34,7 @@ export default function LoginPage() {
     },
   })
 
-  // Display toast message if there's an error from the server action
-  if (state?.error) {
-    toast({
-      title: "Login Failed",
-      description: state.error,
-      variant: "destructive",
-    })
-  }
+  // TODO: Handle login errors when action state is implemented
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">
@@ -55,8 +48,8 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            {/* Use the formAction from useActionState */}
-            <form action={formAction} onSubmit={form.handleSubmit(() => {})} className="space-y-4">
+            {/* TODO: Implement form action when Next.js 15 action state is stable */}
+            <form onSubmit={form.handleSubmit(() => {})} className="space-y-4">
               <FormField
                 control={form.control}
                 name="email"

@@ -203,7 +203,6 @@ const initialState: PartnerDashboardState = {
     sessionCards: {},
     quickActionCards: {
       'add-member': { isLoading: false, isHovered: false, isExpanded: false },
-      'add-member': { isLoading: false, isHovered: false, isExpanded: false },
       'schedule-session': { isLoading: false, isHovered: false, isExpanded: false },
       'generate-report': { isLoading: false, isHovered: false, isExpanded: false },
       'manage-budget': { isLoading: false, isHovered: false, isExpanded: false }

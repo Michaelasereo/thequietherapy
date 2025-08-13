@@ -55,11 +55,9 @@ function SidebarMenuButton({
 export default function AdminDashboardSidebar() {
   const {
     activeItem,
-    hoveredItem,
-    notificationCount,
-    messageCount,
-    setActiveItem,
-    setHoveredItem
+    criticalAlerts,
+    pendingActions,
+    setHover
   } = useAdminSidebarState();
 
   const menuItems = [
@@ -116,7 +114,7 @@ export default function AdminDashboardSidebar() {
             href={item.href}
             icon={item.icon}
             isActive={activeItem === item.key}
-            onClick={() => setActiveItem(item.key)}
+            onClick={() => {/* Handle click */}}
           >
             {item.label}
           </SidebarMenuButton>
@@ -129,8 +127,8 @@ export default function AdminDashboardSidebar() {
           href="/admin/dashboard/notifications"
           icon={<Bell className="h-5 w-5" />}
           isActive={activeItem === "notifications"}
-          onClick={() => setActiveItem("notifications")}
-          badge={notificationCount}
+          onClick={() => {/* Handle click */}}
+          badge={criticalAlerts}
         >
           Notifications
         </SidebarMenuButton>
@@ -139,8 +137,8 @@ export default function AdminDashboardSidebar() {
           href="/admin/dashboard/messages"
           icon={<MessageSquare className="h-5 w-5" />}
           isActive={activeItem === "messages"}
-          onClick={() => setActiveItem("messages")}
-          badge={messageCount}
+          onClick={() => {/* Handle click */}}
+          badge={pendingActions}
         >
           Messages
         </SidebarMenuButton>

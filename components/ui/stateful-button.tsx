@@ -101,8 +101,8 @@ export function StatefulButton({
     onMouseUp?.()
   }
 
-  const isPressed = buttonState.isPressed || (isIconButton && buttonState.isActive)
-  const isHovered = isIconButton ? buttonState.isHovered : false
+  const isPressed = buttonState.isPressed || (isIconButton && 'isActive' in buttonState && buttonState.isActive)
+  const isHovered = isIconButton ? ('isHovered' in buttonState && buttonState.isHovered) : false
 
   return (
     <Button
@@ -116,10 +116,10 @@ export function StatefulButton({
       onMouseUp={handleMouseUp}
       className={cn(
         className,
-        isPressed && 'scale-95',
-        isHovered && 'shadow-md',
-        loading && 'cursor-wait',
-        disabled && 'cursor-not-allowed'
+        isPressed ? 'scale-95' : '',
+        isHovered ? 'shadow-md' : '',
+        loading ? 'cursor-wait' : '',
+        disabled ? 'cursor-not-allowed' : ''
       )}
       title={tooltip}
       {...props}

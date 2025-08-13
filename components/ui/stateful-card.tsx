@@ -47,11 +47,19 @@ export function StatefulCard({
   const getCardState = () => {
     switch (cardType) {
       case 'stats':
-        return getStatsCardState(cardId as keyof ReturnType<typeof getStatsCardState>)
+        try {
+          return getStatsCardState(cardId as any)
+        } catch {
+          return { isHovered: false, isLoading: false }
+        }
       case 'session':
         return getSessionCardState(cardId)
       case 'quickAction':
-        return getQuickActionCardState(cardId as keyof ReturnType<typeof getQuickActionCardState>)
+        try {
+          return getQuickActionCardState(cardId as any)
+        } catch {
+          return { isHovered: false, isLoading: false }
+        }
       default:
         return { isHovered: false, isLoading: false }
     }
@@ -61,11 +69,11 @@ export function StatefulCard({
 
   // Update loading state
   React.useEffect(() => {
-    if (cardType === 'stats' && loading !== cardState.isLoading) {
+    if (cardType === 'stats' && 'isLoading' in cardState && loading !== cardState.isLoading) {
       // Update stats card loading state
       // This would need to be implemented in the context
     }
-  }, [loading, cardState.isLoading, cardType])
+  }, [loading, cardState, cardType])
 
   const handleMouseEnter = () => {
     if (showHoverEffect) {
@@ -88,7 +96,7 @@ export function StatefulCard({
   }
 
   const isHovered = cardState.isHovered
-  const isLoading = cardState.isLoading || loading
+  const isLoading = ('isLoading' in cardState && cardState.isLoading) || loading
 
   return (
     <Card
@@ -237,8 +245,8 @@ export function StatefulSessionCard({
   onCancel,
   ...props
 }: StatefulSessionCardProps) {
-  const { getSessionCardState, toggleSessionExpansion } = useSessionState()
-  const sessionState = getSessionCardState(sessionId)
+  const { getSessionState, toggleSessionExpansion } = useSessionState()
+  const sessionState = getSessionState(sessionId)
 
   const handleExpand = () => {
     toggleSessionExpansion(sessionId)

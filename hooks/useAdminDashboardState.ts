@@ -378,6 +378,7 @@ export function useAdminNotificationState() {
 
   const addSystemAlert = useCallback((title: string, message: string, severity: 'low' | 'medium' | 'high' | 'critical' = 'medium') => {
     addNotification({
+      id: `system_alert_${Date.now()}`,
       type: 'system_alert',
       title,
       message,
@@ -390,6 +391,7 @@ export function useAdminNotificationState() {
 
   const addUserReport = useCallback((title: string, message: string) => {
     addNotification({
+      id: `user_report_${Date.now()}`,
       type: 'user_report',
       title,
       message,
@@ -402,6 +404,7 @@ export function useAdminNotificationState() {
 
   const addPaymentIssue = useCallback((title: string, message: string) => {
     addNotification({
+      id: `payment_issue_${Date.now()}`,
       type: 'payment_issue',
       title,
       message,
@@ -414,6 +417,7 @@ export function useAdminNotificationState() {
 
   const addSecurityBreach = useCallback((title: string, message: string) => {
     addNotification({
+      id: `security_breach_${Date.now()}`,
       type: 'security_breach',
       title,
       message,
@@ -426,6 +430,7 @@ export function useAdminNotificationState() {
 
   const addPerformanceWarning = useCallback((title: string, message: string) => {
     addNotification({
+      id: `performance_warning_${Date.now()}`,
       type: 'performance_warning',
       title,
       message,

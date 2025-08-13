@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Brain, Video, Users, Clock, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
-export default function VideoCallPage() {
+function VideoCallContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [roomName, setRoomName] = useState('')
@@ -203,5 +203,20 @@ export default function VideoCallPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function VideoCallPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading video call...</p>
+        </div>
+      </div>
+    }>
+      <VideoCallContent />
+    </Suspense>
   )
 }

@@ -28,7 +28,8 @@ const mockTherapists: any[] = [
     sessions: 45,
     rating: 4.8,
     joinDate: "2024-01-15",
-    mdcnCode: "MDCN12345"
+    mdcnCode: "MDCN12345",
+    totalEarnings: 125000
   },
   {
     id: "2", 
@@ -40,7 +41,8 @@ const mockTherapists: any[] = [
     sessions: 0,
     rating: 0,
     joinDate: "2024-01-20",
-    mdcnCode: "MDCN67890"
+    mdcnCode: "MDCN67890",
+    totalEarnings: 0
   }
 ]
 

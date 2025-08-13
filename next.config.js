@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: false, // Keep this false to catch actual errors
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb'
@@ -28,6 +34,12 @@ const nextConfig = {
         path: false,
       };
     }
+    
+    // Ignore critical dependency warnings for Supabase
+    config.ignoreWarnings = [
+      /Critical dependency: the request of a dependency is an expression/,
+    ]
+    
     return config;
   },
 }

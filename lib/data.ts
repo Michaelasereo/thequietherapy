@@ -365,6 +365,44 @@ export const mockUser = {
   partnerName: "TechCorp Solutions", // Partner name if user came from partner
 }
 
+// Recent applications data
+export const recentApplications = [
+  // This array is empty by default as shown in the component
+  // Applications will be populated when users actually apply to tasks
+]
+
+// Smart matches data
+export const smartMatches = [
+  {
+    id: "task-001",
+    title: "Senior React Developer",
+    salary: "$80-120k",
+    type: "Full-time",
+    location: "Remote",
+    date: "2024-01-15",
+    matchScore: "95%",
+    description: "We're looking for an experienced React developer to join our team and help build scalable web applications.",
+    tags: ["React", "TypeScript", "Node.js", "AWS"],
+    company: "TechCorp Solutions",
+    verified: true,
+    applicants: 12
+  },
+  {
+    id: "task-002",
+    title: "UI/UX Designer",
+    salary: "$70-100k",
+    type: "Contract",
+    location: "San Francisco, CA",
+    date: "2024-01-14",
+    matchScore: "88%",
+    description: "Join our design team to create beautiful and intuitive user experiences for our products.",
+    tags: ["Figma", "Sketch", "Adobe Creative Suite", "Prototyping"],
+    company: "Design Studio Inc",
+    verified: true,
+    applicants: 8
+  }
+]
+
 // Updated session notes with IDs and therapy tags
 export const sessionNotes = [
   {

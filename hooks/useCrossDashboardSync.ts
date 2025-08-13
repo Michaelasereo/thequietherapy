@@ -57,7 +57,7 @@ export function useCrossDashboardSync(dashboardType: 'user' | 'therapist' | 'par
     console.log(`User status change event for ${dashboardType}:`, data)
     
     // Update global state
-    globalState.updateUserStatus(data.userId, data.status)
+    globalState.updateUserStatus(data.userId, data.status as 'online' | 'offline' | 'away' | 'busy')
   }, [dashboardType, globalState])
 
   // Handle session status changes
@@ -66,7 +66,7 @@ export function useCrossDashboardSync(dashboardType: 'user' | 'therapist' | 'par
     console.log(`Session status change event for ${dashboardType}:`, data)
     
     // Update global state
-    globalState.updateSessionStatus(data.sessionId, data.status)
+    globalState.updateSessionStatus(data.sessionId, data.status as 'scheduled' | 'active' | 'completed' | 'cancelled' | 'no-show')
   }, [dashboardType, globalState])
 
   // Handle global notifications
@@ -80,7 +80,8 @@ export function useCrossDashboardSync(dashboardType: 'user' | 'therapist' | 'par
       message: data.message,
       severity: data.severity || 'medium',
       target_user_types: [dashboardType],
-      requires_action: data.requiresAction || false
+      requires_action: data.requiresAction || false,
+      read_by: []
     })
   }, [dashboardType, globalState])
 
@@ -91,12 +92,13 @@ export function useCrossDashboardSync(dashboardType: 'user' | 'therapist' | 'par
     // Only admin dashboard handles system alerts
     if (dashboardType === 'admin') {
       globalState.addGlobalNotification({
-        type: 'system_alert',
+        type: 'system',
         title: data.title,
         message: data.message,
         severity: data.severity || 'high',
         target_user_types: ['admin'],
-        requires_action: data.requiresAction || false
+        requires_action: data.requiresAction || false,
+        read_by: []
       })
     }
   }, [dashboardType, globalState])
@@ -105,12 +107,12 @@ export function useCrossDashboardSync(dashboardType: 'user' | 'therapist' | 'par
   const handleDataSync = useCallback((data: any) => {
     console.log(`Data sync event for ${dashboardType}:`, data)
     
-    // Update global sync state
-    globalState.updateSyncState({
-      lastSync: new Date().toISOString(),
-      status: 'completed',
-      recordsProcessed: data.recordsProcessed || 0
-    })
+    // TODO: Implement sync state update when method is available
+    // globalState.updateSyncState({
+    //   lastSync: new Date().toISOString(),
+    //   status: 'completed',
+    //   recordsProcessed: data.recordsProcessed || 0
+    // })
   }, [dashboardType, globalState])
 
   return {

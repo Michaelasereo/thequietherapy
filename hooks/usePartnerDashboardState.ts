@@ -357,19 +357,47 @@ export function usePartnerNotificationState() {
   }, [state.notifications])
 
   const addSuccessNotification = useCallback((title: string, message: string) => {
-    addNotification({ type: 'success', title, message, read: false })
+    addNotification({ 
+      id: `success_${Date.now()}`,
+      type: 'success', 
+      title, 
+      message, 
+      read: false,
+      timestamp: new Date().toISOString()
+    })
   }, [addNotification])
 
   const addErrorNotification = useCallback((title: string, message: string) => {
-    addNotification({ type: 'error', title, message, read: false })
+    addNotification({ 
+      id: `error_${Date.now()}`,
+      type: 'error', 
+      title, 
+      message, 
+      read: false,
+      timestamp: new Date().toISOString()
+    })
   }, [addNotification])
 
   const addWarningNotification = useCallback((title: string, message: string) => {
-    addNotification({ type: 'warning', title, message, read: false })
+    addNotification({ 
+      id: `warning_${Date.now()}`,
+      type: 'warning', 
+      title, 
+      message, 
+      read: false,
+      timestamp: new Date().toISOString()
+    })
   }, [addNotification])
 
   const addInfoNotification = useCallback((title: string, message: string) => {
-    addNotification({ type: 'info', title, message, read: false })
+    addNotification({ 
+      id: `info_${Date.now()}`,
+      type: 'info', 
+      title, 
+      message, 
+      read: false,
+      timestamp: new Date().toISOString()
+    })
   }, [addNotification])
 
   return {

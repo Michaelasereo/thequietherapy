@@ -14,8 +14,8 @@ const formSchema = z.object({
   address: z.string().min(2),
   contactPerson: z.string().min(2),
   email: z.string().email(),
-  notifyPurchases: z.boolean().default(true),
-  notifyUsage: z.boolean().default(true),
+  notifyPurchases: z.boolean(),
+  notifyUsage: z.boolean(),
   apiKey: z.string().optional(),
 })
 

@@ -326,14 +326,15 @@ export async function logoutSession(sessionToken: string): Promise<{ success: bo
 }
 
 export function setAuthCookie(sessionToken: string, response: Response): void {
+  // TODO: Implement cookie setting when Next.js 15 cookies API is stable
   // response.cookies.set('trpi_session', sessionToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 30 * 24 * 60 * 60 // 30 days
-  });
+  //   httpOnly: true,
+  //   secure: process.env.NODE_ENV === 'production',
+  //   sameSite: 'lax',
+  //   maxAge: 30 * 24 * 60 * 60 // 30 days
+  // });
 }
 
 export function clearAuthCookie(response: Response): void {
-  // response.cookies.delete('trpi_session');
+  // TODO: Implement cookie clearing when Next.js 15 cookies API is stable
 }

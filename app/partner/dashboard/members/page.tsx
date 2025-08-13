@@ -44,7 +44,7 @@ export default function PartnerMembersPage() {
   const members = partnerMembers
   const name = ""
   const email = ""
-  const selected = {}
+  const selected: Record<string, boolean> = {}
   const selectedPackage = ""
   const csvData = ""
 

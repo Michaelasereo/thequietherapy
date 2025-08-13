@@ -15,9 +15,9 @@ const formSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(6),
   mdcnCode: z.string().optional(),
-  sessionReminders: z.boolean().default(true),
-  newClientAlerts: z.boolean().default(true),
-  payoutNotifications: z.boolean().default(true),
+  sessionReminders: z.boolean(),
+  newClientAlerts: z.boolean(),
+  payoutNotifications: z.boolean(),
 })
 
 type SettingsFormValues = z.infer<typeof formSchema>
