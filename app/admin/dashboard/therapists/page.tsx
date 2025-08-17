@@ -1,443 +1,733 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { UserCheck, Search, Filter, MoreHorizontal, Eye, Edit, Trash2, CheckCircle, XCircle, Clock, DollarSign, Users, Calendar } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { UserCheck, Search, Eye, Shield, Calendar, Mail, Phone, FileText, Star, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
+import { toast } from "sonner"
 
-// Therapist data - will be populated with real data
-const mockTherapists: any[] = [
-  {
-    id: "1",
-    name: "Dr. Emily White",
-    email: "emily@example.com",
-    specialization: "Anxiety, Depression",
-    status: "Active",
-    verificationStatus: "Verified",
-    sessions: 45,
-    rating: 4.8,
-    joinDate: "2024-01-15",
-    mdcnCode: "MDCN12345",
-    totalEarnings: 125000
-  },
-  {
-    id: "2", 
-    name: "Dr. John Smith",
-    email: "john@example.com",
-    specialization: "Trauma Therapy",
-    status: "Pending",
-    verificationStatus: "Pending",
-    sessions: 0,
-    rating: 0,
-    joinDate: "2024-01-20",
-    mdcnCode: "MDCN67890",
-    totalEarnings: 0
-  }
-]
+interface Therapist {
+  id: string
+  full_name: string
+  email: string
+  phone?: string
+  mdcn_code: string
+  specialization: string[]
+  languages: string[]
+  is_verified: boolean
+  is_active: boolean
+  status: string
+  rating?: number
+  totalSessions: number
+  created_at: string
+  lastActivity?: string
+}
 
-export default function AdminTherapistsPage() {
-  const [therapists, setTherapists] = useState(mockTherapists)
-  const [isLoading, setIsLoading] = useState(false)
-  
-  const activeTherapists = therapists.filter(t => t.status === "Active")
-  const verifiedTherapists = therapists.filter(t => t.verificationStatus === "Verified")
-  const pendingVerifications = therapists.filter(t => t.verificationStatus === "Pending")
+export default function TherapistsPage() {
+  const [therapists, setTherapists] = useState<Therapist[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [verificationFilter, setVerificationFilter] = useState("all")
 
-  const handleApproveTherapist = async (therapistId: string) => {
-    setIsLoading(true)
+  // Fetch therapists on component mount
+  useEffect(() => {
+    fetchTherapists()
+  }, [])
+
+  const fetchTherapists = async () => {
     try {
-      // In real app, call API to approve therapist
-      setTherapists(prev => prev.map(t => 
-        t.id === therapistId 
-          ? { ...t, status: "Active", verificationStatus: "Verified" }
-          : t
-      ))
+      setLoading(true)
+      // This would be replaced with actual API call
+      const mockTherapists: Therapist[] = [
+        {
+          id: "1",
+          full_name: "Dr. Sarah Johnson",
+          email: "sarah@example.com",
+          phone: "+2348098765432",
+          mdcn_code: "MDCN12345",
+          specialization: ["Cognitive Behavioral Therapy", "Anxiety", "Depression"],
+          languages: ["English", "Yoruba"],
+          is_verified: true,
+          is_active: true,
+          status: "active",
+          rating: 4.8,
+          totalSessions: 156,
+          created_at: "2024-01-10T09:15:00Z",
+          lastActivity: "2024-01-20T16:20:00Z"
+        },
+        {
+          id: "2",
+          full_name: "Dr. Michael Brown",
+          email: "michael@example.com",
+          phone: "+2348012345678",
+          mdcn_code: "MDCN67890",
+          specialization: ["Family Therapy", "Marriage Counseling"],
+          languages: ["English", "Hausa"],
+          is_verified: true,
+          is_active: true,
+          status: "active",
+          rating: 4.6,
+          totalSessions: 89,
+          created_at: "2024-01-12T11:30:00Z",
+          lastActivity: "2024-01-19T14:45:00Z"
+        },
+        {
+          id: "3",
+          full_name: "Dr. Emily White",
+          email: "emily@example.com",
+          phone: "+2348076543210",
+          mdcn_code: "MDCN11111",
+          specialization: ["Trauma Therapy", "PTSD"],
+          languages: ["English", "Igbo"],
+          is_verified: false,
+          is_active: false,
+          status: "pending",
+          totalSessions: 0,
+          created_at: "2024-01-15T13:20:00Z"
+        }
+      ]
       
-      // Show success message
-      console.log(`Therapist ${therapistId} approved successfully!`)
+      setTherapists(mockTherapists)
     } catch (error) {
-      console.error('Error approving therapist:', error)
+      console.error('Error fetching therapists:', error)
+      toast.error('Failed to fetch therapists')
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const handleRejectTherapist = async (therapistId: string) => {
-    setIsLoading(true)
+  const handleVerificationToggle = async (therapistId: string, isVerified: boolean) => {
     try {
-      // In real app, call API to reject therapist
-      setTherapists(prev => prev.map(t => 
-        t.id === therapistId 
-          ? { ...t, status: "Inactive", verificationStatus: "Rejected" }
-          : t
+      // This would be replaced with actual API call
+      setTherapists(prev => prev.map(therapist => 
+        therapist.id === therapistId ? { ...therapist, is_verified: isVerified } : therapist
       ))
-      
-      // Show success message
-      console.log(`Therapist ${therapistId} rejected successfully!`)
+      toast.success(`Therapist verification ${isVerified ? 'enabled' : 'disabled'}`)
     } catch (error) {
-      console.error('Error rejecting therapist:', error)
-    } finally {
-      setIsLoading(false)
+      console.error('Error updating therapist verification:', error)
+      toast.error('Failed to update therapist verification')
+    }
+  }
+
+  const handleStatusChange = async (therapistId: string, newStatus: string) => {
+    try {
+      // This would be replaced with actual API call
+      setTherapists(prev => prev.map(therapist => 
+        therapist.id === therapistId ? { ...therapist, status: newStatus, is_active: newStatus === 'active' } : therapist
+      ))
+      toast.success(`Therapist status updated to ${newStatus}`)
+    } catch (error) {
+      console.error('Error updating therapist status:', error)
+      toast.error('Failed to update therapist status')
     }
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Active":
-        return <Badge variant="default">Active</Badge>
-      case "Inactive":
-        return <Badge variant="secondary">Inactive</Badge>
-      case "Suspended":
-        return <Badge variant="destructive">Suspended</Badge>
+      case 'active':
+        return <Badge variant="outline" className="text-green-600 border-green-600">Active</Badge>
+      case 'pending':
+        return <Badge variant="outline" className="text-yellow-600 border-yellow-600">Pending</Badge>
+      case 'suspended':
+        return <Badge variant="outline" className="text-red-600 border-red-600">Suspended</Badge>
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">Unknown</Badge>
     }
   }
 
-  const getVerificationBadge = (status: string) => {
-    switch (status) {
-      case "Verified":
-        return <Badge variant="default" className="bg-green-100 text-green-800">Verified</Badge>
-      case "Pending":
-        return <Badge variant="secondary">Pending</Badge>
-      case "Rejected":
-        return <Badge variant="destructive">Rejected</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
+  const getVerificationBadge = (isVerified: boolean) => {
+    return isVerified ? (
+      <Badge variant="default" className="bg-green-600">Verified</Badge>
+    ) : (
+      <Badge variant="secondary">Unverified</Badge>
+    )
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  // Filter therapists based on search and filters
+  const filteredTherapists = therapists.filter(therapist => {
+    const matchesSearch = therapist.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         therapist.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         therapist.mdcn_code.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === "all" || therapist.status === statusFilter
+    const matchesVerification = verificationFilter === "all" || 
+                               (verificationFilter === "verified" && therapist.is_verified) ||
+                               (verificationFilter === "unverified" && !therapist.is_verified)
+    
+    return matchesSearch && matchesStatus && matchesVerification
+  })
+
+  const therapistStats = {
+    total: therapists.length,
+    active: therapists.filter(t => t.status === 'active').length,
+    verified: therapists.filter(t => t.is_verified).length,
+    pending: therapists.filter(t => t.status === 'pending').length,
+    totalSessions: therapists.reduce((sum, t) => sum + t.totalSessions, 0),
+    averageRating: therapists.filter(t => t.rating).reduce((sum, t) => sum + (t.rating || 0), 0) / therapists.filter(t => t.rating).length
+  }
+
+  // Get pending verifications
+  const pendingVerifications = therapists.filter(t => t.status === 'pending')
+  const [rejectionReason, setRejectionReason] = useState("")
+  const [processingId, setProcessingId] = useState<string | null>(null)
+
+  const handleApprove = async (therapistId: string) => {
+    try {
+      setProcessingId(therapistId)
+      
+      // This would be replaced with actual API call
+      setTherapists(prev => prev.map(therapist => 
+        therapist.id === therapistId ? { ...therapist, status: 'active', is_verified: true } : therapist
+      ))
+      toast.success('Therapist approved successfully')
+    } catch (error) {
+      console.error('Error approving therapist:', error)
+      toast.error('Failed to approve therapist')
+    } finally {
+      setProcessingId(null)
     }
+  }
+
+  const handleReject = async (therapistId: string, reason: string) => {
+    try {
+      setProcessingId(therapistId)
+      
+      // This would be replaced with actual API call
+      setTherapists(prev => prev.map(therapist => 
+        therapist.id === therapistId ? { ...therapist, status: 'rejected' } : therapist
+      ))
+      toast.success('Therapist application rejected')
+      setRejectionReason("")
+    } catch (error) {
+      console.error('Error rejecting therapist:', error)
+      toast.error('Failed to reject therapist')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Therapist Management</h1>
+          <p className="text-sm text-muted-foreground mt-1">Loading therapists...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2"></div>
+                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-semibold">Therapist Management</h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage licensed therapists and their specializations</p>
+      </div>
+
+      {/* Therapist Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Therapists</CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{therapistStats.total}</div>
+            <p className="text-xs text-muted-foreground">All therapists</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Therapists</CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{therapistStats.active}</div>
+            <p className="text-xs text-muted-foreground">Currently active</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Verified Therapists</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{therapistStats.verified}</div>
+            <p className="text-xs text-muted-foreground">MDCN verified</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{therapistStats.totalSessions}</div>
+            <p className="text-xs text-muted-foreground">Conducted sessions</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Pending Verifications */}
+      {pendingVerifications.length > 0 && (
         <div>
-          <h1 className="text-2xl font-semibold">Therapist Management</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage all platform therapists</p>
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            <h2 className="text-lg font-medium">Pending Verifications ({pendingVerifications.length})</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pendingVerifications.map((therapist) => (
+              <Card key={therapist.id} className="shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{therapist.full_name}</CardTitle>
+                    {getStatusBadge(therapist.status)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{therapist.email}</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">MDCN Code:</span>
+                      <span className="text-sm">{therapist.mdcn_code}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Specializations:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {therapist.specialization.map((spec, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {spec}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Applied: {formatDate(therapist.created_at)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Details
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Therapist Application Details</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label>Full Name</Label>
+                              <p className="text-sm">{therapist.full_name}</p>
+                            </div>
+                            <div>
+                              <Label>Email</Label>
+                              <p className="text-sm">{therapist.email}</p>
+                            </div>
+                            <div>
+                              <Label>Phone</Label>
+                              <p className="text-sm">{therapist.phone || "Not provided"}</p>
+                            </div>
+                            <div>
+                              <Label>MDCN Code</Label>
+                              <p className="text-sm">{therapist.mdcn_code}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <Label>Specializations</Label>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {therapist.specialization.map((spec, index) => (
+                                <Badge key={index} variant="secondary">
+                                  {spec}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <Label>Languages</Label>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {therapist.languages.map((lang, index) => (
+                                <Badge key={index} variant="outline">
+                                  {lang}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <Label>Applied</Label>
+                            <p className="text-sm">{formatDateTime(therapist.created_at)}</p>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    <Button 
+                      size="sm" 
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      onClick={() => handleApprove(therapist.id)}
+                      disabled={processingId === therapist.id}
+                    >
+                      {processingId === therapist.id ? (
+                        "Processing..."
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Approve
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          disabled={processingId === therapist.id}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Reject Application</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="rejectionReason">Reason for Rejection</Label>
+                            <Textarea
+                              id="rejectionReason"
+                              placeholder="Please provide a reason for rejecting this application..."
+                              value={rejectionReason}
+                              onChange={(e) => setRejectionReason(e.target.value)}
+                              rows={4}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              onClick={() => setRejectionReason("")}
+                            >
+                              Cancel
+                            </Button>
+                            <Button 
+                              variant="destructive"
+                              onClick={() => handleReject(therapist.id, rejectionReason)}
+                              disabled={!rejectionReason.trim() || processingId === therapist.id}
+                            >
+                              {processingId === therapist.id ? "Processing..." : "Reject Application"}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-        <Button>
-          <UserCheck className="mr-2 h-4 w-4" />
-          Add Therapist
-        </Button>
-      </div>
+      )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-blue-500" />
-              <div>
-                <div className="text-2xl font-bold">{mockTherapists.length}</div>
-                <div className="text-sm text-muted-foreground">Total Therapists</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <div>
-                <div className="text-2xl font-bold">{activeTherapists.length}</div>
-                <div className="text-sm text-muted-foreground">Active Therapists</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-yellow-500" />
-              <div>
-                <div className="text-2xl font-bold">{pendingVerifications.length}</div>
-                <div className="text-sm text-muted-foreground">Pending Verification</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-purple-500" />
-              <div>
-                <div className="text-2xl font-bold">0</div>
-                <div className="text-sm text-muted-foreground">Pending Enrollments</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-500" />
-              <div>
-                <div className="text-2xl font-bold">₦{mockTherapists.reduce((sum, t) => sum + t.totalEarnings, 0).toLocaleString()}</div>
-                <div className="text-sm text-muted-foreground">Total Earnings</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Pending Enrollments Section */}
-      <Card>
+      {/* Filters and Search */}
+      <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-yellow-500" />
-            Pending Therapist Enrollments
+            <Search className="h-5 w-5" />
+            Filters & Search
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Pending Enrollments</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              When therapists complete the enrollment process, they will appear here for manual verification.
-            </p>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>• MDCN codes will be verified manually</p>
-              <p>• Document uploads will be reviewed</p>
-              <p>• Approved therapists will be activated</p>
-            </div>
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <p className="text-xs text-blue-700">
-                <strong>Note:</strong> Check the "All Therapists" table below for any unverified therapists that need approval.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="search">Search Therapists</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search therapists by name or email..."
-                  className="pl-9"
+                  id="search"
+                  placeholder="Search by name, email, or MDCN code..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
                 />
               </div>
             </div>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by verification" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Verifications</SelectItem>
-                <SelectItem value="verified">Verified</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="verification">Verification</Label>
+              <Select value={verificationFilter} onValueChange={setVerificationFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="verified">Verified</SelectItem>
+                  <SelectItem value="unverified">Unverified</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Therapists Table */}
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle>All Therapists ({therapists.length})</CardTitle>
+          <CardTitle>Therapists ({filteredTherapists.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Therapist</TableHead>
-                <TableHead>Specialization</TableHead>
+                <TableHead>MDCN Code</TableHead>
+                <TableHead>Specializations</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Verification</TableHead>
                 <TableHead>Sessions</TableHead>
-                <TableHead>Earnings</TableHead>
                 <TableHead>Rating</TableHead>
-                <TableHead>MDCN Code</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {therapists.map((therapist) => (
+              {filteredTherapists.map((therapist) => (
                 <TableRow key={therapist.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{therapist.name}</div>
+                      <div className="font-medium">{therapist.full_name}</div>
                       <div className="text-sm text-muted-foreground">{therapist.email}</div>
-                      <div className="text-xs text-muted-foreground">Joined: {therapist.joinDate}</div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm">{therapist.specialization}</span>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-mono">{therapist.mdcn_code}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {therapist.specialization.slice(0, 2).map((spec, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {spec}
+                        </Badge>
+                      ))}
+                      {therapist.specialization.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{therapist.specialization.length - 2} more
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {getStatusBadge(therapist.status)}
                   </TableCell>
                   <TableCell>
-                    {getVerificationBadge(therapist.verificationStatus)}
+                    {getVerificationBadge(therapist.is_verified)}
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">{therapist.totalSessions}</div>
-                    <div className="text-xs text-muted-foreground">{therapist.clients} clients</div>
+                    <div className="text-sm font-medium">{therapist.totalSessions}</div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">₦{therapist.totalEarnings.toLocaleString()}</div>
+                    {therapist.rating ? (
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                        <span className="text-sm font-medium">{therapist.rating}</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">No rating</span>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm">{therapist.rating}</span>
-                      <span className="text-yellow-500">★</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-mono">{therapist.mdcnCode}</span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Profile
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit Therapist
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Users className="mr-2 h-4 w-4" />
-                          View Clients
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Calendar className="mr-2 h-4 w-4" />
-                          View Sessions
-                        </DropdownMenuItem>
-                        {therapist.verificationStatus === "Pending" && (
-                          <>
-                            <DropdownMenuItem 
-                              className="text-green-600"
-                              onClick={() => handleApproveTherapist(therapist.id)}
-                              disabled={isLoading}
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Therapist Details</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label>Full Name</Label>
+                              <p className="text-sm">{therapist.full_name}</p>
+                            </div>
+                            <div>
+                              <Label>Email</Label>
+                              <p className="text-sm">{therapist.email}</p>
+                            </div>
+                            <div>
+                              <Label>Phone</Label>
+                              <p className="text-sm">{therapist.phone || "Not provided"}</p>
+                            </div>
+                            <div>
+                              <Label>MDCN Code</Label>
+                              <p className="text-sm font-mono">{therapist.mdcn_code}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <Label>Specializations</Label>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {therapist.specialization.map((spec, index) => (
+                                <Badge key={index} variant="secondary">
+                                  {spec}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <Label>Languages</Label>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {therapist.languages.map((lang, index) => (
+                                <Badge key={index} variant="outline">
+                                  {lang}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label>Status</Label>
+                              <div className="mt-1">{getStatusBadge(therapist.status)}</div>
+                            </div>
+                            <div>
+                              <Label>Verification</Label>
+                              <div className="mt-1">{getVerificationBadge(therapist.is_verified)}</div>
+                            </div>
+                            <div>
+                              <Label>Total Sessions</Label>
+                              <p className="text-sm font-medium">{therapist.totalSessions}</p>
+                            </div>
+                            <div>
+                              <Label>Rating</Label>
+                              {therapist.rating ? (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                                  <span className="text-sm font-medium">{therapist.rating}</span>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground">No rating</p>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <Label>Created</Label>
+                            <p className="text-sm">{formatDateTime(therapist.created_at)}</p>
+                          </div>
+                          {therapist.lastActivity && (
+                            <div>
+                              <Label>Last Activity</Label>
+                              <p className="text-sm">{formatDateTime(therapist.lastActivity)}</p>
+                            </div>
+                          )}
+                          <div className="flex gap-2 pt-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleVerificationToggle(therapist.id, !therapist.is_verified)}
                             >
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Approve Therapist
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => handleRejectTherapist(therapist.id)}
-                              disabled={isLoading}
-                            >
-                              <XCircle className="mr-2 h-4 w-4" />
-                              Reject Therapist
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Suspend Account
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                              {therapist.is_verified ? "Unverify" : "Verify"}
+                            </Button>
+                            {therapist.status === 'active' ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleStatusChange(therapist.id, 'suspended')}
+                              >
+                                Suspend
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleStatusChange(therapist.id, 'active')}
+                              >
+                                Activate
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          
+          {filteredTherapists.length === 0 && (
+            <div className="text-center py-8">
+              <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">No therapists found</h3>
+              <p className="text-muted-foreground">Try adjusting your search or filters.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {/* Performance Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Performing Therapists</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {mockTherapists
-                .sort((a, b) => b.totalSessions - a.totalSessions)
-                .slice(0, 5)
-                .map((therapist, index) => (
-                  <div key={therapist.id} className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <div className="font-medium">{therapist.name}</div>
-                        <div className="text-sm text-muted-foreground">{therapist.specialization}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{therapist.totalSessions} sessions</div>
-                      <div className="text-sm text-muted-foreground">₦{therapist.totalEarnings.toLocaleString()}</div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Verification Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Verified</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-32 bg-muted rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full" 
-                      style={{ width: `${(verifiedTherapists.length / mockTherapists.length) * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm font-medium">{verifiedTherapists.length}/{mockTherapists.length}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Pending</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-32 bg-muted rounded-full h-2">
-                    <div 
-                      className="bg-yellow-500 h-2 rounded-full" 
-                      style={{ width: `${(pendingVerifications.length / mockTherapists.length) * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm font-medium">{pendingVerifications.length}/{mockTherapists.length}</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   )
 }

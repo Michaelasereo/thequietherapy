@@ -1,40 +1,35 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-import { cookies } from "next/headers"
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-export async function GET() {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
-    
-    if (!therapistUserCookie) {
-      return NextResponse.json({
-        success: false,
-        error: "Therapist not authenticated"
-      }, { status: 401 })
+    const { searchParams } = new URL(request.url)
+    const therapistEmail = searchParams.get('therapistEmail')
+
+    if (!therapistEmail) {
+      return NextResponse.json(
+        { success: false, error: 'Therapist email is required' },
+        { status: 400 }
+      )
     }
 
-    const therapistUser = JSON.parse(therapistUserCookie)
-    const email = therapistUser.email
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    // Get therapist availability from database
     const { data: availability, error } = await supabase
       .from('therapist_availability')
       .select('*')
-      .eq('therapist_email', email)
-      .order('day_of_week')
+      .eq('therapist_email', therapistEmail)
+      .order('day_of_week', { ascending: true })
 
     if (error) {
-      console.error('Error fetching availability:', error)
-      return NextResponse.json({
-        success: false,
-        error: "Failed to fetch availability"
-      }, { status: 500 })
+      console.error('Error fetching therapist availability:', error)
+      return NextResponse.json(
+        { success: false, error: 'Failed to fetch availability' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({
@@ -43,76 +38,72 @@ export async function GET() {
     })
 
   } catch (error) {
-    console.error('Error in availability GET:', error)
-    return NextResponse.json({
-      success: false,
-      error: "Failed to fetch availability"
-    }, { status: 500 })
+    console.error('Error in therapist availability API:', error)
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
-    
-    if (!therapistUserCookie) {
-      return NextResponse.json({
-        success: false,
-        error: "Therapist not authenticated"
-      }, { status: 401 })
+    const { therapistEmail, availability } = await request.json()
+
+    if (!therapistEmail || !availability) {
+      return NextResponse.json(
+        { success: false, error: 'Therapist email and availability data are required' },
+        { status: 400 }
+      )
     }
 
-    const therapistUser = JSON.parse(therapistUserCookie)
-    const email = therapistUser.email
-    const body = await request.json()
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    // Delete existing availability
-    await supabase
+    // Delete existing availability for this therapist
+    const { error: deleteError } = await supabase
       .from('therapist_availability')
       .delete()
-      .eq('therapist_email', email)
+      .eq('therapist_email', therapistEmail)
+
+    if (deleteError) {
+      console.error('Error deleting existing availability:', deleteError)
+      return NextResponse.json(
+        { success: false, error: 'Failed to update availability' },
+        { status: 500 }
+      )
+    }
 
     // Insert new availability
-    const availabilityData = body.availability.map((day: any) => ({
-      therapist_email: email,
-      day_of_week: day.dayOfWeek,
-      start_time: day.startTime,
-      end_time: day.endTime,
-      is_available: day.isAvailable,
-      session_duration: day.sessionDuration,
-      max_sessions_per_day: day.maxSessionsPerDay
+    const availabilityData = availability.map((slot: any) => ({
+      therapist_email: therapistEmail,
+      day_of_week: slot.day_of_week,
+      start_time: slot.start_time,
+      end_time: slot.end_time,
+      is_available: slot.is_available,
+      session_duration: slot.session_duration || 60,
+      max_sessions_per_day: slot.max_sessions_per_day || 8
     }))
 
-    const { data, error } = await supabase
+    const { error: insertError } = await supabase
       .from('therapist_availability')
       .insert(availabilityData)
-      .select()
 
-    if (error) {
-      console.error('Error saving availability:', error)
-      return NextResponse.json({
-        success: false,
-        error: "Failed to save availability"
-      }, { status: 500 })
+    if (insertError) {
+      console.error('Error inserting availability:', insertError)
+      return NextResponse.json(
+        { success: false, error: 'Failed to save availability' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({
       success: true,
-      message: "Availability saved successfully",
-      data
+      message: 'Availability updated successfully'
     })
 
   } catch (error) {
-    console.error('Error in availability POST:', error)
-    return NextResponse.json({
-      success: false,
-      error: "Failed to save availability"
-    }, { status: 500 })
+    console.error('Error in therapist availability API:', error)
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }

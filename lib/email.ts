@@ -32,7 +32,7 @@ export async function sendVerificationEmail(email: string, token: string) {
     return { success: false, error: 'Email service not configured' };
   }
   
-  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3003'}/api/auth/verify-email?email=${email}&token=${token}`;
+  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/verify-email?email=${email}&token=${token}`;
   
   const senderEmail = process.env.SENDER_EMAIL || 'noreply@trpi.com';
   
@@ -79,7 +79,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     return { success: false, error: 'Email service not configured' };
   }
   
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3003'}/reset-password?token=${token}`;
+  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
   
   const senderEmail = process.env.SENDER_EMAIL || 'noreply@trpi.com';
   
@@ -112,11 +112,20 @@ export async function sendPasswordResetEmail(email: string, token: string) {
 }
 
 export async function sendMagicLinkEmail(email: string, verificationUrl: string, type: 'booking' | 'login' | 'signup', metadata?: any) {
+  console.log('📧 sendMagicLinkEmail called with:', { email, verificationUrl, type, metadata });
+  
   const transporter = createTransporter();
+  console.log('📧 Transporter created:', !!transporter);
   
   if (!transporter) {
-    console.warn('Email transporter not available - skipping email send');
-    return { success: false, error: 'Email service not configured' };
+    console.warn('Email transporter not available - logging magic link instead');
+    console.log('🔗 MAGIC LINK FOR TESTING:');
+    console.log('Email:', email);
+    console.log('URL:', verificationUrl);
+    console.log('Type:', type);
+    console.log('Metadata:', metadata);
+    console.log('🔗 END MAGIC LINK');
+    return { success: true, error: 'Email service not configured - link logged to console' };
   }
   
   let subject = '';

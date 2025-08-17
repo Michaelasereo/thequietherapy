@@ -5,31 +5,33 @@ export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json()
     
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
-    }
-
-    console.log('Testing Brevo email sending to:', email)
-
+    console.log('🧪 Testing email sending to:', email)
+    
     const testUrl = 'http://localhost:3000/api/auth/verify-magic-link?token=test-token'
     
-    const result = await sendMagicLinkEmail(email, testUrl, 'signup', {
-      first_name: 'Test User',
-      user_type: 'therapist'
+    const result = await sendMagicLinkEmail(
+      email,
+      testUrl,
+      'signup',
+      {
+        user_type: 'therapist',
+        first_name: 'Test User'
+      }
+    )
+    
+    console.log('📧 Email test result:', result)
+    
+    return NextResponse.json({
+      success: result.success,
+      error: result.error,
+      messageId: result.messageId
     })
-
-    console.log('Brevo email test result:', result)
-
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Test email sent successfully via Brevo',
-      result: result
-    })
+    
   } catch (error) {
-    console.error('Error sending test email via Brevo:', error)
+    console.error('❌ Email test error:', error)
     return NextResponse.json({ 
-      error: 'Failed to send test email via Brevo',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      success: false, 
+      error: 'Internal server error' 
     }, { status: 500 })
   }
 }

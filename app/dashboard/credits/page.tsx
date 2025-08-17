@@ -8,12 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { CreditCard, Plus, Minus, Loader2 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 export default function CreditsPage() {
   const [selectedPackage, setSelectedPackage] = useState<string>("")
@@ -188,7 +183,7 @@ export default function CreditsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold text-blue-600">{userCredits}</div>
+          <div className="text-3xl font-bold text-black">{userCredits}</div>
           <p className="text-sm text-muted-foreground mt-1">Available for booking sessions</p>
         </CardContent>
       </Card>
@@ -199,7 +194,7 @@ export default function CreditsPage() {
           <Card 
             key={pkg.id} 
             className={`shadow-sm cursor-pointer transition-all ${
-              selectedPackage === pkg.id ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:shadow-md'
+              selectedPackage === pkg.id ? 'ring-2 ring-black bg-gray-50' : 'hover:shadow-md'
             }`}
             onClick={() => handlePackageSelect(pkg.id)}
           >
@@ -212,13 +207,13 @@ export default function CreditsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{pkg.credits} Credits</div>
-              <div className="text-lg font-semibold">${pkg.price}</div>
+              <div className="text-2xl font-bold text-black">{pkg.credits} Credits</div>
+              <div className="text-lg font-semibold">₦{pkg.price}</div>
               {pkg.savings > 0 && (
-                <div className="text-sm text-green-600">Save ${pkg.savings}</div>
+                <div className="text-sm text-green-600">Save ₦{pkg.savings}</div>
               )}
               <div className="text-xs text-muted-foreground mt-2">
-                ${(pkg.price / pkg.credits).toFixed(2)} per credit
+                ₦{(pkg.price / pkg.credits).toFixed(2)} per credit
               </div>
             </CardContent>
           </Card>
@@ -233,29 +228,29 @@ export default function CreditsPage() {
         <CardContent>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="custom-amount">Amount (USD)</Label>
+              <Label htmlFor="custom-amount">Amount (₦)</Label>
               <div className="flex items-center gap-2 mt-1">
                 <Input
                   id="custom-amount"
                   type="number"
-                  placeholder="Enter amount (minimum $10)"
+                  placeholder="Enter amount (minimum ₦5,000)"
                   value={customAmount}
                   onChange={(e) => handleCustomAmountChange(e.target.value)}
-                  min="10"
-                  step="1"
+                  min="5000"
+                  step="1000"
                   className="flex-1"
                 />
               </div>
             </div>
-            {customAmount && parseFloat(customAmount) >= 10 && (
+            {customAmount && parseFloat(customAmount) >= 5000 && (
               <div className="p-3 bg-gray-50 rounded-lg">
                 <div className="text-sm text-muted-foreground">
-                  You'll receive: <span className="font-semibold text-blue-600">
-                    {Math.floor(parseFloat(customAmount) / 10)} credits
+                  You'll receive: <span className="font-semibold text-black">
+                    {Math.floor(parseFloat(customAmount) / 5000)} credits
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Rate: $10 per credit
+                  Rate: ₦5,000 per credit
                 </div>
               </div>
             )}
@@ -282,21 +277,21 @@ export default function CreditsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-start gap-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-2 h-2 bg-black rounded-full mt-2 flex-shrink-0"></div>
             <div>
               <p className="font-medium">1 Credit = 1 Session</p>
               <p className="text-sm text-muted-foreground">Each therapy session costs 1 credit</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-2 h-2 bg-black rounded-full mt-2 flex-shrink-0"></div>
             <div>
               <p className="font-medium">Credits Never Expire</p>
               <p className="text-sm text-muted-foreground">Use your credits whenever you want</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-2 h-2 bg-black rounded-full mt-2 flex-shrink-0"></div>
             <div>
               <p className="font-medium">Secure Payment</p>
               <p className="text-sm text-muted-foreground">All payments are processed securely</p>

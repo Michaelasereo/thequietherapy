@@ -21,8 +21,7 @@ import {
 import { dashboardSidebarGroups, dashboardBottomNavItems, mockUser } from "@/lib/data"
 import { useSidebarState } from "@/hooks/useDashboardState"
 import { cn } from "@/lib/utils"
-// import { useUser } from "@/context/user-context" // Commented out for now
-import { logoutAction } from "@/actions/auth"
+import { useAuth } from "@/context/auth-context"
 
 export default function DashboardSidebar() {
   const pathname = usePathname()
@@ -32,7 +31,12 @@ export default function DashboardSidebar() {
     handleItemClick, 
     handleItemToggle
   } = useSidebarState()
-  // const { user } = useUser() // Commented out for now
+  const { logout } = useAuth()
+
+  const handleLogout = async () => {
+    await logout()
+    window.location.href = '/login'
+  }
 
   return (
     <Sidebar className="bg-sidebar-background text-sidebar-foreground" collapsible="icon">
@@ -132,12 +136,10 @@ export default function DashboardSidebar() {
             )
           })}
           <SidebarMenuItem>
-            <form action={logoutAction}>
-              <SidebarMenuButton type="submit">
-                <LogOut className="h-5 w-5" />
-                <span className="group-data-[state=collapsed]:hidden">Logout</span>
-              </SidebarMenuButton>
-            </form>
+            <SidebarMenuButton onClick={handleLogout}>
+              <LogOut className="h-5 w-5" />
+              <span className="group-data-[state=collapsed]:hidden">Logout</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LogOut, BarChart3, Users, CreditCard, FileText, DollarSign, Settings, Check } from "lucide-react"
+import { LogOut, BarChart3, Users, CreditCard, FileText, DollarSign, Settings, Check, Bell } from "lucide-react"
 import React from "react"
 import { Logo } from "@/components/ui/logo"
 import {
@@ -38,6 +38,12 @@ const partnerDashboardSidebarGroups = [
       { name: "Reports", href: "/partner/dashboard/reports", icon: FileText },
       { name: "Payments", href: "/partner/dashboard/payments", icon: DollarSign },
       { name: "Settings", href: "/partner/dashboard/settings", icon: Settings }
+    ]
+  },
+  {
+    label: "Communication",
+    items: [
+      { name: "Notifications", href: "/partner/dashboard/notifications", icon: Bell }
     ]
   }
 ]

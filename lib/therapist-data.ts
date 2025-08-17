@@ -1,10 +1,5 @@
-import { Home, Calendar, Users, DollarSign, Settings, CheckCircle2, Video } from "lucide-react"
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-const supabase = createClient(supabaseUrl, supabaseKey)
+import { Home, Calendar, Users, DollarSign, Settings, CheckCircle2, Video, Bell } from "lucide-react"
+import { supabase } from '@/lib/supabase'
 
 // Types for therapist data
 export interface TherapistClient {
@@ -138,6 +133,12 @@ export const therapistDashboardSidebarGroups = [
     items: [
       { name: "Availability", href: "/therapist/dashboard/availability", icon: Calendar },
       { name: "Video Call", href: "/therapist/dashboard/video-call", icon: Video },
+    ],
+  },
+  {
+    label: "Communication",
+    items: [
+      { name: "Notifications", href: "/therapist/dashboard/notifications", icon: Bell },
     ],
   },
 ]

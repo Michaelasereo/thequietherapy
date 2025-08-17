@@ -20,7 +20,8 @@ const formSchema = z.object({
   maritalStatus: z.enum(["Single", "Married", "Divorced", "Widowed", "Other"], {
     message: "Please select marital status.",
   }),
-  therapistPreference: z.string().optional(),
+  therapistGenderPreference: z.string().optional(),
+  therapistSpecializationPreference: z.string().optional(),
 })
 
 type PatientBiodataFormValues = z.infer<typeof formSchema>
@@ -39,13 +40,23 @@ export default function BookingStep1({ onNext, initialData }: BookingStep1Props)
       age: "",
       gender: "Male",
       maritalStatus: "Single",
-      therapistPreference: "",
+      therapistGenderPreference: "no-preference",
+      therapistSpecializationPreference: "no-preference",
     },
   })
 
   function onSubmit(data: PatientBiodataFormValues) {
     onNext(data)
   }
+
+  // Predefined list of therapy specializations
+  const specializations = [
+    "Anxiety & Stress Management",
+    "Depression & Mood Disorders", 
+    "Relationship & Family Therapy",
+    "Trauma & PTSD",
+    "Addiction & Recovery"
+  ]
 
   return (
     <Form {...form}>
@@ -56,9 +67,9 @@ export default function BookingStep1({ onNext, initialData }: BookingStep1Props)
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Full Name</FormLabel>
+              <FormLabel>First Name</FormLabel>
               <FormControl>
-                <Input placeholder="John Doe" {...field} />
+                <Input placeholder="John" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -143,33 +154,62 @@ export default function BookingStep1({ onNext, initialData }: BookingStep1Props)
             )}
           />
         </div>
-        <FormField
-          control={form.control}
-          name="therapistPreference"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Therapist Preference (Optional)</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Any preference (e.g., specialization, gender)" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
-                  <SelectItem value="Any">Any</SelectItem>
-                  {therapists.map((therapist) => (
-                    <SelectItem key={therapist.id} value={therapist.specialization}>
-                      {therapist.specialization}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="Male Therapist">Male Therapist</SelectItem>
-                  <SelectItem value="Female Therapist">Female Therapist</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        
+        {/* Therapist Preferences Section */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium text-gray-900">Therapist Preferences (Optional)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="therapistGenderPreference"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Gender</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender preference" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
+                      <SelectItem value="no-preference">No Preference</SelectItem>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Non-binary">Non-binary</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="therapistSpecializationPreference"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Specialization</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select specialization" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
+                      <SelectItem value="no-preference">No Preference</SelectItem>
+                      {specializations.map((specialization) => (
+                        <SelectItem key={specialization} value={specialization}>
+                          {specialization}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+        
         <Button type="submit" className="w-full">
           Next: Select Therapist
         </Button>

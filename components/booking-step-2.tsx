@@ -15,12 +15,20 @@ interface BookingStep2Props {
 export default function BookingStep2({ onNext, onBack, initialSelectedTherapistId }: BookingStep2Props) {
   const [selectedTherapistId, setSelectedTherapistId] = useState<string | undefined>(initialSelectedTherapistId)
   const [filterGender, setFilterGender] = useState<string>("All")
-  const [filterAge, setFilterAge] = useState<string>("All")
-  const [filterMaritalStatus, setFilterMaritalStatus] = useState<string>("All")
+  const [filterSpecialization, setFilterSpecialization] = useState<string>("All")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalTherapist, setModalTherapist] = useState<any>(null)
   const [therapists, setTherapists] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Predefined list of therapy specializations
+  const specializations = [
+    "Anxiety & Stress Management",
+    "Depression & Mood Disorders", 
+    "Relationship & Family Therapy",
+    "Trauma & PTSD",
+    "Addiction & Recovery"
+  ]
 
   // Fetch real therapist data
   useEffect(() => {
@@ -41,9 +49,8 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
 
   const filteredTherapists = therapists.filter((therapist) => {
     const genderMatch = filterGender === "All" || therapist.gender === filterGender
-    const ageMatch = filterAge === "All" || therapist.age === filterAge
-    const maritalStatusMatch = filterMaritalStatus === "All" || therapist.maritalStatus === filterMaritalStatus
-    return genderMatch && ageMatch && maritalStatusMatch
+    const specializationMatch = filterSpecialization === "All" || therapist.specialization === filterSpecialization
+    return genderMatch && specializationMatch
   })
 
   const handleViewProfile = (id: string) => {
@@ -58,7 +65,7 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
     <div className="space-y-6 p-4 md:p-6">
       <h3 className="text-xl font-semibold mb-4">Select Your Therapist</h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Select value={filterGender} onValueChange={setFilterGender}>
           <SelectTrigger>
             <SelectValue placeholder="Filter by Gender" />
@@ -70,29 +77,17 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
             <SelectItem value="Non-binary">Non-binary</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={filterAge} onValueChange={setFilterAge}>
+        <Select value={filterSpecialization} onValueChange={setFilterSpecialization}>
           <SelectTrigger>
-            <SelectValue placeholder="Filter by Age Group" />
+            <SelectValue placeholder="Filter by Specialization" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="All">All Age Groups</SelectItem>
-            <SelectItem value="20s">20s</SelectItem>
-            <SelectItem value="30s">30s</SelectItem>
-            <SelectItem value="40s">40s</SelectItem>
-            <SelectItem value="50s">50s</SelectItem>
-            <SelectItem value="60s">60s+</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterMaritalStatus} onValueChange={setFilterMaritalStatus}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by Marital Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All Marital Statuses</SelectItem>
-            <SelectItem value="Single">Single</SelectItem>
-            <SelectItem value="Married">Married</SelectItem>
-            <SelectItem value="Divorced">Divorced</SelectItem>
-            <SelectItem value="Widowed">Widowed</SelectItem>
+            <SelectItem value="All">All Specializations</SelectItem>
+            {specializations.map((specialization) => (
+              <SelectItem key={specialization} value={specialization}>
+                {specialization}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

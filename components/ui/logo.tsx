@@ -18,12 +18,12 @@ export function Logo({ className, size = "md", variant = "auto" }: LogoProps) {
 
   const getLogoSrc = () => {
     if (variant === "light") {
-      return "/quiet-logo-white.png"
+      return "/quiet-logo-whitee.png"
     } else if (variant === "dark") {
-      return "/logo-black.svg"
+      return "/quiet-logo-blackk.png"
     } else {
       // Auto variant - default to dark logo for light backgrounds
-      return "/logo-black.svg"
+      return "/quiet-logo-blackk.png"
     }
   }
 

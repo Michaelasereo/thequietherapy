@@ -9,47 +9,52 @@ import { Input } from "@/components/ui/input"
 import { Bell, Search } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { createClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { DashboardProvider } from "@/context/dashboard-context"
 import { DebugToggle } from "@/components/ui/debug-panel"
 import { GlobalStateProvider } from '@/context/global-state-context';
 import { useCrossDashboardSync } from '@/hooks/useCrossDashboardSync';
+import { useAuth } from '@/context/auth-context'
+import { NotificationBell } from '@/components/notifications/notification-bell'
+import { useRouter } from 'next/navigation'
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
+  console.log('🔍 DashboardLayout: Component rendered')
+  
   // Connect to global state
   useCrossDashboardSync('user');
   
-  // Get user data from context or use default
-  const [userName, setUserName] = React.useState("John");
+  // Get user data from auth context
+  const { user, loading, isAuthenticated } = useAuth();
+  const router = useRouter();
   
-  React.useEffect(() => {
-    // Try to get user from cookies first, then localStorage/sessionStorage
-    try {
-      // Get user data from cookies
-      const cookies = document.cookie.split(';');
-      const userCookie = cookies.find(cookie => cookie.trim().startsWith('trpi_user='));
-      
-      if (userCookie) {
-        const userData = userCookie.split('=')[1];
-        const user = JSON.parse(decodeURIComponent(userData));
-        const firstName = user.full_name ? user.full_name.split(' ')[0] : "John";
-        setUserName(firstName);
-        return;
-      }
-      
-      // Fallback to localStorage/sessionStorage
-      const storedUser = localStorage.getItem('trpi_user') || sessionStorage.getItem('trpi_user');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        const firstName = user.full_name ? user.full_name.split(' ')[0] : "John";
-        setUserName(firstName);
-      }
-    } catch (error) {
-      console.log('Using default user name');
-    }
-  }, []);
+  console.log('🔍 DashboardLayout: Auth state - loading:', loading, 'isAuthenticated:', isAuthenticated, 'user:', user)
+  
+  // Get user's first name for display
+  const userName = user?.full_name ? user.full_name.split(' ')[0] : "User";
+  
+  // Show loading state
+  if (loading) {
+    console.log('🔍 DashboardLayout: Showing loading state')
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Only redirect if not authenticated and not loading
+  if (!isAuthenticated && !loading) {
+    console.log('🔍 DashboardLayout: Not authenticated, redirecting to login')
+    router.push('/login');
+    return null;
+  }
+  
+  console.log('🔍 DashboardLayout: Rendering dashboard content')
   
   return (
     <SidebarProvider defaultOpen={true}>
@@ -85,7 +90,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             
             {/* User Info */}
             <div className="flex items-center gap-3">
-              <span className="text-gray-700 text-sm font-medium">Hello, {userName}</span>
+              <NotificationBell userId={user?.id || ''} userType={user?.user_type as any || "individual"} />
+              <span className="text-gray-700 text-sm font-medium">Welcome, {userName}!</span>
               <button className="p-1.5 text-gray-400 hover:text-gray-600">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5z" />

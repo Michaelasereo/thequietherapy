@@ -24,13 +24,13 @@ export async function therapistMagicLinkAction(_prevState: any, formData: FormDa
 
   try {
     // Create magic link for therapist
-    const result = await createMagicLink({
-      email: email.trim(),
-      type: 'login',
-      metadata: {
+    const result = await createMagicLink(
+      email.trim(),
+      'login',
+      {
         user_type: 'therapist'
       }
-    })
+    )
 
     if (result.success) {
       return { success: "Magic link sent! Check your email to log in." }
@@ -97,6 +97,12 @@ export async function therapistEnrollAction(_prevState: any, formData: FormData)
     const termsAccepted = formData.get("termsAccepted") === "on" || formData.get("termsAccepted") === "true"
 
     console.log("Form data received:", { name, email, phone, mdcnCode, specialization, languages, termsAccepted }) // Debug log
+
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email.trim())) {
+    return { error: "Please enter a valid email address." }
+  }
 
   if (
     !name ||
@@ -207,8 +213,28 @@ export async function therapistEnrollAction(_prevState: any, formData: FormData)
 
   console.log("Creating magic link for therapist...") // Debug log
   
-  // Create magic link for therapist login
-  const result = await createMagicLink({
+  // Create user record in users table for therapist
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .insert({
+      email: email.trim(),
+      full_name: name,
+      user_type: 'therapist',
+      is_verified: false, // Will be verified when they click the magic link
+      is_active: true, // Active by default, but availability controlled by approval
+      // No credits for therapists - they are service providers
+    })
+    .select()
+    .single()
+
+  if (userError) {
+    console.error('Error creating user record:', userError)
+    // Don't fail the enrollment if user creation fails - the verifyMagicLink function will handle it
+  } else {
+    console.log('User record created for therapist:', userData.id)
+  }
+  
+  console.log("About to call createMagicLink with data:", {
     email: email.trim(),
     type: 'signup',
     metadata: {
@@ -221,6 +247,21 @@ export async function therapistEnrollAction(_prevState: any, formData: FormData)
       languages
     }
   })
+  
+  // Create magic link for therapist login
+  const result = await createMagicLink(
+    email.trim(),
+    'signup',
+    {
+      first_name: name,
+      user_type: 'therapist',
+      therapist_id: therapist.id,
+      phone,
+      mdcn_code: mdcnCode,
+      specialization,
+      languages
+    }
+  )
 
   console.log("Magic link result:", result) // Debug log
 

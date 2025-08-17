@@ -1,148 +1,143 @@
-'use client';
+"use client"
 
-import Link from "next/link";
-import { useAdminSidebarState } from "@/hooks/useAdminDashboardState";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  Users, 
-  Shield, 
-  BarChart3, 
-  Settings, 
-  Bell, 
-  MessageSquare,
-  Database,
-  Activity,
-  Cog
-} from "lucide-react";
-
-interface SidebarMenuButtonProps {
-  href: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  isActive: boolean;
-  onClick: () => void;
-  badge?: number;
-}
-
-function SidebarMenuButton({ 
-  href, 
-  icon, 
-  children, 
-  isActive, 
-  onClick,
-  badge 
-}: SidebarMenuButtonProps) {
-  return (
-    <Link href={href}>
-      <Button
-        variant={isActive ? "secondary" : "ghost"}
-        className="w-full justify-start gap-3 h-12"
-        onClick={onClick}
-      >
-        {icon}
-        <span className="flex-1 text-left">{children}</span>
-        {badge && badge > 0 && (
-          <Badge variant="secondary" className="ml-auto">
-            {badge}
-          </Badge>
-        )}
-      </Button>
-    </Link>
-  );
-}
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { LogOut, Shield } from "lucide-react"
+import React from "react"
+import { Logo } from "@/components/ui/logo"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarSeparator,
+} from "@/components/ui/sidebar"
+import { adminSidebarGroups, adminBottomNavItems } from "@/lib/admin-data"
+import { Badge } from "@/components/ui/badge"
+import { useAdminSidebarState } from "@/hooks/useAdminDashboardState"
+import { cn } from "@/lib/utils"
 
 export default function AdminDashboardSidebar() {
+  const pathname = usePathname()
   const {
     activeItem,
     criticalAlerts,
     pendingActions,
-    setHover
-  } = useAdminSidebarState();
+    setHover,
+    handleItemClick,
+    handleItemToggle
+  } = useAdminSidebarState()
 
-  const menuItems = [
-    {
-      href: "/admin/dashboard",
-      icon: <Shield className="h-5 w-5" />,
-      label: "Overview",
-      key: "overview"
-    },
-    {
-      href: "/admin/dashboard/users",
-      icon: <Users className="h-5 w-5" />,
-      label: "Users",
-      key: "users"
-    },
-    {
-      href: "/admin/dashboard/system",
-      icon: <Database className="h-5 w-5" />,
-      label: "System",
-      key: "system"
-    },
-    {
-      href: "/admin/dashboard/analytics",
-      icon: <BarChart3 className="h-5 w-5" />,
-      label: "Analytics",
-      key: "analytics"
-    },
-    {
-      href: "/admin/dashboard/activity",
-      icon: <Activity className="h-5 w-5" />,
-      label: "Activity",
-      key: "activity"
-    },
-    {
-      href: "/admin/dashboard/settings",
-      icon: <Cog className="h-5 w-5" />,
-      label: "Settings",
-      key: "settings"
-    }
-  ];
+  // Simple isActive function using pathname
+  const isActive = (href: string) => pathname === href
+
+  const handleLogout = async () => {
+    // Add logout logic here
+    window.location.href = '/admin/login'
+  }
 
   return (
-    <div className="flex flex-col w-64 bg-sidebar-background text-sidebar-foreground border-r border-sidebar-border">
-      {/* Logo */}
-      <div className="p-6 border-b border-sidebar-border">
-        <h1 className="text-xl font-bold text-sidebar-foreground">TRPI Admin</h1>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
-        {menuItems.map((item) => (
-          <SidebarMenuButton
-            key={item.key}
-            href={item.href}
-            icon={item.icon}
-            isActive={activeItem === item.key}
-            onClick={() => {/* Handle click */}}
-          >
-            {item.label}
-          </SidebarMenuButton>
-        ))}
-      </nav>
-
-      {/* Communication */}
-      <div className="p-4 border-t border-sidebar-border space-y-2">
-        <SidebarMenuButton
-          href="/admin/dashboard/notifications"
-          icon={<Bell className="h-5 w-5" />}
-          isActive={activeItem === "notifications"}
-          onClick={() => {/* Handle click */}}
-          badge={criticalAlerts}
-        >
-          Notifications
-        </SidebarMenuButton>
-        
-        <SidebarMenuButton
-          href="/admin/dashboard/messages"
-          icon={<MessageSquare className="h-5 w-5" />}
-          isActive={activeItem === "messages"}
-          onClick={() => {/* Handle click */}}
-          badge={pendingActions}
-        >
-          Messages
-        </SidebarMenuButton>
-      </div>
-    </div>
-  );
+    <Sidebar 
+      className="bg-sidebar-background text-sidebar-foreground" 
+      collapsible="icon"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <SidebarHeader className="p-4">
+        <Link href="/admin/dashboard" className="flex items-center gap-2 font-bold text-2xl">
+          <Logo size="md" variant="light" />
+        </Link>
+      </SidebarHeader>
+      
+      <SidebarContent className="flex-1 overflow-auto">
+        <SidebarGroup>
+          <SidebarGroupContent>
+            {adminSidebarGroups.map((group, groupIndex) => (
+              <React.Fragment key={group.label}>
+                <SidebarGroupLabel className="text-sm font-medium text-sidebar-label-foreground px-2 py-2">
+                  <span className="group-data-[state=collapsed]:hidden">{group.label}</span>
+                </SidebarGroupLabel>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.href)}
+                        onClick={() => handleItemClick(item.name)}
+                        className={
+                          isActive(item.href)
+                            ? "bg-sidebar-active-bg text-sidebar-active-foreground hover:bg-sidebar-active-bg hover:text-sidebar-active-foreground"
+                            : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        }
+                      >
+                        <Link href={item.href}>
+                          <item.icon className="h-5 w-5" />
+                          <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
+                          {item.name === 'Therapists' && pendingActions > 0 && (
+                            <Badge variant="destructive" className="ml-auto text-xs">
+                              {pendingActions}
+                            </Badge>
+                          )}
+                          {item.name === 'Partners' && pendingActions > 0 && (
+                            <Badge variant="destructive" className="ml-auto text-xs">
+                              {pendingActions}
+                            </Badge>
+                          )}
+                          {item.name === 'Notifications' && criticalAlerts > 0 && (
+                            <Badge variant="destructive" className="ml-auto text-xs">
+                              {criticalAlerts}
+                            </Badge>
+                          )}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+                {groupIndex < adminSidebarGroups.length - 1 && (
+                  <SidebarSeparator className="my-2 mx-2 w-auto bg-sidebar-border" />
+                )}
+              </React.Fragment>
+            ))}
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      
+      <SidebarFooter className="p-4">
+        <SidebarSeparator className="my-2 mx-2 w-auto bg-sidebar-border" />
+        <SidebarMenu>
+          {adminBottomNavItems.map((item) => (
+            <SidebarMenuItem key={item.name}>
+              <SidebarMenuButton
+                asChild
+                isActive={isActive(item.href)}
+                onClick={() => handleItemClick(item.name)}
+                className={
+                  isActive(item.href)
+                    ? "bg-sidebar-active-bg text-sidebar-active-foreground hover:bg-sidebar-active-bg hover:text-sidebar-active-foreground"
+                    : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                }
+              >
+                <Link href={item.href}>
+                  <item.icon className="h-5 w-5" />
+                  <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleLogout}>
+              <LogOut className="h-5 w-5" />
+              <span className="group-data-[state=collapsed]:hidden">Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  )
 }

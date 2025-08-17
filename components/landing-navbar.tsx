@@ -37,7 +37,7 @@ export default function LandingNavbar() {
             <Link href="/signup">Get Started</Link>
           </Button>
           <Button asChild className="bg-black text-white hover:bg-gray-800 rounded-xl border border-white">
-            <Link href="/book">Book a Session</Link>
+            <Link href="/book-session">Book a Session</Link>
           </Button>
           <Button asChild variant="outline" className="border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl">
             <Link href="/test-login">Test Dashboards</Link>
@@ -59,7 +59,7 @@ export default function LandingNavbar() {
                 <Link href="/signup" className="text-lg font-semibold">
                   Get Started
                 </Link>
-                <Link href="/book" className="text-lg font-semibold">
+                <Link href="/book-session" className="text-lg font-semibold">
                   Book a Session
                 </Link>
               </div>

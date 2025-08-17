@@ -46,7 +46,7 @@ export default function WhyUs() {
         <div className="max-w-6xl mx-auto">
           <div className="relative">
             {/* Large Feature Preview Card */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-3xl p-8 md:p-12 shadow-lg">
+            <div className="bg-white border border-gray-200 rounded-3xl p-8 md:p-12 shadow-sm">
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 {/* Left Side Content */}
                 <div className="space-y-6">

@@ -1,172 +1,112 @@
+require('dotenv').config({ path: '.env.local' });
 const { createClient } = require('@supabase/supabase-js');
 
-// Initialize Supabase client with actual credentials
-const supabaseUrl = 'https://frzciymslvpohhyefmtr.supabase.co';
-const supabaseKey = 'sb_secret_IUgjaZMUy-Il7waL-hMmiw_awYJ2AyO';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 async function createTestTherapist() {
+  console.log('🧪 Creating Test Therapist...\n');
+
+  const testTherapist = {
+    email: 'test-therapist@example.com',
+    full_name: 'Dr. Test Therapist',
+    phone: '+2348012345678',
+    specialization: ['Anxiety', 'Depression'],
+    languages: ['English', 'Yoruba'],
+    status: 'pending', // Start with pending status
+    hourly_rate: 5000,
+    bio: 'Test therapist for authentication flow testing'
+  };
+
   try {
-    console.log('🚀 Creating test therapist...');
-
-    // Check if therapist already exists
-    const { data: existingUser, error: checkError } = await supabase
-      .from('global_users')
-      .select('id')
-      .eq('email', 'test.therapist@trpi.com')
+    // Step 1: Create therapist enrollment
+    console.log('1. Creating therapist enrollment...');
+    const { data: therapistData, error: therapistError } = await supabase
+      .from('therapist_enrollments')
+      .insert(testTherapist)
+      .select()
       .single();
 
-    let therapistId;
+    if (therapistError) {
+      if (therapistError.code === '23505') {
+        console.log('ℹ️  Therapist already exists, updating...');
+        const { data: updatedTherapist, error: updateError } = await supabase
+          .from('therapist_enrollments')
+          .update(testTherapist)
+          .eq('email', testTherapist.email)
+          .select()
+          .single();
 
-    if (existingUser) {
-      console.log('✅ Therapist already exists, using existing ID:', existingUser.id);
-      therapistId = existingUser.id;
-    } else {
-      // 1. Create therapist user in auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: 'test.therapist@trpi.com',
-        password: 'test123456',
-        email_confirm: true,
-        user_metadata: {
-          full_name: 'Dr. Sarah Johnson',
-          role: 'therapist'
+        if (updateError) {
+          console.error('❌ Error updating therapist:', updateError);
+          return;
         }
-      });
-
-      if (authError) {
-        console.error('❌ Error creating therapist user:', authError);
+        console.log('✅ Therapist updated:', updatedTherapist.id);
+      } else {
+        console.error('❌ Error creating therapist:', therapistError);
         return;
       }
-
-      therapistId = authData.user.id;
-      console.log('✅ Therapist user created:', therapistId);
-
-      // 2. Add therapist to global_users table
-      const { error: userError } = await supabase
-        .from('global_users')
-        .insert({
-          id: therapistId,
-          full_name: 'Dr. Sarah Johnson',
-          email: 'test.therapist@trpi.com',
-          role: 'therapist',
-          avatar_url: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face',
-          is_verified: true,
-          is_active: true
-        });
-
-      if (userError) {
-        console.error('❌ Error adding therapist to global_users:', userError);
-        return;
-      }
-
-      console.log('✅ Therapist added to global_users');
+    } else {
+      console.log('✅ Therapist created:', therapistData.id);
     }
 
-    // 3. Check if therapist exists in therapists table
-    const { data: existingTherapist, error: therapistCheckError } = await supabase
-      .from('therapists')
-      .select('user_id')
-      .eq('user_id', therapistId)
+    // Step 2: Create user record
+    console.log('\n2. Creating user record...');
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .insert({
+        email: testTherapist.email,
+        full_name: testTherapist.full_name,
+        user_type: 'therapist',
+        is_verified: true,
+        is_active: true
+      })
+      .select()
       .single();
 
-    if (!existingTherapist) {
-      // Add therapist to therapists table
-      const { error: therapistError } = await supabase
-        .from('therapists')
-        .insert({
-          user_id: therapistId,
-          specialization: 'Cognitive Behavioral Therapy, Anxiety, Depression',
-          experience_years: 8,
-          license_number: 'THR-2024-001',
-          is_verified: true,
-          hourly_rate: 50,
-          bio: 'Experienced therapist specializing in CBT for anxiety and depression. Committed to providing compassionate, evidence-based therapy.',
-          languages: ['English', 'Yoruba'],
-          education: 'PhD in Clinical Psychology, University of Lagos',
-          certifications: ['Licensed Clinical Psychologist', 'CBT Specialist']
-        });
+    if (userError) {
+      if (userError.code === '23505') {
+        console.log('ℹ️  User already exists, updating...');
+        const { data: updatedUser, error: updateError } = await supabase
+          .from('users')
+          .update({
+            user_type: 'therapist',
+            is_verified: true,
+            is_active: true
+          })
+          .eq('email', testTherapist.email)
+          .select()
+          .single();
 
-      if (therapistError) {
-        console.error('❌ Error adding therapist to therapists table:', therapistError);
-        return;
-      }
-
-      console.log('✅ Therapist added to therapists table');
-    } else {
-      console.log('✅ Therapist already exists in therapists table');
-    }
-
-    // 4. Check if availability slots exist
-    const { data: existingSlots, error: slotsCheckError } = await supabase
-      .from('therapist_availability')
-      .select('id')
-      .eq('therapist_id', therapistId)
-      .limit(1);
-
-    if (!existingSlots || existingSlots.length === 0) {
-      // Create availability slots for the next 7 days
-      const availabilitySlots = [];
-      const today = new Date();
-      
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
-        
-        // Create slots from 9 AM to 5 PM, every hour
-        for (let hour = 9; hour < 17; hour++) {
-          const startTime = new Date(date);
-          startTime.setHours(hour, 0, 0, 0);
-          
-          const endTime = new Date(date);
-          endTime.setHours(hour + 1, 0, 0, 0);
-          
-          availabilitySlots.push({
-            therapist_id: therapistId,
-            date: date.toISOString().split('T')[0],
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
-            is_available: true,
-            session_duration: 60
-          });
+        if (updateError) {
+          console.error('❌ Error updating user:', updateError);
+          return;
         }
-      }
-
-      const { error: availabilityError } = await supabase
-        .from('therapist_availability')
-        .insert(availabilitySlots);
-
-      if (availabilityError) {
-        console.error('❌ Error creating availability slots:', availabilityError);
+        console.log('✅ User updated:', updatedUser.id);
+      } else {
+        console.error('❌ Error creating user:', userError);
         return;
       }
-
-      console.log('✅ Availability slots created');
     } else {
-      console.log('✅ Availability slots already exist');
+      console.log('✅ User created:', userData.id);
     }
 
-    // 5. Update user credits to 3 (for testing)
-    const { error: creditsError } = await supabase
-      .from('global_users')
-      .update({ credits: 3 })
-      .eq('email', 'test.user@trpi.com'); // Update test user credits
-
-    if (creditsError) {
-      console.error('❌ Error updating user credits:', creditsError);
-    } else {
-      console.log('✅ Test user credits updated to 3');
-    }
-
-    console.log('🎉 Test therapist setup complete!');
-    console.log('📧 Email: test.therapist@trpi.com');
-    console.log('🔑 Password: test123456');
-    console.log('🆔 Therapist ID:', therapistId);
+    console.log('\n✅ Test therapist setup completed successfully!');
+    console.log('\n📋 Test Data:');
+    console.log(`   Email: ${testTherapist.email}`);
+    console.log(`   Name: ${testTherapist.full_name}`);
+    console.log(`   Status: ${testTherapist.status}`);
+    console.log(`   User Type: therapist`);
+    console.log(`   Verified: true`);
+    console.log(`   Active: true`);
 
   } catch (error) {
-    console.error('❌ Unexpected error:', error);
+    console.error('❌ Setup failed:', error);
   }
 }
 
-// Run the script
+// Run the setup
 createTestTherapist();

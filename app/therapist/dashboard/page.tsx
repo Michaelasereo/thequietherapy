@@ -3,12 +3,14 @@
 import { useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Video, CheckCircle2, TrendingUp, Clock, Users } from "lucide-react"
+import { CalendarIcon, Video, CheckCircle2, TrendingUp, Clock, Users, Mail, DollarSign } from "lucide-react"
 import { useTherapistData, useTherapistButtonState, useTherapistNotificationState } from "@/hooks/useTherapistDashboardState"
 import { useCrossDashboardBroadcast } from '@/hooks/useCrossDashboardSync';
 import { StatefulButton } from "@/components/ui/stateful-button"
 
 export default function TherapistDashboardPage() {
+  console.log('🔍 TherapistDashboardPage: Component rendered')
+  
   const { therapistInfo, sessionStats, clientStats, fetchTherapistData, fetchClients, fetchSessions, fetchStats } = useTherapistData()
   const { getPrimaryButtonState, setButtonLoading } = useTherapistButtonState()
   const { addSuccessNotification, addErrorNotification } = useTherapistNotificationState()
@@ -16,6 +18,7 @@ export default function TherapistDashboardPage() {
 
   // Fetch therapist data on component mount
   useEffect(() => {
+    console.log('🔍 TherapistDashboardPage: Fetching therapist data...')
     fetchTherapistData()
   }, []) // Empty dependency array to run only once
 
@@ -30,6 +33,9 @@ export default function TherapistDashboardPage() {
   useEffect(() => {
     fetchStats()
   }, []) // Empty dependency array to run only once
+
+  // Calculate earnings this month (₦5,000 per session)
+  const earningsThisMonth = (therapistInfo?.totalSessions || 0) * 5000
 
   // Dynamic data based on therapist info
   const therapistSummaryCards = [
@@ -46,14 +52,14 @@ export default function TherapistDashboardPage() {
       icon: CheckCircle2,
     },
     {
-      title: "Average Rating",
-      value: therapistInfo?.rating?.toString() || "4.8",
-      description: "Client satisfaction",
-      icon: TrendingUp,
+      title: "Earnings This Month",
+      value: `₦${earningsThisMonth.toLocaleString()}`,
+      description: "₦5,000 per session",
+      icon: DollarSign,
     },
     {
-      title: "Hourly Rate",
-      value: `$${therapistInfo?.hourlyRate || 150}`,
+      title: "Session Rate",
+      value: `₦${therapistInfo?.hourlyRate || 5000}`,
       description: "Per session",
       icon: Clock,
     },
@@ -83,8 +89,34 @@ export default function TherapistDashboardPage() {
 
   return (
     <div className="grid gap-6">
-      {/* Under Review Banner - Show only if not verified */}
-      {(!therapistInfo?.isVerified || !therapistInfo?.isActive) && (
+      {/* Email Verification Banner - Show if not verified */}
+      {!therapistInfo?.isVerified && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                  <Mail className="h-4 w-4 text-orange-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium text-orange-800">Email Verification Required</h3>
+                <p className="text-sm text-orange-700">
+                  Please check your email and click the verification link to complete your account setup.
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                  Unverified
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Admin Approval Banner - Show if verified but not approved */}
+      {therapistInfo?.isVerified && !therapistInfo?.isApproved && (
         <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -94,15 +126,15 @@ export default function TherapistDashboardPage() {
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="font-medium text-yellow-800">Application Under Review</h3>
+                <h3 className="font-medium text-yellow-800">Waiting for Admin Approval</h3>
                 <p className="text-sm text-yellow-700">
-                  Your therapist application is currently being reviewed by our admin team. 
-                  You'll be notified once your account is approved and activated.
+                  Your account has been verified! We're currently reviewing your application. 
+                  You'll be able to set availability and accept clients once approved.
                 </p>
               </div>
               <div className="flex-shrink-0">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  Pending
+                  Pending Approval
                 </span>
               </div>
             </div>
@@ -110,8 +142,8 @@ export default function TherapistDashboardPage() {
         </Card>
       )}
 
-      {/* Approved Banner - Show when verified and active */}
-      {therapistInfo?.isVerified && therapistInfo?.isActive && (
+      {/* Fully Approved Banner - Show when verified and approved */}
+      {therapistInfo?.isVerified && therapistInfo?.isApproved && (
         <Card className="border-green-200 bg-green-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -121,14 +153,14 @@ export default function TherapistDashboardPage() {
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="font-medium text-green-800">Account Approved!</h3>
+                <h3 className="font-medium text-green-800">Account Fully Approved!</h3>
                 <p className="text-sm text-green-700">
-                  Your therapist account has been approved and activated. You can now accept clients and start providing therapy sessions.
+                  Your therapist account has been approved and activated. You can now set availability and accept clients.
                 </p>
               </div>
               <div className="flex-shrink-0">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Active
+                  Approved
                 </span>
               </div>
             </div>
@@ -183,8 +215,8 @@ export default function TherapistDashboardPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <div className="flex-shrink-0">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <CalendarIcon className="h-5 w-5 text-blue-600" />
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <CalendarIcon className="h-5 w-5 text-gray-600" />
                           </div>
                         </div>
                         <div className="flex-1">

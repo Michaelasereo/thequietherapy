@@ -14,12 +14,7 @@ import {
   completeSession,
   SessionData 
 } from "@/lib/session-management"
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 export default function SessionsPage() {
   const router = useRouter()
@@ -190,8 +185,8 @@ export default function SessionsPage() {
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="bg-blue-100 p-2 rounded-full">
-                          <User className="h-4 w-4 text-blue-600" />
+                        <div className="bg-gray-100 p-2 rounded-full">
+                          <User className="h-4 w-4 text-gray-600" />
                         </div>
                         <div>
                           <h3 className="font-semibold">

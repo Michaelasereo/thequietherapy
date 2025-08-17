@@ -256,7 +256,7 @@ export function StatefulSessionCard({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'scheduled':
-        return 'text-blue-600 bg-blue-50'
+        return 'text-black bg-gray-50'
       case 'completed':
         return 'text-green-600 bg-green-50'
       case 'cancelled':

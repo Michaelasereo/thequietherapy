@@ -8,16 +8,14 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { Building2, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { useActionState } from "react"
-import { partnerMagicLinkAction } from "@/actions/partner-auth"
 
 export default function PartnerAuthPage() {
   const { toast } = useToast()
   const [isNewPartner, setIsNewPartner] = useState<boolean | null>(null)
   const [email, setEmail] = useState("")
-  const [state, formAction, isPending] = useActionState(partnerMagicLinkAction, null)
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleExistingLogin = () => {
+  const handleExistingLogin = async () => {
     if (!email.trim()) {
       toast({
         title: "Missing email",
@@ -27,25 +25,39 @@ export default function PartnerAuthPage() {
       return
     }
 
-    const fd = new FormData()
-    fd.append("email", email)
-    formAction(fd)
-  }
-
-  // Handle form state
-  if (state?.error) {
-    toast({
-      title: "Login Failed",
-      description: state.error,
-      variant: "destructive",
-    })
-  }
-
-  if (state?.success) {
-    toast({
-      title: "Magic Link Sent!",
-      description: state.success,
-    })
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/partner/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        toast({
+          title: "Magic Link Sent!",
+          description: data.message,
+        })
+        setEmail("") // Clear email after successful submission
+      } else {
+        toast({
+          title: "Login Failed",
+          description: data.error || "Failed to send magic link. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error sending magic link:', error)
+      toast({
+        title: "Login Failed",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -130,11 +142,21 @@ export default function PartnerAuthPage() {
                     placeholder="admin@yourcompany.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleExistingLogin()
+                      }
+                    }}
                   />
                 </div>
                 
-                <Button onClick={handleExistingLogin} className="w-full" disabled={isPending}>
-                  {isPending ? "Sending..." : "Send Magic Link"}
+                <Button 
+                  onClick={handleExistingLogin} 
+                  className="w-full" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Sending..." : "Send Magic Link"}
                 </Button>
                 
                 <div className="text-center text-sm text-muted-foreground">

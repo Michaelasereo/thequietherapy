@@ -422,7 +422,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           const sanitizedUserData = {
             id: typeof userData.id === 'string' ? userData.id : '',
             email: typeof userData.email === 'string' ? userData.email : '',
-            full_name: typeof userData.full_name === 'string' ? userData.full_name : '',
+            full_name: typeof userData.name === 'string' ? userData.name : (typeof userData.full_name === 'string' ? userData.full_name : ''),
             user_type: ['individual', 'therapist', 'partner', 'admin'].includes(userData.user_type) ? userData.user_type : 'individual',
             is_verified: typeof userData.is_verified === 'boolean' ? userData.is_verified : false,
             credits: typeof userData.credits === 'number' ? userData.credits : 1,

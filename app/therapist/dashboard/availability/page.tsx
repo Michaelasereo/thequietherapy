@@ -1,122 +1,56 @@
 "use client"
-import { useEffect, useState } from "react"
+
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
-
-const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const
-const sessionDurations = ["30", "45", "60"] as const // in minutes
-
-const formSchema = z.object({
-  availableDays: z.array(z.enum(daysOfWeek)).min(1, { message: "Please select at least one available day." }),
-  // Using string for time for simplicity, could be refined with a custom time picker component
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Invalid start time format (HH:MM)." }),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Invalid end time format (HH:MM)." }),
-  sessionDuration: z.enum(sessionDurations, { message: "Please select a session duration." }),
-  maxSessionsPerDay: z.coerce
-    .number()
-    .min(1, { message: "Must be at least 1 session per day." })
-    .max(20, { message: "Cannot exceed 20 sessions per day." }),
-})
-
-type AvailabilityFormValues = z.infer<typeof formSchema>
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Clock, AlertTriangle, CheckCircle2, Calendar } from "lucide-react"
+import { useTherapistData } from "@/hooks/useTherapistDashboardState"
+import { AvailabilitySchedule } from "@/components/availability-schedule"
 
 export default function TherapistAvailabilityPage() {
-  const { toast } = useToast()
+  const { therapistInfo, fetchTherapistData } = useTherapistData()
+  const [isActive, setIsActive] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [savedAvailability, setSavedAvailability] = useState<any[]>([])
 
-  const form = useForm<AvailabilityFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      startTime: "09:00",
-      endTime: "17:00",
-      sessionDuration: "60",
-      maxSessionsPerDay: 8,
-    },
-  })
-
-  // Load existing availability
   useEffect(() => {
-    fetch('/api/therapist/availability')
-      .then(response => response.json())
-      .then(data => {
-        if (data.success && data.availability) {
-          setSavedAvailability(data.availability)
-          // Update form with existing data
-          const availableDays = data.availability
-            .filter((day: any) => day.is_available)
-            .map((day: any) => {
-              const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-              return dayNames[day.day_of_week]
-            })
-          
-          if (availableDays.length > 0) {
-            form.setValue('availableDays', availableDays)
-            form.setValue('startTime', data.availability[0].start_time)
-            form.setValue('endTime', data.availability[0].end_time)
-            form.setValue('sessionDuration', data.availability[0].session_duration.toString())
-            form.setValue('maxSessionsPerDay', data.availability[0].max_sessions_per_day)
-          }
-        }
-      })
-      .catch(error => {
-        console.error('Error loading availability:', error)
-      })
-  }, [form])
+    fetchTherapistData()
+  }, [fetchTherapistData])
 
-  async function onSubmit(data: AvailabilityFormValues) {
+  useEffect(() => {
+    if (therapistInfo) {
+      setIsActive(therapistInfo.isActive)
+    }
+  }, [therapistInfo])
+
+  const handleToggleActive = async (checked: boolean) => {
+    if (!therapistInfo?.isApproved) {
+      return // Don't allow toggling if not approved
+    }
+
     setIsLoading(true)
     try {
-      // Convert form data to API format
-      const availability = daysOfWeek.map((day, index) => ({
-        dayOfWeek: index,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        isAvailable: data.availableDays.includes(day),
-        sessionDuration: parseInt(data.sessionDuration),
-        maxSessionsPerDay: data.maxSessionsPerDay
-      }))
-
       const response = await fetch('/api/therapist/availability', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ availability })
+        body: JSON.stringify({
+          isActive: checked
+        }),
       })
 
-      const result = await response.json()
-
-      if (result.success) {
-        toast({ 
-          title: "Availability Saved!", 
-          description: "Your availability settings have been updated." 
-        })
-        setSavedAvailability(result.data)
+      if (response.ok) {
+        setIsActive(checked)
+        // Refresh therapist data
+        fetchTherapistData()
       } else {
-        toast({ 
-          title: "Error", 
-          description: result.error || "Failed to save availability",
-          variant: "destructive"
-        })
+        console.error('Failed to update availability')
       }
     } catch (error) {
-      console.error('Error saving availability:', error)
-      toast({ 
-        title: "Error", 
-        description: "Failed to save availability",
-        variant: "destructive"
-      })
+      console.error('Error updating availability:', error)
     } finally {
       setIsLoading(false)
     }
@@ -124,117 +58,126 @@ export default function TherapistAvailabilityPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Availability</h2>
+      <div>
+        <h1 className="text-2xl font-semibold text-foreground">Availability Settings</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Manage your availability and visibility to clients
+        </p>
+      </div>
 
-      <Card className="shadow-sm">
+      {/* Approval Status Alert */}
+      {!therapistInfo?.isVerified && (
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800">
+            You need to verify your email before you can manage availability.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {therapistInfo?.isVerified && !therapistInfo?.isApproved && (
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <Clock className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            Your account is pending admin approval. You'll be able to set availability once approved.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {therapistInfo?.isVerified && therapistInfo?.isApproved && (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            Your account is approved! You can now manage your availability and accept clients.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Active/Inactive Toggle */}
+      <Card>
         <CardHeader>
-          <CardTitle>Set Your Weekly Hours</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Availability Status
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="mb-6">
-            <p className="text-sm text-muted-foreground mb-2">Select specific days to customize availability.</p>
-            <Calendar mode="multiple" selected={[]} onSelect={() => {}} className="rounded-md border inline-block" />
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="active-toggle" className="text-base font-medium">
+                Active for Client Bookings
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                When active, clients can see and book sessions with you. When inactive, you won't appear in client searches.
+              </p>
+            </div>
+            <Switch
+              id="active-toggle"
+              checked={isActive}
+              onCheckedChange={handleToggleActive}
+              disabled={!therapistInfo?.isApproved || isLoading}
+            />
           </div>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-muted-foreground">
-                      <th className="py-2 pr-4">Day</th>
-                      <th className="py-2 pr-4">Enabled</th>
-                      <th className="py-2 pr-4">Start</th>
-                      <th className="py-2 pr-4">End</th>
-                      <th className="py-2">Duration</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {daysOfWeek.map((day) => (
-                      <tr key={day} className="border-t">
-                        <td className="py-3 pr-4 font-medium">{day}</td>
-                        <td className="py-3 pr-4">
-                          <FormField
-                            control={form.control}
-                            name="availableDays"
-                            render={({ field }) => (
-                              <Checkbox
-                                checked={field.value?.includes(day)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), day])
-                                    : field.onChange(field.value?.filter((d: string) => d !== day))
-                                }}
-                              />
-                            )}
-                          />
-                        </td>
-                        <td className="py-3 pr-4">
-                          <FormField
-                            control={form.control}
-                            name="startTime"
-                            render={({ field }) => (
-                              <Input type="time" {...field} />
-                            )}
-                          />
-                        </td>
-                        <td className="py-3 pr-4">
-                          <FormField
-                            control={form.control}
-                            name="endTime"
-                            render={({ field }) => <Input type="time" {...field} />}
-                          />
-                        </td>
-                        <td className="py-3">
-                          <FormField
-                            control={form.control}
-                            name="sessionDuration"
-                            render={({ field }) => (
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="w-[140px]">
-                                    <SelectValue placeholder="Duration" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {sessionDurations.map((duration) => (
-                                    <SelectItem key={duration} value={duration}>
-                                      {duration} minutes
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="maxSessionsPerDay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Sessions Per Day</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="e.g., 8" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+          <div className="flex items-center gap-2 text-sm">
+            {isActive ? (
+              <>
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-green-700 font-medium">Active - Available for bookings</span>
+              </>
+            ) : (
+              <>
+                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                <span className="text-gray-600">Inactive - Not available for bookings</span>
+              </>
+            )}
+          </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Saving..." : "Save Availability"}
-              </Button>
-            </form>
-          </Form>
+          {!therapistInfo?.isApproved && (
+            <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md">
+              ⚠️ You need admin approval before you can set your availability status.
+            </p>
+          )}
         </CardContent>
       </Card>
+
+      {/* Availability Schedule */}
+      {therapistInfo?.isApproved && isActive && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Weekly Schedule</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AvailabilitySchedule />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Session Settings */}
+      {therapistInfo?.isApproved && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Session Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base font-medium">Session Duration</Label>
+                <p className="text-sm text-muted-foreground">Default session length</p>
+              </div>
+              <span className="text-sm font-medium">60 minutes</span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base font-medium">Hourly Rate</Label>
+                <p className="text-sm text-muted-foreground">Your session fee</p>
+              </div>
+              <span className="text-sm font-medium">₦{therapistInfo?.hourlyRate || 5000}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

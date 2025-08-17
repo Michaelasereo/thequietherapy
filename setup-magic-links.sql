@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS magic_links (
   email VARCHAR(255) NOT NULL,
   token TEXT NOT NULL UNIQUE,
   type VARCHAR(50) NOT NULL CHECK (type IN ('booking', 'login', 'signup')),
+  auth_type VARCHAR(50) NOT NULL CHECK (auth_type IN ('individual', 'therapist', 'partner', 'admin')),
   expires_at TIMESTAMP NOT NULL,
   used_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS magic_links (
 CREATE INDEX IF NOT EXISTS idx_magic_links_email ON magic_links(email);
 CREATE INDEX IF NOT EXISTS idx_magic_links_token ON magic_links(token);
 CREATE INDEX IF NOT EXISTS idx_magic_links_type ON magic_links(type);
+CREATE INDEX IF NOT EXISTS idx_magic_links_auth_type ON magic_links(auth_type);
 CREATE INDEX IF NOT EXISTS idx_magic_links_expires_at ON magic_links(expires_at);
 
 -- Enable Row Level Security

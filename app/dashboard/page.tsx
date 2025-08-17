@@ -9,7 +9,7 @@ import { StatefulStatsCard } from "@/components/ui/stateful-card"
 import { CalendarIcon, Video as VideoIcon, CheckCircle, CheckCircle2, TrendingUp, Clock, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import BookingProgress from "@/components/booking-progress"
 import BookingStep1 from "@/components/booking-step-1"
 import BookingStep2 from "@/components/booking-step-2"
@@ -17,6 +17,81 @@ import BookingStep3 from "@/components/booking-step-3"
 import { useDashboard } from "@/context/dashboard-context"
 import { useNotificationState } from "@/hooks/useDashboardState"
 import { useCrossDashboardBroadcast } from '@/hooks/useCrossDashboardSync';
+import { useAuth } from '@/context/auth-context'
+
+// Authentication check component
+function AuthCheck({ children }: { children: React.ReactNode }) {
+  const [authState, setAuthState] = useState<'loading' | 'authenticated' | 'error'>('loading')
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include', // Ensure cookies are sent
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success) {
+            setAuthState('authenticated')
+            return
+          }
+        }
+        
+        // Add a small delay before redirect to avoid race conditions
+        setTimeout(() => {
+          router.push('/login')
+        }, 100)
+        
+      } catch (error) {
+        console.error('Auth check error:', error)
+        setAuthState('error')
+      }
+    }
+
+    // Add a longer delay to ensure cookie is set and server is ready
+    setTimeout(() => {
+      checkAuth()
+    }, 500)
+  }, [router])
+
+  if (authState === 'error') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">Authentication Error</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (authState === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (authState === 'authenticated') {
+    return <>{children}</>
+  }
+
+  return null
+}
 
 // Twitter-style verification badge component
 function TwitterVerifiedBadge(props: React.SVGProps<SVGSVGElement>) {
@@ -81,10 +156,13 @@ function Video(props: React.SVGProps<SVGSVGElement>) {
 }
 
 function DashboardContent() {
+  console.log('🔍 DashboardContent: Component rendered')
+  
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const { state, fetchSessions } = useDashboard()
   const { addSuccessNotification } = useNotificationState()
+  const { user } = useAuth() // Get user from AuthContext instead of DashboardContext
   // const { broadcastEvent } = useCrossDashboardBroadcast();
   
   // Booking state
@@ -264,8 +342,8 @@ function DashboardContent() {
                 <h1 className="text-2xl font-semibold text-foreground">
                   Welcome, {(() => {
                     try {
-                      if (state.user && typeof state.user === 'object' && state.user.full_name && typeof state.user.full_name === 'string') {
-                        const firstName = state.user.full_name.split(' ')[0];
+                      if (user && typeof user === 'object' && user.full_name && typeof user.full_name === 'string') {
+                        const firstName = user.full_name.trim().split(' ')[0];
                         return firstName || 'User';
                       }
                       return 'User';
@@ -407,8 +485,8 @@ function DashboardContent() {
             )}
             <p>• New feature: Enhanced session notes are now available.</p>
             <p>• Platform update: Scheduled maintenance on October 5th, 2 AM - 4 AM UTC.</p>
-            {state.user && state.user.credits < 2 && (
-              <p>• Low credits alert: You have {state.user.credits} credits remaining. Consider purchasing more credits.</p>
+            {user && user.credits < 2 && (
+              <p>• Low credits alert: You have {user.credits} credits remaining. Consider purchasing more credits.</p>
             )}
           </div>
         </CardContent>
@@ -461,16 +539,20 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
+  console.log('🔍 DashboardPage: Main component rendered')
+  
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
+    <AuthCheck>
+      <Suspense fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
         </div>
-      </div>
-    }>
-      <DashboardContent />
-    </Suspense>
+      }>
+        <DashboardContent />
+      </Suspense>
+    </AuthCheck>
   )
 }

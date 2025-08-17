@@ -20,9 +20,10 @@ interface Step4TermsConditionsProps {
   onBack: () => void
   onSubmit: (data: TermsConditionsFormValues) => void
   isSubmitting: boolean
+  canEnroll?: boolean
 }
 
-export default function Step4TermsConditions({ onBack, onSubmit, isSubmitting }: Step4TermsConditionsProps) {
+export default function Step4TermsConditions({ onBack, onSubmit, isSubmitting, canEnroll = true }: Step4TermsConditionsProps) {
   const form = useForm<TermsConditionsFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -74,7 +75,7 @@ export default function Step4TermsConditions({ onBack, onSubmit, isSubmitting }:
           <Button type="button" variant="outline" onClick={onBack}>
             Back
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || !canEnroll}>
             {isSubmitting ? "Submitting..." : "Submit Enrollment"}
           </Button>
         </div>

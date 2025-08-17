@@ -325,7 +325,7 @@ export default function VideoCall({ sessionId, userId, userType, onEndCall }: Vi
               <div
                 className={`max-w-xs px-3 py-2 rounded-lg ${
                   message.sender === userId
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-black text-white'
                     : 'bg-gray-700 text-white'
                 }`}
               >
@@ -346,7 +346,7 @@ export default function VideoCall({ sessionId, userId, userType, onEndCall }: Vi
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
               placeholder="Type a message..."
-              className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
             />
             <Button onClick={sendMessage} size="sm">
               Send

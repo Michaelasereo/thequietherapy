@@ -2,164 +2,316 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Simplified session management functions
 export interface SessionData {
-  id: string
+  id?: string
   user_id: string
   therapist_id: string
   start_time: string
   end_time: string
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
-  session_type: string
+  duration?: number
+  session_type?: string
+  status?: string
   notes?: string
-  room_url?: string
-  created_at: string
-  updated_at: string
+  session_url?: string
+  recording_url?: string
 }
 
-export interface SessionNote {
-  id: string
-  session_id: string
-  therapist_id: string
-  content: string
-  created_at: string
+export interface AvailabilitySlot {
+  day_of_week: number
+  start_time: string
+  end_time: string
+  is_available: boolean
 }
 
-// Book a session
-export async function bookSession(
-  userId: string,
+// Check if therapist is available for a specific time slot
+export async function checkTherapistAvailability(
   therapistId: string,
-  startTime: string,
-  endTime: string,
-  sessionType: string = 'therapy'
-): Promise<SessionData | null> {
+  startTime: Date,
+  endTime: Date
+): Promise<boolean> {
   try {
-    // First, check if user has enough credits
-    const { data: userData, error: userError } = await supabase
-      .from('global_users')
-      .select('credits')
-      .eq('id', userId)
-      .single()
+    const dayOfWeek = startTime.getDay() // 0 = Sunday, 6 = Saturday
+    const startTimeStr = startTime.toTimeString().split(' ')[0]
+    const endTimeStr = endTime.toTimeString().split(' ')[0]
 
-    if (userError || !userData) {
-      throw new Error('Failed to fetch user credits')
-    }
-
-    if (userData.credits < 1) {
-      throw new Error('Insufficient credits. You need at least 1 credit to book a session.')
-    }
-
-    // Check if the time slot is available
-    const { data: availabilityData, error: availabilityError } = await supabase
+    // Check if therapist has availability for this day and time
+    const { data: availability, error } = await supabase
       .from('therapist_availability')
       .select('*')
       .eq('therapist_id', therapistId)
-      .eq('start_time', startTime)
+      .eq('day_of_week', dayOfWeek)
       .eq('is_available', true)
+      .gte('start_time', startTimeStr)
+      .lte('end_time', endTimeStr)
       .single()
 
-    if (availabilityError || !availabilityData) {
-      throw new Error('Selected time slot is not available')
+    if (error || !availability) {
+      return false
+    }
+
+    // Check for conflicting sessions
+    const { data: conflicts, error: conflictError } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('therapist_id', therapistId)
+      .in('status', ['scheduled', 'in_progress'])
+      .or(`start_time.lte.${startTime.toISOString()},end_time.gte.${endTime.toISOString()}`)
+
+    if (conflictError) {
+      console.error('Error checking conflicts:', conflictError)
+      return false
+    }
+
+    return conflicts.length === 0
+  } catch (error) {
+    console.error('Error checking therapist availability:', error)
+    return false
+  }
+}
+
+// Get available time slots for a therapist on a specific date
+export async function getAvailableSlots(
+  therapistId: string,
+  date: Date,
+  duration: number = 60
+): Promise<Array<{ start_time: string; end_time: string }>> {
+  try {
+    const dayOfWeek = date.getDay()
+    const dateStr = date.toISOString().split('T')[0]
+
+    // Get therapist availability for this day
+    const { data: availability, error } = await supabase
+      .from('therapist_availability')
+      .select('*')
+      .eq('therapist_id', therapistId)
+      .eq('day_of_week', dayOfWeek)
+      .eq('is_available', true)
+      .order('start_time')
+
+    if (error || !availability || availability.length === 0) {
+      return []
+    }
+
+    const availableSlots: Array<{ start_time: string; end_time: string }> = []
+
+    for (const slot of availability) {
+      const slotStart = new Date(`${dateStr}T${slot.start_time}`)
+      const slotEnd = new Date(`${dateStr}T${slot.end_time}`)
+
+      // Generate time slots within the availability window
+      let currentStart = slotStart
+      while (currentStart.getTime() + duration * 60000 <= slotEnd.getTime()) {
+        const currentEnd = new Date(currentStart.getTime() + duration * 60000)
+
+        // Check if this slot conflicts with existing sessions
+        const { data: conflicts, error: conflictError } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('therapist_id', therapistId)
+          .in('status', ['scheduled', 'in_progress'])
+          .or(`start_time.lte.${currentStart.toISOString()},end_time.gte.${currentEnd.toISOString()}`)
+
+        if (!conflictError && conflicts.length === 0) {
+          availableSlots.push({
+            start_time: currentStart.toISOString(),
+            end_time: currentEnd.toISOString()
+          })
+        }
+
+        currentStart = new Date(currentStart.getTime() + duration * 60000)
+      }
+    }
+
+    return availableSlots
+  } catch (error) {
+    console.error('Error getting available slots:', error)
+    return []
+  }
+}
+
+// Book a session
+export async function bookSession(sessionData: SessionData): Promise<{ success: boolean; session?: any; error?: string }> {
+  try {
+    // Check if therapist is available
+    const isAvailable = await checkTherapistAvailability(
+      sessionData.therapist_id,
+      new Date(sessionData.start_time),
+      new Date(sessionData.end_time)
+    )
+
+    if (!isAvailable) {
+      return { success: false, error: 'Therapist is not available for this time slot' }
+    }
+
+    // Check if user has enough credits (simplified check)
+    const { data: user, error: userError } = await supabase
+      .from('individual_auth')
+      .select('credits')
+      .eq('user_id', sessionData.user_id)
+      .single()
+
+    if (userError || !user || user.credits < 1) {
+      return { success: false, error: 'Insufficient credits' }
     }
 
     // Create the session
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('global_sessions')
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
       .insert({
-        user_id: userId,
-        therapist_id: therapistId,
-        start_time: startTime,
-        end_time: endTime,
-        status: 'scheduled',
-        session_type: sessionType,
-        room_url: `https://meet.daily.co/${Date.now()}-${userId}-${therapistId}`
+        ...sessionData,
+        status: sessionData.status || 'scheduled',
+        duration: sessionData.duration || 60,
+        session_type: sessionData.session_type || 'video'
       })
       .select()
       .single()
 
     if (sessionError) {
-      throw new Error('Failed to create session')
+      console.error('Error creating session:', sessionError)
+      return { success: false, error: 'Failed to book session' }
     }
 
-    // Deduct 1 credit from user
-    const { error: creditError } = await supabase
-      .from('global_users')
-      .update({ credits: userData.credits - 1 })
-      .eq('id', userId)
-
-    if (creditError) {
-      console.error('Failed to deduct credits:', creditError)
-      // Note: In production, you might want to rollback the session creation
-    }
-
-    // Mark the availability slot as booked
+    // Deduct credits from user
     await supabase
-      .from('therapist_availability')
-      .update({ is_available: false })
-      .eq('id', availabilityData.id)
+      .from('individual_auth')
+      .update({ credits: user.credits - 1 })
+      .eq('user_id', sessionData.user_id)
 
-    return sessionData
+    return { success: true, session }
   } catch (error) {
     console.error('Error booking session:', error)
-    throw error
+    return { success: false, error: 'Internal server error' }
   }
 }
 
-// Get user's sessions
+// Get sessions for a user or therapist
+export async function getSessions(
+  userId?: string,
+  therapistId?: string,
+  status?: string
+): Promise<Array<any>> {
+  try {
+    let query = supabase
+      .from('sessions')
+      .select('*')
+      .order('start_time', { ascending: true })
+
+    if (userId) {
+      query = query.eq('user_id', userId)
+    }
+
+    if (therapistId) {
+      query = query.eq('therapist_id', therapistId)
+    }
+
+    if (status) {
+      query = query.eq('status', status)
+    }
+
+    const { data: sessions, error } = await query
+
+    if (error) {
+      console.error('Error fetching sessions:', error)
+      return []
+    }
+
+    return sessions || []
+  } catch (error) {
+    console.error('Error getting sessions:', error)
+    return []
+  }
+}
+
+// Update session status
+export async function updateSessionStatus(
+  sessionId: string,
+  status: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('sessions')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', sessionId)
+
+    if (error) {
+      console.error('Error updating session status:', error)
+      return { success: false, error: 'Failed to update session status' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating session status:', error)
+    return { success: false, error: 'Internal server error' }
+  }
+}
+
+// Get sessions for a specific user
 export async function getUserSessions(userId: string): Promise<SessionData[]> {
   try {
-    const { data, error } = await supabase
-      .from('global_sessions')
-      .select(`
-        *,
-        therapist:therapist_id (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
+    const { data: sessions, error } = await supabase
+      .from('sessions')
+      .select('*')
       .eq('user_id', userId)
       .order('start_time', { ascending: false })
 
     if (error) {
-      throw error
+      console.error('Error fetching user sessions:', error)
+      return []
     }
 
-    return data || []
+    return sessions || []
   } catch (error) {
-    console.error('Error fetching user sessions:', error)
+    console.error('Error getting user sessions:', error)
     return []
   }
 }
 
-// Get upcoming sessions
+// Get upcoming sessions for a user
 export async function getUpcomingSessions(userId: string): Promise<SessionData[]> {
   try {
     const now = new Date().toISOString()
-    const { data, error } = await supabase
-      .from('global_sessions')
-      .select(`
-        *,
-        therapist:therapist_id (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
+    const { data: sessions, error } = await supabase
+      .from('sessions')
+      .select('*')
       .eq('user_id', userId)
       .gte('start_time', now)
+      .in('status', ['scheduled', 'confirmed'])
       .order('start_time', { ascending: true })
 
     if (error) {
-      throw error
+      console.error('Error fetching upcoming sessions:', error)
+      return []
     }
 
-    return data || []
+    return sessions || []
   } catch (error) {
-    console.error('Error fetching upcoming sessions:', error)
+    console.error('Error getting upcoming sessions:', error)
     return []
+  }
+}
+
+// Get a specific session by ID
+export async function getSessionById(sessionId: string): Promise<SessionData | null> {
+  try {
+    const { data: session, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single()
+
+    if (error) {
+      console.error('Error fetching session by ID:', error)
+      return null
+    }
+
+    return session
+  } catch (error) {
+    console.error('Error getting session by ID:', error)
+    return null
   }
 }
 
@@ -167,7 +319,7 @@ export async function getUpcomingSessions(userId: string): Promise<SessionData[]
 export async function joinSession(sessionId: string): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('global_sessions')
+      .from('sessions')
       .update({ 
         status: 'in_progress',
         updated_at: new Date().toISOString()
@@ -175,7 +327,8 @@ export async function joinSession(sessionId: string): Promise<boolean> {
       .eq('id', sessionId)
 
     if (error) {
-      throw error
+      console.error('Error joining session:', error)
+      return false
     }
 
     return true
@@ -185,11 +338,11 @@ export async function joinSession(sessionId: string): Promise<boolean> {
   }
 }
 
-// Complete a session
+// Complete a session (update status to completed)
 export async function completeSession(sessionId: string): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('global_sessions')
+      .from('sessions')
       .update({ 
         status: 'completed',
         updated_at: new Date().toISOString()
@@ -197,92 +350,13 @@ export async function completeSession(sessionId: string): Promise<boolean> {
       .eq('id', sessionId)
 
     if (error) {
-      throw error
+      console.error('Error completing session:', error)
+      return false
     }
 
     return true
   } catch (error) {
     console.error('Error completing session:', error)
     return false
-  }
-}
-
-// Add session note (for therapist)
-export async function addSessionNote(
-  sessionId: string,
-  therapistId: string,
-  content: string
-): Promise<SessionNote | null> {
-  try {
-    const { data, error } = await supabase
-      .from('session_notes')
-      .insert({
-        session_id: sessionId,
-        therapist_id: therapistId,
-        content: content
-      })
-      .select()
-      .single()
-
-    if (error) {
-      throw error
-    }
-
-    return data
-  } catch (error) {
-    console.error('Error adding session note:', error)
-    return null
-  }
-}
-
-// Get session notes
-export async function getSessionNotes(sessionId: string): Promise<SessionNote[]> {
-  try {
-    const { data, error } = await supabase
-      .from('session_notes')
-      .select('*')
-      .eq('session_id', sessionId)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      throw error
-    }
-
-    return data || []
-  } catch (error) {
-    console.error('Error fetching session notes:', error)
-    return []
-  }
-}
-
-// Get session by ID
-export async function getSessionById(sessionId: string): Promise<SessionData | null> {
-  try {
-    const { data, error } = await supabase
-      .from('global_sessions')
-      .select(`
-        *,
-        therapist:therapist_id (
-          id,
-          full_name,
-          avatar_url
-        ),
-        user:user_id (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq('id', sessionId)
-      .single()
-
-    if (error) {
-      throw error
-    }
-
-    return data
-  } catch (error) {
-    console.error('Error fetching session:', error)
-    return null
   }
 }

@@ -8,12 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, User, Phone, PhoneOff, Loader2 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { getSessionById, completeSession, SessionData } from "@/lib/session-management"
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 export default function SessionPage() {
   const params = useParams()
@@ -199,8 +194,8 @@ export default function SessionPage() {
           <CardContent>
             {!isInCall ? (
               <div className="text-center py-12">
-                <div className="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <Phone className="h-8 w-8 text-blue-600" />
+                <div className="bg-gray-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <Phone className="h-8 w-8 text-gray-600" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Ready to Start Session</h3>
                 <p className="text-muted-foreground mb-6">

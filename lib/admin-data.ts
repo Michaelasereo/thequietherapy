@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Activity
 } from "lucide-react"
+import { supabase } from './supabase'
 
 // Admin Dashboard Sidebar Navigation
 export const adminSidebarGroups = [
@@ -26,10 +27,9 @@ export const adminSidebarGroups = [
   {
     label: "User Management",
     items: [
-      { name: "All Users", href: "/admin/dashboard/users", icon: Users },
+      { name: "Users", href: "/admin/dashboard/users", icon: Users },
       { name: "Therapists", href: "/admin/dashboard/therapists", icon: UserCheck },
       { name: "Partners", href: "/admin/dashboard/partners", icon: Building2 },
-      { name: "Pending Verifications", href: "/admin/dashboard/verifications", icon: AlertTriangle },
     ],
   },
   {
@@ -54,62 +54,70 @@ export const adminBottomNavItems = [
   { name: "Profile", href: "/admin/dashboard/profile", icon: Shield },
 ]
 
-// Admin Dashboard Summary Data
+// Note: Data fetching functions have been moved to API routes for security
+// These functions should be called from server components or API routes
+// that have access to the service role key
+
+// HIPAA Compliance Settings
+export const hipaaComplianceSettings = {
+  dataEncryption: {
+    enabled: true,
+    algorithm: 'AES-256-GCM',
+    keyRotationDays: 90,
+    encryptedFields: ['medical_history', 'biodata', 'session_notes', 'payment_info']
+  },
+  auditLogging: {
+    enabled: true,
+    retentionDays: 2555, // 7 years as per HIPAA
+    logEvents: ['login', 'logout', 'data_access', 'data_modification', 'data_export', 'session_access']
+  },
+  accessControl: {
+    twoFactorAuth: true,
+    sessionTimeout: 30, // minutes
+    maxLoginAttempts: 5,
+    passwordComplexity: true,
+    ipWhitelist: false
+  },
+  dataRetention: {
+    patientData: 2555, // 7 years
+    sessionRecords: 2555, // 7 years
+    auditLogs: 2555, // 7 years
+    backupRetention: 365 // 1 year
+  },
+  breachNotification: {
+    enabled: true,
+    notificationTimeframe: 60, // days
+    contactEmail: 'privacy@trpi.com'
+  }
+}
+
+// Utility functions
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+  
+  if (diffInMinutes < 1) return 'Just now'
+  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`
+  if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`
+  return `${Math.floor(diffInMinutes / 1440)} days ago`
+}
+
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString()
+}
+
+// Export default data for fallback
 export const adminSummary = {
-  totalUsers: 1250,
-  totalTherapists: 45,
-  totalPartners: 28,
-  totalSessions: 3450,
-  pendingVerifications: 12,
-  totalRevenue: 2500000,
-  activeSessions: 23,
-  platformHealth: "Excellent"
+  totalUsers: 0,
+  totalTherapists: 0,
+  totalPartners: 0,
+  totalSessions: 0,
+  pendingVerifications: 0,
+  totalRevenue: 0,
+  activeSessions: 0,
+  platformHealth: "Unknown"
 }
 
-// Mock data for admin dashboard
-export const recentActivities = [
-  { id: "1", type: "user_registration", user: "John Doe", time: "2 minutes ago", status: "completed" },
-  { id: "2", type: "therapist_verification", user: "Dr. Sarah Johnson", time: "15 minutes ago", status: "pending" },
-  { id: "3", type: "partner_onboarding", user: "TechCorp Solutions", time: "1 hour ago", status: "completed" },
-  { id: "4", type: "payment_processed", user: "Partner XYZ", time: "2 hours ago", status: "completed" },
-  { id: "5", type: "session_completed", user: "Session #1234", time: "3 hours ago", status: "completed" },
-]
-
-export const pendingVerifications = [
-  { id: "v1", type: "therapist", name: "Dr. Emily White", email: "emily@example.com", submitted: "2024-01-15", status: "pending" },
-  { id: "v2", type: "therapist", name: "Dr. Michael Brown", email: "michael@example.com", submitted: "2024-01-14", status: "pending" },
-  { id: "v3", type: "partner", name: "HealthCorp Ltd", email: "admin@healthcorp.com", submitted: "2024-01-13", status: "pending" },
-]
-
-export const platformStats = {
-  dailyActiveUsers: 450,
-  weeklyActiveUsers: 1200,
-  monthlyActiveUsers: 3800,
-  sessionCompletionRate: 94.5,
-  averageSessionDuration: 52,
-  userSatisfactionScore: 4.8,
-  therapistRetentionRate: 96.2,
-  partnerRetentionRate: 89.5
-}
-
-export const revenueData = {
-  monthlyRevenue: 2500000,
-  previousMonthRevenue: 2200000,
-  growthRate: 13.6,
-  topRevenueSources: [
-    { source: "Individual Sessions", amount: 1200000, percentage: 48 },
-    { source: "Partner Subscriptions", amount: 800000, percentage: 32 },
-    { source: "Premium Features", amount: 300000, percentage: 12 },
-    { source: "Other", amount: 200000, percentage: 8 },
-  ]
-}
-
-export const systemHealth = {
-  uptime: 99.9,
-  responseTime: 245,
-  errorRate: 0.1,
-  activeConnections: 1250,
-  serverLoad: 45,
-  databaseHealth: "Optimal",
-  cacheHitRate: 92.5
-}
+export const recentActivities = []
+export const pendingVerifications = []

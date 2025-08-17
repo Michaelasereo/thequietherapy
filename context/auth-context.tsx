@@ -1,13 +1,8 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import { User } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
+import Cookies from 'js-cookie'
 
 interface UserProfile {
   id: string
@@ -20,158 +15,192 @@ interface UserProfile {
   is_active: boolean
   created_at: string
   updated_at: string
+  last_login_at?: string
+  avatar_url?: string
 }
 
 interface AuthContextType {
-  user: User | null
-  profile: UserProfile | null
+  user: UserProfile | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  signUp: (email: string, password: string, fullName: string) => Promise<{ success: boolean; error?: string }>
-  signOut: () => Promise<void>
-  refreshProfile: () => Promise<void>
+  isAuthenticated: boolean
+  login: (email: string) => Promise<{ success: boolean; error?: string }>
+  signup: (email: string, fullName: string) => Promise<{ success: boolean; error?: string }>
+  logout: () => Promise<void>
+  refreshUser: () => Promise<void>
+  validateSession: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Get user profile from database
-  const getUserProfile = async (userId: string) => {
+  // Validate session from cookie
+  const validateSession = async (): Promise<boolean> => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (error) {
-        console.error('Error fetching profile:', error)
-        return null
+      const userCookie = Cookies.get('trpi_user')
+      
+      if (!userCookie) {
+        return false
+      }
+      
+      let userData
+      try {
+        userData = JSON.parse(userCookie)
+      } catch (parseError) {
+        return false
+      }
+      
+      const sessionToken = userData.session_token
+      if (!sessionToken) {
+        return false
       }
 
-      return data
-    } catch (error) {
-      console.error('Error fetching profile:', error)
-      return null
-    }
-  }
-
-  // Sign in function
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Use direct API call to /api/auth/me for validation
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
       })
-
-      if (error) {
-        return { success: false, error: error.message }
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setUser(data.user)
+          return true
+        }
       }
-
-      if (data.user) {
-        const userProfile = await getUserProfile(data.user.id)
-        setProfile(userProfile)
-      }
-
-      return { success: true }
+      
+      Cookies.remove('trpi_user')
+      return false
     } catch (error) {
-      return { success: false, error: 'Sign in failed' }
+      console.error('Session validation error:', error)
+      Cookies.remove('trpi_user')
+      return false
     }
   }
 
-  // Sign up function
-  const signUp = async (email: string, password: string, fullName: string) => {
+  // Refresh user data
+  const refreshUser = async () => {
+    const isValid = await validateSession()
+    if (!isValid) {
+      setUser(null)
+    }
+  }
+
+  // Login function
+  const login = async (email: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ email }),
       })
 
-      if (error) {
-        return { success: false, error: error.message }
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        return { success: true }
+      } else {
+        return { success: false, error: data.error || 'Login failed' }
       }
-
-      if (data.user) {
-        // Create user profile
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            email: email,
-            full_name: fullName,
-            user_type: 'individual',
-            is_verified: false,
-            credits: 10,
-            package_type: 'Basic'
-          })
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError)
-        }
-
-        const userProfile = await getUserProfile(data.user.id)
-        setProfile(userProfile)
-      }
-
-      return { success: true }
     } catch (error) {
-      return { success: false, error: 'Sign up failed' }
+      console.error('Login error:', error)
+      return { success: false, error: 'Network error' }
     }
   }
 
-  // Sign out function
-  const signOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setProfile(null)
-  }
+  // Signup function
+  const signup = async (email: string, fullName: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, fullName }),
+      })
 
-  // Refresh profile
-  const refreshProfile = async () => {
-    if (user) {
-      const userProfile = await getUserProfile(user.id)
-      setProfile(userProfile)
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        return { success: true }
+      } else {
+        return { success: false, error: data.error || 'Signup failed' }
+      }
+    } catch (error) {
+      console.error('Signup error:', error)
+      return { success: false, error: 'Network error' }
     }
   }
 
-  // Listen for auth changes
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null)
-        
-        if (session?.user) {
-          const userProfile = await getUserProfile(session.user.id)
-          setProfile(userProfile)
-        } else {
-          setProfile(null)
+  // Logout function
+  const logout = async () => {
+    try {
+      const userCookie = Cookies.get('trpi_user')
+      if (userCookie) {
+        const userData = JSON.parse(userCookie)
+        const sessionToken = userData.session_token
+
+        if (sessionToken) {
+          // Invalidate session in database
+          await supabase.rpc('invalidate_session', { p_session_token: sessionToken })
         }
-        
+      }
+
+      // Remove cookie
+      Cookies.remove('trpi_user')
+      setUser(null)
+      console.log('User logged out successfully')
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Still remove cookie even if database call fails
+      Cookies.remove('trpi_user')
+      setUser(null)
+    }
+  }
+
+  // Initialize auth state
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        // Try multiple times with increasing delays
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          // Add delay that increases with each attempt
+          const delay = attempt * 500 // 500ms, 1000ms, 1500ms
+          await new Promise(resolve => setTimeout(resolve, delay))
+          
+          const isValid = await validateSession()
+          
+          if (isValid) {
+            break
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error)
+      } finally {
         setLoading(false)
       }
-    )
-
-    return () => subscription.unsubscribe()
+    }
+    
+    // Start initialization immediately
+    initAuth()
   }, [])
 
   return (
     <AuthContext.Provider value={{
       user,
-      profile,
       loading,
-      signIn,
-      signUp,
-      signOut,
-      refreshProfile
+      isAuthenticated: !!user,
+      login,
+      signup,
+      logout,
+      refreshUser,
+      validateSession
     }}>
       {children}
     </AuthContext.Provider>

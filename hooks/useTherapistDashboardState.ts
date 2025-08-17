@@ -384,6 +384,7 @@ export function useTherapistData() {
       specialization: state.therapist.specialization,
       licenseNumber: state.therapist.license_number,
       isVerified: state.therapist.is_verified,
+      isApproved: state.therapist.status === 'approved',
       isActive: state.therapist.is_active,
       rating: state.therapist.rating,
       totalSessions: state.therapist.total_sessions,

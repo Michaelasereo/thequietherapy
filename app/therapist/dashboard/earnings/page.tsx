@@ -6,7 +6,7 @@ export default function TherapistEarningsPage() {
   const therapistSummaryCards = [
     {
       title: "Total Earnings",
-      value: "$2,450"
+      value: "₦122,500"
     }
   ]
 
@@ -15,33 +15,33 @@ export default function TherapistEarningsPage() {
       id: "t1",
       date: "2024-09-15",
       description: "CBT Session - Sarah Johnson",
-      amount: 150.00,
+      amount: 5000.00,
       type: "credit"
     },
     {
       id: "t2", 
       date: "2024-09-14",
       description: "Trauma Therapy - Michael Chen",
-      amount: 180.00,
+      amount: 5000.00,
       type: "credit"
     },
     {
       id: "t3",
       date: "2024-09-13", 
       description: "Mindfulness Session - Lisa Wang",
-      amount: 120.00,
+      amount: 5000.00,
       type: "credit"
     },
     {
       id: "t4",
       date: "2024-09-12",
       description: "Platform Fee",
-      amount: 15.00,
+      amount: 500.00,
       type: "debit"
     }
   ]
 
-  const mtd = therapistSummaryCards.find((c) => c.title.includes("Earnings"))?.value ?? "$0"
+  const mtd = therapistSummaryCards.find((c) => c.title.includes("Earnings"))?.value ?? "₦0"
 
   return (
     <div className="space-y-6">
@@ -76,7 +76,7 @@ export default function TherapistEarningsPage() {
                   <TableCell>{t.date}</TableCell>
                   <TableCell>{t.description}</TableCell>
                   <TableCell className={`text-right ${t.type === "debit" ? "text-red-600" : "text-green-600"}`}>
-                    {t.type === "debit" ? "-" : "+"}${t.amount.toFixed(2)}
+                    {t.type === "debit" ? "-" : "+"}₦{t.amount.toLocaleString()}
                   </TableCell>
                 </TableRow>
               ))}

@@ -16,10 +16,16 @@ import { TherapistDashboardProvider } from "@/context/therapist-dashboard-contex
 import { GlobalStateProvider } from '@/context/global-state-context';
 import { useCrossDashboardSync } from '@/hooks/useCrossDashboardSync';
 import { DebugToggle } from "@/components/ui/debug-panel"
+import { NotificationBell } from '@/components/notifications/notification-bell'
+import { useAuth } from '@/context/auth-context'
 
 function TherapistDashboardLayoutContent({ children }: { children: React.ReactNode }) {
+  console.log('🔍 TherapistDashboardLayout: Rendering layout content')
   // Connect to global state
   useCrossDashboardSync('therapist');
+  
+  // Get user data from auth context
+  const { user } = useAuth();
   
   return (
     <SidebarProvider defaultOpen={true}>
@@ -42,9 +48,7 @@ function TherapistDashboardLayoutContent({ children }: { children: React.ReactNo
                   />
                 </div>
               </form>
-              <Button variant="outline" size="icon">
-                <Bell className="h-4 w-4" />
-              </Button>
+              <NotificationBell userId={user?.id || ''} userType={user?.user_type as any || "therapist"} />
               <Avatar>
                 <AvatarImage src="/placeholder-user.jpg" />
                 <AvatarFallback>TH</AvatarFallback>

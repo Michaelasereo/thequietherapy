@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, startTransition } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,6 +28,7 @@ const institutionTypes = [
 export default function PartnerOnboardingPage() {
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [state, formAction, isPending] = useActionState(partnerOnboardingAction, null)
   const [formData, setFormData] = useState({
     organizationName: "",
@@ -44,36 +45,38 @@ export default function PartnerOnboardingPage() {
     industry: ""
   })
 
-  const progress = (currentStep / 3) * 100
+  const progress = (currentStep / 2) * 100
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   const handleNext = () => {
-    if (currentStep === 1) {
-      if (!formData.organizationName || !formData.institutionType || !formData.email || !formData.phone || !formData.contactName || !formData.employeeCount || !formData.industry) {
-        toast({
-          title: "Missing required fields",
-          description: "Please fill in all required fields.",
-          variant: "destructive",
-        })
-        return
-      }
-    }
+    console.log("🔍 handleNext called for step:", currentStep)
+    console.log("📋 Current form data:", formData)
     
-    if (currentStep === 2) {
-      if (!formData.acceptTerms || !formData.acceptPrivacy) {
+    if (currentStep === 1) {
+      console.log("🔍 Validating step 1 fields...")
+      console.log("  organizationName:", formData.organizationName)
+      console.log("  institutionType:", formData.institutionType)
+      console.log("  email:", formData.email)
+      console.log("  contactName:", formData.contactName)
+      console.log("  employeeCount:", formData.employeeCount)
+      
+      // Check only the fields that are actually filled in step 1
+      if (!formData.organizationName || !formData.institutionType || !formData.email || !formData.contactName || !formData.employeeCount) {
+        console.log("❌ Step 1 validation failed")
         toast({
           title: "Missing required fields",
-          description: "Please accept terms and privacy policy.",
+          description: "Please fill in all required fields marked with *.",
           variant: "destructive",
         })
         return
       }
-    }
-
-    if (currentStep < 3) {
+      console.log("✅ Step 1 validation passed")
+      
+      // Move to next step
+      console.log("🔄 Moving to next step:", currentStep + 1)
       setCurrentStep(currentStep + 1)
     }
   }
@@ -84,33 +87,24 @@ export default function PartnerOnboardingPage() {
     }
   }
 
-  const handleSubmit = () => {
-    const fd = new FormData()
-    fd.append("organizationName", formData.organizationName)
-    fd.append("contactName", formData.contactName)
-    fd.append("email", formData.email)
-    fd.append("phone", formData.phone)
-    fd.append("employeeCount", formData.employeeCount)
-    fd.append("industry", formData.institutionType)
-    fd.append("termsAccepted", formData.acceptTerms ? "on" : "")
-    formAction(fd)
-  }
+  // Handle form state with useEffect to avoid setState during render
+  useEffect(() => {
+    if (state?.success && !showSuccessModal) {
+      setShowSuccessModal(true)
+      toast({
+        title: "Onboarding Initiated!",
+        description: state.success,
+      })
+    }
 
-  // Handle form state
-  if (state?.error) {
-    toast({
-      title: "Onboarding Failed",
-      description: state.error,
-      variant: "destructive",
-    })
-  }
-
-  if (state?.success) {
-    toast({
-      title: "Onboarding Initiated!",
-      description: state.success,
-    })
-  }
+    if (state?.error) {
+      toast({
+        title: "Onboarding Failed",
+        description: state.error,
+        variant: "destructive",
+      })
+    }
+  }, [state, showSuccessModal])
 
   return (
     <div className="min-h-screen flex">
@@ -149,7 +143,7 @@ export default function PartnerOnboardingPage() {
               </Button>
               <div className="flex-1">
                 <CardTitle className="text-xl">Partner Onboarding</CardTitle>
-                <p className="text-sm text-muted-foreground">Step {currentStep} of 3</p>
+                <p className="text-sm text-muted-foreground">Step {currentStep} of 2</p>
               </div>
             </div>
             
@@ -163,8 +157,8 @@ export default function PartnerOnboardingPage() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
-            {currentStep === 1 && (
+            <CardContent className="space-y-6">
+              {currentStep === 1 && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Institution Profile Setup</h3>
                 
@@ -175,6 +169,12 @@ export default function PartnerOnboardingPage() {
                     placeholder="Enter your organization name"
                     value={formData.organizationName}
                     onChange={(e) => handleInputChange("organizationName", e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleNext()
+                      }
+                    }}
                   />
                 </div>
 
@@ -213,16 +213,6 @@ export default function PartnerOnboardingPage() {
                       onChange={(e) => handleInputChange("address", e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+234 XXX XXX XXXX"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                    />
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -234,10 +224,16 @@ export default function PartnerOnboardingPage() {
                       placeholder="admin@yourcompany.com"
                       value={formData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleNext()
+                        }
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Label htmlFor="phone">Phone Number</Label>
                     <Input
                       id="phone"
                       type="tel"
@@ -337,47 +333,12 @@ export default function PartnerOnboardingPage() {
               </div>
             )}
 
-            {currentStep === 3 && (
-              <div className="space-y-4 text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="bg-green-100 p-4 rounded-full">
-                    <CheckCircle className="h-12 w-12 text-green-600" />
-                  </div>
-                </div>
-                
-                <h3 className="text-lg font-semibold">Email Verification Required</h3>
-                
-                <div className="space-y-4">
-                  <p className="text-muted-foreground">
-                    Please check your email ({formData.email}) for verification instructions.
-                  </p>
-                  
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Mail className="h-5 w-5 text-blue-600" />
-                      <h4 className="font-medium text-blue-900">Next Steps:</h4>
-                    </div>
-                    <ul className="text-sm text-blue-800 space-y-1 text-left">
-                      <li>1. Click the verification link in your email</li>
-                      <li>2. Complete email verification</li>
-                      <li>3. Schedule onboarding meeting with our team</li>
-                      <li>4. Get approved and access your dashboard</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="bg-amber-50 p-4 rounded-lg">
-                    <p className="text-sm text-amber-800">
-                      <strong>Important:</strong> After verification, a meeting will be set up by our company admin/representative 
-                      to discuss onboarding before verification is approved and you can enjoy all the benefits.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+
 
             {/* Navigation Buttons */}
             <div className="flex justify-between pt-4">
               <Button
+                type="button"
                 variant="outline"
                 onClick={handleBack}
                 disabled={currentStep === 1}
@@ -386,21 +347,112 @@ export default function PartnerOnboardingPage() {
                 Back
               </Button>
               
-              {currentStep < 3 ? (
-                <Button onClick={handleNext}>
+              {currentStep < 2 ? (
+                <Button type="button" onClick={handleNext}>
                   Next
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={isPending}>
-                  {isPending ? "Sending..." : "Complete Onboarding"}
+                <Button 
+                  type="button" 
+                  disabled={isPending}
+                  onClick={async (e) => {
+                    // Validate step 2 before submitting
+                    if (!formData.acceptTerms || !formData.acceptPrivacy) {
+                      toast({
+                        title: "Missing required fields",
+                        description: "Please accept terms and privacy policy.",
+                        variant: "destructive",
+                      })
+                      return
+                    }
+                    
+                    // Create FormData and submit manually
+                    const formDataToSubmit = new FormData()
+                    formDataToSubmit.append('organizationName', formData.organizationName)
+                    formDataToSubmit.append('contactName', formData.contactName)
+                    formDataToSubmit.append('email', formData.email)
+                    formDataToSubmit.append('employeeCount', formData.employeeCount)
+                    formDataToSubmit.append('industry', formData.institutionType)
+                    formDataToSubmit.append('termsAccepted', formData.acceptTerms ? 'on' : '')
+                    formDataToSubmit.append('address', formData.address)
+                    formDataToSubmit.append('phone', formData.phone)
+                    
+                    console.log("🔍 Manual form submission triggered")
+                    console.log("📋 Form data being submitted:")
+                    console.log("  organizationName:", formData.organizationName)
+                    console.log("  contactName:", formData.contactName)
+                    console.log("  email:", formData.email)
+                    console.log("  employeeCount:", formData.employeeCount)
+                    console.log("  industry:", formData.institutionType)
+                    console.log("  termsAccepted:", formData.acceptTerms)
+                    console.log("  address:", formData.address)
+                    console.log("  phone:", formData.phone)
+                    
+                    // Call the server action directly within startTransition
+                    startTransition(() => {
+                      formAction(formDataToSubmit)
+                    })
+                  }}
+                >
+                  {isPending ? "Sending..." : "Submit"}
                   <CheckCircle className="ml-2 h-4 w-4" />
                 </Button>
               )}
             </div>
-          </CardContent>
+            </CardContent>
         </Card>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4">
+            <div className="flex justify-center mb-4">
+              <div className="bg-green-100 p-4 rounded-full">
+                <CheckCircle className="h-12 w-12 text-green-600" />
+              </div>
+            </div>
+            
+            <h3 className="text-lg font-semibold text-center">Email Verification Required</h3>
+            
+            <div className="space-y-4">
+              <p className="text-muted-foreground text-center">
+                Please check your email ({formData.email}) for verification instructions.
+              </p>
+              
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Mail className="h-5 w-5 text-blue-600" />
+                  <h4 className="font-medium text-blue-900">Next Steps:</h4>
+                </div>
+                <ul className="text-sm text-blue-800 space-y-1 text-left">
+                  <li>1. Click the verification link in your email</li>
+                  <li>2. Complete email verification</li>
+                  <li>3. Schedule onboarding meeting with our team</li>
+                  <li>4. Get approved and access your dashboard</li>
+                </ul>
+              </div>
+              
+              <div className="bg-amber-50 p-4 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  <strong>Important:</strong> After verification, a meeting will be set up by our company admin/representative 
+                  to discuss onboarding before verification is approved and you can enjoy all the benefits.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-center pt-4">
+              <Button 
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full"
+              >
+                Got it!
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

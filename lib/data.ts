@@ -18,13 +18,14 @@ import {
   Stethoscope,
   Eye,
   List,
+  Bell,
 } from "lucide-react"
 
 export const navLinks = [
   { name: "Therapy", href: "#therapy" },
   { name: "About Us", href: "#about" },
-  { name: "FAQs", href: "#faqs" },
-  { name: "Articles", href: "#articles" },
+  { name: "FAQs", href: "/faqs" },
+  { name: "Articles", href: "/articles" },
 ]
 
 export const coreServices = [
@@ -195,6 +196,12 @@ export const dashboardSidebarGroups = [
       { name: "Family History", href: "/dashboard/family-history", icon: Users },
       { name: "Social History", href: "/dashboard/social-history", icon: BookOpen }, // New item
       { name: "Drug History & Previous Diagnosis", href: "/dashboard/medical-history", icon: Heart },
+    ],
+  },
+  {
+    label: "Communication",
+    items: [
+      { name: "Notifications", href: "/dashboard/notifications", icon: Bell },
     ],
   },
 ]
