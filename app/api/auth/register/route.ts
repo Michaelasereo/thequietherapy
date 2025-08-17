@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
         email: email,
         token: magicLinkToken,
         type: 'signup',
+        auth_type: 'individual',
         expires_at: expiresAt.toISOString(),
         metadata: {
           first_name: fullName,

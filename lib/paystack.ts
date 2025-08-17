@@ -5,7 +5,7 @@ let paystack: any = null;
 if (typeof window === 'undefined') {
   try {
     const Paystack = require('paystack');
-    paystack = Paystack(process.env.PAYSTACK_SECRET_KEY!);
+    paystack = Paystack(process.env.PAYSTACK_SECRET_KEY || '');
   } catch (error) {
     console.warn('Paystack library not available on client-side');
   }

@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
         email: email,
         token: verificationToken,
         type: 'signup',
+        auth_type: 'individual',
         expires_at: expiresAt.toISOString(),
         metadata: {
           first_name: fullName,
