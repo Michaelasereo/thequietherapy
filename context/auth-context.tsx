@@ -98,18 +98,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Clear invalid cookies
-      cookieNames.forEach((name: string) => Cookies.remove(name))
+      const cookieKeys: string[] = [
+        'trpi_individual_user',
+        'trpi_therapist_user',
+        'trpi_partner_user',
+        'trpi_admin_user'
+      ]
+      cookieKeys.forEach((name) => Cookies.remove(name))
       setUser(null)
       setUserType(null)
       return false
-    } catch (error) {
-      console.error('Session validation error:', error)
-      // Clear all auth cookies on error
-      ['trpi_individual_user', 'trpi_therapist_user', 'trpi_partner_user', 'trpi_admin_user'].forEach((name: string) => Cookies.remove(name))
-      setUser(null)
-      setUserType(null)
-      return false
-    }
+      } catch (error: unknown) {
+    console.error('Session validation error:', error)
+    // Clear all auth cookies on error
+    const cookieKeys: string[] = [
+      'trpi_individual_user',
+      'trpi_therapist_user',
+      'trpi_partner_user',
+      'trpi_admin_user'
+    ]
+    cookieKeys.forEach((name) => Cookies.remove(name))
+    setUser(null)
+    setUserType(null)
+    return false
+  }
   }
 
   // Refresh user data
@@ -182,7 +194,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Clear all auth cookies
-    ['trpi_individual_user', 'trpi_therapist_user', 'trpi_partner_user', 'trpi_admin_user'].forEach((name: string) => Cookies.remove(name))
+    const cookieKeys: string[] = [
+      'trpi_individual_user',
+      'trpi_therapist_user',
+      'trpi_partner_user',
+      'trpi_admin_user'
+    ]
+    cookieKeys.forEach((name) => Cookies.remove(name))
     
     setUser(null)
     setUserType(null)
