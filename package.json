@@ -85,5 +85,9 @@
   "overrides": {
     "react": "^19",
     "react-dom": "^19"
+  },
+  "resolutions": {
+    "react": "^19",
+    "react-dom": "^19"
   }
 }
