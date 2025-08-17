@@ -33,10 +33,10 @@ export default function AdminLoginPage() {
   const handleSubmit = async (values: LoginFormValues) => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: values.email }),
+        body: JSON.stringify({ email: values.email, userType: 'admin' }),
       })
       
       const data = await response.json()

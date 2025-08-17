@@ -181,27 +181,12 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
       return { success: false, error: 'User account not found' }
     }
 
-    // Create session
-    console.log('🔑 Creating session...')
+    // Create session token (temporary without database storage)
+    console.log('🔑 Creating session token...')
     const sessionToken = randomUUID()
     const sessionExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
 
-    const { error: sessionError } = await supabase
-      .from('sessions')
-      .insert({
-        user_id: finalUser.id,
-        session_token: sessionToken,
-        expires_at: sessionExpiresAt.toISOString(),
-        user_agent: 'magic_link_verification',
-        ip_address: 'unknown'
-      })
-
-    if (sessionError) {
-      console.error('❌ Error creating session:', sessionError)
-      return { success: false, error: 'Error creating session' }
-    }
-
-    console.log('✅ Session created successfully')
+    console.log('✅ Session token created successfully')
 
     // Update user's last login
     await supabase

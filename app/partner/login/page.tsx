@@ -33,10 +33,10 @@ export default function PartnerLoginPage() {
   const handleSubmit = async (values: LoginFormValues) => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/partner/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: values.email }),
+        body: JSON.stringify({ email: values.email, userType: 'partner' }),
       })
       
       const data = await response.json()

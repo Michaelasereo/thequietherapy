@@ -90,10 +90,10 @@ export default function TherapistLoginPage() {
   const handleSubmit = async (values: LoginFormValues) => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/therapist/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: values.email }),
+        body: JSON.stringify({ email: values.email, userType: 'therapist' }),
       })
       
       const data = await response.json()
