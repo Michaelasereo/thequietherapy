@@ -26,6 +26,7 @@ const PartnerUserContext = createContext<PartnerUserContextType | undefined>(und
 export function PartnerUserProvider({ children }: { children: ReactNode }) {
   const [partnerUser, setPartnerUser] = useState<PartnerUser | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   // Validate session from cookie

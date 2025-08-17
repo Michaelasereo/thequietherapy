@@ -31,18 +31,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const result = { success: true, count: count || 0 }
-
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 500 }
-      )
-    }
-
     return NextResponse.json({
       success: true,
-      count: result.count
+      count: count || 0
     })
 
   } catch (error) {

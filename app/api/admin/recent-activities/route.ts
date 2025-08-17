@@ -47,7 +47,13 @@ export async function GET() {
     const clientMap = new Map(clients?.map(c => [c.id, c.full_name]) || [])
 
     // Combine and format activities
-    const activities = []
+    const activities: Array<{
+      id: string
+      type: string
+      user: string
+      time: string
+      status: string
+    }> = []
 
     // Add user registrations
     recentUsers?.forEach(user => {

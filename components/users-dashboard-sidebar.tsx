@@ -19,7 +19,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
-import { useUserSidebarState } from "@/hooks/useDashboardState"
+import { useSidebarState } from "@/hooks/useDashboardState"
 import { logoutAction } from "@/actions/auth"
 
 // Users sidebar groups
@@ -61,12 +61,10 @@ export default function UsersDashboardSidebar() {
   const {
     isActive,
     isExpanded,
-    notificationsCount,
-    unreadMessages,
     handleItemClick,
     handleItemToggle,
     setHover
-  } = useUserSidebarState()
+  } = useSidebarState()
 
   return (
     <Sidebar 
@@ -105,16 +103,7 @@ export default function UsersDashboardSidebar() {
                         <Link href={item.href}>
                           <item.icon className="h-5 w-5" />
                           <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
-                          {item.name === 'Notifications' && notificationsCount > 0 && (
-                            <Badge variant="destructive" className="ml-auto text-xs">
-                              {notificationsCount}
-                            </Badge>
-                          )}
-                          {item.name === 'Messages' && unreadMessages > 0 && (
-                            <Badge variant="secondary" className="ml-auto text-xs">
-                              {unreadMessages}
-                            </Badge>
-                          )}
+                          {/* Notification badges can be added here when needed */}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 })
     }
 
-    const user = sessionData.users
+    const user = sessionData.users[0]
     console.log('✅ Session validated for user:', user.email)
 
     // Update last accessed time

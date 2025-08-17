@@ -89,8 +89,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user is a therapist
-    if (sessionData.users.user_type !== 'therapist') {
-      console.log('❌ User is not a therapist:', sessionData.users.user_type)
+    if (sessionData.users[0].user_type !== 'therapist') {
+      console.log('❌ User is not a therapist:', sessionData.users[0].user_type)
       return NextResponse.json({ error: 'Access denied - therapist only' }, { status: 403 })
     }
 
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     const { data: therapistData, error: therapistError } = await supabase
       .from('therapist_enrollments')
       .select('*')
-      .eq('email', sessionData.users.email)
+      .eq('email', sessionData.users[0].email)
       .single()
 
     if (therapistError || !therapistData) {

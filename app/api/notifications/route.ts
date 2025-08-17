@@ -35,18 +35,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const result = { success: true, notifications: notifications || [] }
-
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 500 }
-      )
-    }
-
     return NextResponse.json({
       success: true,
-      notifications: result.notifications
+      notifications: notifications || []
     })
 
   } catch (error) {
@@ -83,18 +74,9 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const result = { success: true, count: count || 0 }
-      
-      if (!result.success) {
-        return NextResponse.json(
-          { success: false, error: result.error },
-          { status: 500 }
-        )
-      }
-
       return NextResponse.json({
         success: true,
-        message: `Marked ${result.count} notifications as read`
+        message: `Marked ${count || 0} notifications as read`
       })
     }
 

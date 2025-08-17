@@ -128,7 +128,7 @@ export default function SessionsPage() {
     })
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | undefined) => {
     switch (status) {
       case 'scheduled':
         return <Badge variant="secondary">Scheduled</Badge>
@@ -139,7 +139,7 @@ export default function SessionsPage() {
       case 'cancelled':
         return <Badge variant="destructive">Cancelled</Badge>
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="secondary">{status || 'Unknown'}</Badge>
     }
   }
 
@@ -214,18 +214,18 @@ export default function SessionsPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      {canJoinSession(session) && (
+                      {canJoinSession(session) && session.id && (
                         <Button 
-                          onClick={() => handleJoinSession(session.id)}
+                          onClick={() => handleJoinSession(session.id!)}
                           className="flex-1"
                         >
                           <Video className="mr-2 h-4 w-4" />
                           Join Session
                         </Button>
                       )}
-                      {session.status === 'in_progress' && (
+                      {session.status === 'in_progress' && session.id && (
                         <Button 
-                          onClick={() => handleCompleteSession(session.id)}
+                          onClick={() => handleCompleteSession(session.id!)}
                           variant="outline"
                           className="flex-1"
                         >
