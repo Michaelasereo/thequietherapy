@@ -24,7 +24,7 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-      const result = await login(formData.email)
+      const result = await login(formData.email, 'individual')
 
       if (result.success) {
         toast({

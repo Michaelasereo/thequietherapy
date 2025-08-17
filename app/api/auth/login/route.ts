@@ -3,7 +3,10 @@ import { createMagicLinkForAuthType } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json()
+    const body = await request.json()
+    const { email, userType = 'individual' } = body
+
+    console.log('🔑 Login request:', { email, userType })
 
     if (!email) {
       return NextResponse.json(
@@ -12,22 +15,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('🔑 Individual login request for:', email)
+    if (!['individual', 'therapist', 'partner', 'admin'].includes(userType)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid user type' },
+        { status: 400 }
+      )
+    }
 
-    // Create magic link for individual auth type
-    const result = await createMagicLinkForAuthType(email, 'individual', 'login')
+    // Create magic link for the specific user type
+    const result = await createMagicLinkForAuthType(email, userType, 'login')
 
     if (result.success) {
+      console.log('✅ Magic link created for login:', { email, userType })
       return NextResponse.json({
         success: true,
-        message: 'Magic link sent! Check your email to log in.'
+        message: `Magic link sent to ${email}. Please check your email to log in.`
       })
     } else {
+      console.error('❌ Failed to create magic link:', result.error)
       return NextResponse.json(
         { success: false, error: result.error || 'Failed to send magic link' },
         { status: 500 }
       )
     }
+
   } catch (error) {
     console.error('❌ Login API error:', error)
     return NextResponse.json(

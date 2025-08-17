@@ -3,8 +3,8 @@ import { randomUUID } from 'crypto';
 import { sendMagicLinkEmail } from './email';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
 export interface MagicLinkData {
@@ -26,7 +26,7 @@ export interface SessionData {
   ip_address?: string;
 }
 
-// New function to create magic link for specific auth type
+// Unified function to create magic link for any auth type
 export async function createMagicLinkForAuthType(
   email: string, 
   authType: 'individual' | 'therapist' | 'partner' | 'admin',
@@ -37,14 +37,12 @@ export async function createMagicLinkForAuthType(
   
   try {
     const token = randomUUID()
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours (for testing)
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
     console.log('✅ Token created:', { 
       token: token.substring(0, 8) + '...', 
       expiresAt: expiresAt.toISOString(),
-      now: new Date().toISOString(),
-      expiresAtLocal: expiresAt.toLocaleString(),
-      nowLocal: new Date().toLocaleString()
+      now: new Date().toISOString()
     })
 
     const { error } = await supabase
@@ -86,10 +84,9 @@ export async function createMagicLinkForAuthType(
   }
 }
 
-// Updated verifyMagicLink to handle auth type
+// Unified function to verify magic link for any auth type
 export async function verifyMagicLinkForAuthType(token: string, authType: 'individual' | 'therapist' | 'partner' | 'admin') {
   console.log('🔍 verifyMagicLinkForAuthType called with token:', token.substring(0, 8) + '...', 'authType:', authType)
-  console.log('📅 Timestamp:', new Date().toISOString())
   
   try {
     // Find the magic link
@@ -117,230 +114,121 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
       email: magicLink.email,
       type: magicLink.type,
       auth_type: magicLink.auth_type,
-      expiresAt: magicLink.expires_at,
-      metadata: magicLink.metadata
+      expiresAt: magicLink.expires_at
     })
 
     // Check if expired
     const now = new Date()
     const expiresAt = new Date(magicLink.expires_at)
-    const timeDiffMs = expiresAt.getTime() - now.getTime()
-    const timeDiffMinutes = timeDiffMs / (1000 * 60)
     
-    console.log('🔍 Expiration check:', {
-      now: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      nowLocal: now.toLocaleString(),
-      expiresAtLocal: expiresAt.toLocaleString(),
-      timeDiffMs,
-      timeDiffMinutes,
-      isExpired: timeDiffMs < 0
-    })
-    
-    if (timeDiffMs < 0) {
+    if (expiresAt < now) {
       console.log('❌ Magic link expired')
       return { success: false, error: 'Magic link has expired' }
     }
 
-    // Mark as used
-    console.log('✅ Marking magic link as used...')
+    // Mark magic link as used
     const { error: updateError } = await supabase
       .from('magic_links')
-      .update({ used_at: new Date().toISOString() })
+      .update({ used_at: now.toISOString() })
       .eq('id', magicLink.id)
 
     if (updateError) {
       console.error('❌ Error marking magic link as used:', updateError)
-      return { success: false, error: 'Failed to process magic link' }
+      // Don't fail the verification if this fails
     }
 
-    console.log('✅ Magic link marked as used')
-
-    // Get user data
-    console.log('🔍 Fetching user data...')
-    const { data: userData, error: userError } = await supabase
+    // Get or create user
+    console.log('🔍 Getting or creating user...')
+    const { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('email', magicLink.email)
       .single()
 
-    if (userError) {
-      console.error('❌ User lookup error:', userError)
-      return { success: false, error: 'User not found' }
+    if (userError && userError.code !== 'PGRST116') {
+      console.error('❌ Error getting user:', userError)
+      return { success: false, error: 'Error accessing user account' }
     }
 
-    if (!userData) {
-      console.log('❌ User not found in users table')
-      return { success: false, error: 'User not found' }
-    }
+    let finalUser = user
 
-    console.log('✅ User found:', {
-      id: userData.id,
-      email: userData.email,
-      user_type: userData.user_type,
-      is_verified: userData.is_verified
-    })
-
-    // Handle partner signup verification
-    if (magicLink.type === 'signup' && magicLink.auth_type === 'partner') {
-      console.log('🔍 Partner signup verification - marking user as verified')
-      const { error: verifyError } = await supabase
+    // If user doesn't exist and this is a signup, create them
+    if (!user && magicLink.type === 'signup') {
+      console.log('👤 Creating new user...')
+      const { data: newUser, error: createError } = await supabase
         .from('users')
-        .update({ 
+        .insert({
+          email: magicLink.email,
+          full_name: magicLink.metadata?.first_name || magicLink.email.split('@')[0],
+          user_type: authType,
           is_verified: true,
-          updated_at: new Date().toISOString()
+          is_active: true,
+          credits: 0,
+          package_type: 'free'
         })
-        .eq('id', userData.id)
+        .select()
+        .single()
 
-      if (verifyError) {
-        console.error('❌ Error marking partner as verified:', verifyError)
-        return { success: false, error: 'Failed to verify partner account' }
+      if (createError) {
+        console.error('❌ Error creating user:', createError)
+        return { success: false, error: 'Error creating user account' }
       }
 
-      console.log('✅ Partner marked as verified')
-      userData.is_verified = true
+      finalUser = newUser
+      console.log('✅ New user created:', finalUser.id)
+    } else if (!user) {
+      console.log('❌ User not found and not a signup')
+      return { success: false, error: 'User account not found' }
     }
 
-    // Allow cross-role access - user can access any role they're enrolled for
-    // Only check if user is verified
-    if (!userData.is_verified) {
-      console.log('❌ User is not verified')
-      return { success: false, error: 'Please verify your email before accessing the platform.' }
-    }
-
-    // Create simple session token (no database table needed)
-    console.log('🔑 Creating simple session for auth type:', authType)
+    // Create session
+    console.log('🔑 Creating session...')
     const sessionToken = randomUUID()
     const sessionExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
 
-    console.log('✅ Session token created:', {
-      sessionToken: sessionToken.substring(0, 8) + '...',
-      expiresAt: sessionExpiresAt.toISOString(),
-      authType
-    })
+    const { error: sessionError } = await supabase
+      .from('sessions')
+      .insert({
+        user_id: finalUser.id,
+        session_token: sessionToken,
+        expires_at: sessionExpiresAt.toISOString(),
+        user_agent: 'magic_link_verification',
+        ip_address: 'unknown'
+      })
+
+    if (sessionError) {
+      console.error('❌ Error creating session:', sessionError)
+      return { success: false, error: 'Error creating session' }
+    }
+
+    console.log('✅ Session created successfully')
 
     // Update user's last login
-    console.log('✅ Updating user last login...')
-    const { error: updateUserError } = await supabase
+    await supabase
       .from('users')
-      .update({
-        last_login_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userData.id)
+      .update({ last_login_at: now.toISOString() })
+      .eq('id', finalUser.id)
 
-    if (updateUserError) {
-      console.error('❌ Error updating user last login:', updateUserError)
-      // Don't fail the whole process for this
+    return {
+      success: true,
+      user: {
+        ...finalUser,
+        session_token: sessionToken
+      }
     }
-
-    console.log('✅ User last login updated')
-
-    // Return user data with session token
-    const userWithSession = {
-      ...userData,
-      session_token: sessionToken,
-      auth_type: authType
-    }
-
-    console.log('✅ Magic link verification successful:', {
-      userId: userData.id,
-      authType,
-      email: userData.email
-    })
-
-    return { success: true, user: userWithSession }
 
   } catch (error) {
     console.error('❌ verifyMagicLinkForAuthType error:', error)
-    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-    return { success: false, error: 'Internal server error' }
-  }
-}
-
-// New function to validate session for specific auth type
-export async function validateSessionForAuthType(
-  sessionToken: string, 
-  authType: 'individual' | 'therapist' | 'partner' | 'admin'
-): Promise<{ success: boolean; user?: any; error?: string }> {
-  try {
-    // Simple validation - just check if token exists and is valid format
-    if (!sessionToken || sessionToken.length < 10) {
-      return { success: false, error: 'Invalid session token' }
-    }
-
-    // For now, return success (you can add more validation later)
-    return { success: true, user: { auth_type: authType } }
-  } catch (error) {
-    console.error('Error in validateSessionForAuthType:', error)
-    return { success: false, error: 'Internal server error' }
-  }
-}
-
-// New function to create session for specific auth type
-export async function createSessionForAuthType(
-  userId: string, 
-  authType: 'individual' | 'therapist' | 'partner' | 'admin',
-  userAgent?: string, 
-  ipAddress?: string
-): Promise<{ success: boolean; sessionToken?: string; error?: string }> {
-  try {
-    const sessionToken = randomUUID()
-    console.log('✅ Simple session created for auth type:', authType)
-    return { success: true, sessionToken }
-  } catch (error) {
-    console.error('Error in createSessionForAuthType:', error)
-    return { success: false, error: 'Internal server error' }
-  }
-}
-
-// New function to logout from specific auth type
-export async function logoutFromAuthType(
-  sessionToken: string, 
-  authType: 'individual' | 'therapist' | 'partner' | 'admin'
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    console.log('✅ Simple logout for auth type:', authType)
-    return { success: true }
-  } catch (error) {
-    console.error('Error in logoutFromAuthType:', error)
     return { success: false, error: 'Internal server error' }
   }
 }
 
 // Legacy functions for backward compatibility
-export async function createMagicLink(email: string, type: 'login' | 'signup' | 'booking', metadata?: any) {
-  const authType = type === 'booking' ? 'login' : type
-  return createMagicLinkForAuthType(email, 'individual', authType, metadata)
+export async function createMagicLink(email: string, type: 'login' | 'signup', metadata?: any) {
+  return createMagicLinkForAuthType(email, 'individual', type, metadata)
 }
 
 export async function verifyMagicLink(token: string) {
   return verifyMagicLinkForAuthType(token, 'individual')
-}
-
-export async function createSession(userId: string, userAgent?: string, ipAddress?: string): Promise<{ success: boolean; sessionToken?: string; error?: string }> {
-  return createSessionForAuthType(userId, 'individual', userAgent, ipAddress)
-}
-
-export async function validateSession(sessionToken: string): Promise<{ success: boolean; user?: any; error?: string }> {
-  return validateSessionForAuthType(sessionToken, 'individual')
-}
-
-export async function logoutSession(sessionToken: string): Promise<{ success: boolean; error?: string }> {
-  return logoutFromAuthType(sessionToken, 'individual')
-}
-
-export function setAuthCookie(sessionToken: string, response: Response): void {
-  // TODO: Implement cookie setting when Next.js 15 cookies API is stable
-  // response.cookies.set('trpi_session', sessionToken, {
-  //   httpOnly: true,
-  //   secure: process.env.NODE_ENV === 'production',
-  //   sameSite: 'lax',
-  //   maxAge: 30 * 24 * 60 * 60 // 30 days
-  // });
-}
-
-export function clearAuthCookie(response: Response): void {
-  // TODO: Implement cookie clearing when Next.js 15 cookies API is stable
 }
 

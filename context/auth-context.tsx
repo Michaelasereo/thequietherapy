@@ -1,7 +1,6 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import Cookies from 'js-cookie'
 
 interface UserProfile {
@@ -17,14 +16,16 @@ interface UserProfile {
   updated_at: string
   last_login_at?: string
   avatar_url?: string
+  session_token?: string
 }
 
 interface AuthContextType {
   user: UserProfile | null
   loading: boolean
   isAuthenticated: boolean
-  login: (email: string) => Promise<{ success: boolean; error?: string }>
-  signup: (email: string, fullName: string) => Promise<{ success: boolean; error?: string }>
+  userType: 'individual' | 'therapist' | 'partner' | 'admin' | null
+  login: (email: string, userType: 'individual' | 'therapist' | 'partner' | 'admin') => Promise<{ success: boolean; error?: string }>
+  signup: (email: string, fullName: string, userType: 'individual' | 'therapist' | 'partner' | 'admin') => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   validateSession: () => Promise<boolean>
@@ -35,13 +36,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userType, setUserType] = useState<'individual' | 'therapist' | 'partner' | 'admin' | null>(null)
 
   // Validate session from cookie
   const validateSession = async (): Promise<boolean> => {
     try {
-      const userCookie = Cookies.get('trpi_user')
+      // Check all possible cookie names
+      const cookieNames = ['trpi_individual_user', 'trpi_therapist_user', 'trpi_partner_user', 'trpi_admin_user']
+      let userCookie = null
+      let detectedUserType: 'individual' | 'therapist' | 'partner' | 'admin' | null = null
+
+      for (const cookieName of cookieNames) {
+        const cookie = Cookies.get(cookieName)
+        if (cookie) {
+          userCookie = cookie
+          detectedUserType = cookieName.replace('trpi_', '').replace('_user', '') as 'individual' | 'therapist' | 'partner' | 'admin'
+          break
+        }
+      }
       
-      if (!userCookie) {
+      if (!userCookie || !detectedUserType) {
+        setUser(null)
+        setUserType(null)
         return false
       }
       
@@ -49,19 +65,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         userData = JSON.parse(userCookie)
       } catch (parseError) {
+        console.error('Failed to parse user cookie:', parseError)
+        setUser(null)
+        setUserType(null)
         return false
       }
       
       const sessionToken = userData.session_token
       if (!sessionToken) {
+        console.error('No session token in cookie')
+        setUser(null)
+        setUserType(null)
         return false
       }
 
-      // Use direct API call to /api/auth/me for validation
+      // Validate session with backend
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
         headers: {
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-cache',
+          'Authorization': `Bearer ${sessionToken}`
         }
       })
       
@@ -69,15 +92,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json()
         if (data.success) {
           setUser(data.user)
+          setUserType(detectedUserType)
           return true
         }
       }
       
-      Cookies.remove('trpi_user')
+      // Clear invalid cookies
+      cookieNames.forEach((name: string) => Cookies.remove(name))
+      setUser(null)
+      setUserType(null)
       return false
     } catch (error) {
       console.error('Session validation error:', error)
-      Cookies.remove('trpi_user')
+      // Clear all auth cookies on error
+      ['trpi_individual_user', 'trpi_therapist_user', 'trpi_partner_user', 'trpi_admin_user'].forEach((name: string) => Cookies.remove(name))
+      setUser(null)
+      setUserType(null)
       return false
     }
   }
@@ -87,124 +117,101 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isValid = await validateSession()
     if (!isValid) {
       setUser(null)
+      setUserType(null)
     }
   }
 
   // Login function
-  const login = async (email: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (email: string, userType: 'individual' | 'therapist' | 'partner' | 'admin'): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, userType })
       })
 
       const data = await response.json()
 
-      if (response.ok && data.success) {
+      if (data.success) {
         return { success: true }
       } else {
         return { success: false, error: data.error || 'Login failed' }
       }
     } catch (error) {
       console.error('Login error:', error)
-      return { success: false, error: 'Network error' }
+      return { success: false, error: 'Network error. Please try again.' }
     }
   }
 
   // Signup function
-  const signup = async (email: string, fullName: string): Promise<{ success: boolean; error?: string }> => {
+  const signup = async (email: string, fullName: string, userType: 'individual' | 'therapist' | 'partner' | 'admin'): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, fullName }),
+        body: JSON.stringify({ email, fullName, userType })
       })
 
       const data = await response.json()
 
-      if (response.ok && data.success) {
+      if (data.success) {
         return { success: true }
       } else {
         return { success: false, error: data.error || 'Signup failed' }
       }
     } catch (error) {
       console.error('Signup error:', error)
-      return { success: false, error: 'Network error' }
+      return { success: false, error: 'Network error. Please try again.' }
     }
   }
 
   // Logout function
   const logout = async () => {
     try {
-      const userCookie = Cookies.get('trpi_user')
-      if (userCookie) {
-        const userData = JSON.parse(userCookie)
-        const sessionToken = userData.session_token
-
-        if (sessionToken) {
-          // Invalidate session in database
-          await supabase.rpc('invalidate_session', { p_session_token: sessionToken })
-        }
-      }
-
-      // Remove cookie
-      Cookies.remove('trpi_user')
-      setUser(null)
-      console.log('User logged out successfully')
+      // Call logout API
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
     } catch (error) {
-      console.error('Logout error:', error)
-      // Still remove cookie even if database call fails
-      Cookies.remove('trpi_user')
-      setUser(null)
+      console.error('Logout API error:', error)
     }
+
+    // Clear all auth cookies
+    ['trpi_individual_user', 'trpi_therapist_user', 'trpi_partner_user', 'trpi_admin_user'].forEach((name: string) => Cookies.remove(name))
+    
+    setUser(null)
+    setUserType(null)
   }
 
   // Initialize auth state
   useEffect(() => {
     const initAuth = async () => {
-      try {
-        // Try multiple times with increasing delays
-        for (let attempt = 1; attempt <= 3; attempt++) {
-          // Add delay that increases with each attempt
-          const delay = attempt * 500 // 500ms, 1000ms, 1500ms
-          await new Promise(resolve => setTimeout(resolve, delay))
-          
-          const isValid = await validateSession()
-          
-          if (isValid) {
-            break
-          }
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error)
-      } finally {
-        setLoading(false)
-      }
+      setLoading(true)
+      await validateSession()
+      setLoading(false)
     }
-    
-    // Start initialization immediately
+
     initAuth()
   }, [])
 
-  return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      isAuthenticated: !!user,
-      login,
-      signup,
-      logout,
-      refreshUser,
-      validateSession
-    }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  const value: AuthContextType = {
+    user,
+    loading,
+    isAuthenticated: !!user,
+    userType,
+    login,
+    signup,
+    logout,
+    refreshUser,
+    validateSession
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
