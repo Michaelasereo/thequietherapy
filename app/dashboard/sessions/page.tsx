@@ -14,21 +14,19 @@ import {
   completeSession,
   SessionData 
 } from "@/lib/session-management"
-import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/auth-context'
 
 export default function SessionsPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [sessions, setSessions] = useState<SessionData[]>([])
   const [upcomingSessions, setUpcomingSessions] = useState<SessionData[]>([])
   const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          setUserId(user.id)
+        if (user?.id) {
           const [allSessions, upcoming] = await Promise.all([
             getUserSessions(user.id),
             getUpcomingSessions(user.id)
@@ -48,8 +46,12 @@ export default function SessionsPage() {
       }
     }
 
-    fetchSessions()
-  }, [])
+    if (user?.id) {
+      fetchSessions()
+    } else {
+      setLoading(false)
+    }
+  }, [user])
 
   const handleJoinSession = async (sessionId: string) => {
     try {
@@ -87,10 +89,10 @@ export default function SessionsPage() {
           description: "Session has been marked as completed.",
         })
         // Refresh sessions
-        if (userId) {
+        if (user?.id) {
           const [allSessions, upcoming] = await Promise.all([
-            getUserSessions(userId),
-            getUpcomingSessions(userId)
+            getUserSessions(user.id),
+            getUpcomingSessions(user.id)
           ])
           setSessions(allSessions)
           setUpcomingSessions(upcoming)
