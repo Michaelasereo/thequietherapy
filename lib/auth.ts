@@ -64,7 +64,8 @@ export async function createMagicLinkForAuthType(
     console.log('✅ Magic link created successfully for auth type:', authType)
 
     // Send the magic link email
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/verify-magic-link?token=${token}&auth_type=${authType}`
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+    const verificationUrl = `${baseUrl}/api/auth/verify-magic-link?token=${token}&auth_type=${authType}`
     
     console.log('📧 Sending magic link email...')
     const emailResult = await sendMagicLinkEmail(email, verificationUrl, type, { ...metadata, auth_type: authType })
