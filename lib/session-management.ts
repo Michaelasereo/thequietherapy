@@ -3,16 +3,19 @@ import { supabase } from './supabase'
 // Simplified session management functions
 export interface SessionData {
   id?: string
-  user_id: string
+  client_id: string
   therapist_id: string
+  session_date: string
   start_time: string
   end_time: string
-  duration?: number
+  duration_minutes?: number
   session_type?: string
   status?: string
+  amount?: number
+  payment_status?: string
   notes?: string
-  session_url?: string
-  recording_url?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface AvailabilitySlot {
@@ -144,9 +147,9 @@ export async function bookSession(sessionData: SessionData): Promise<{ success: 
 
     // Check if user has enough credits (simplified check)
     const { data: user, error: userError } = await supabase
-      .from('individual_auth')
+      .from('users')
       .select('credits')
-      .eq('user_id', sessionData.user_id)
+      .eq('id', sessionData.client_id)
       .single()
 
     if (userError || !user || user.credits < 1) {
@@ -159,8 +162,10 @@ export async function bookSession(sessionData: SessionData): Promise<{ success: 
       .insert({
         ...sessionData,
         status: sessionData.status || 'scheduled',
-        duration: sessionData.duration || 60,
-        session_type: sessionData.session_type || 'video'
+        duration_minutes: sessionData.duration_minutes || 60,
+        session_type: sessionData.session_type || 'video',
+        amount: sessionData.amount || 0,
+        payment_status: sessionData.payment_status || 'pending'
       })
       .select()
       .single()
@@ -172,9 +177,9 @@ export async function bookSession(sessionData: SessionData): Promise<{ success: 
 
     // Deduct credits from user
     await supabase
-      .from('individual_auth')
+      .from('users')
       .update({ credits: user.credits - 1 })
-      .eq('user_id', sessionData.user_id)
+      .eq('id', sessionData.client_id)
 
     return { success: true, session }
   } catch (error) {
@@ -196,7 +201,7 @@ export async function getSessions(
       .order('start_time', { ascending: true })
 
     if (userId) {
-      query = query.eq('user_id', userId)
+      query = query.eq('client_id', userId)
     }
 
     if (therapistId) {
@@ -250,7 +255,7 @@ export async function getUserSessions(userId: string): Promise<SessionData[]> {
     const { data: sessions, error } = await supabase
       .from('sessions')
       .select('*')
-      .eq('user_id', userId)
+      .eq('client_id', userId)
       .order('start_time', { ascending: false })
 
     if (error) {
@@ -272,7 +277,7 @@ export async function getUpcomingSessions(userId: string): Promise<SessionData[]
     const { data: sessions, error } = await supabase
       .from('sessions')
       .select('*')
-      .eq('user_id', userId)
+      .eq('client_id', userId)
       .gte('start_time', now)
       .in('status', ['scheduled', 'confirmed'])
       .order('start_time', { ascending: true })

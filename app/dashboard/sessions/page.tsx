@@ -195,7 +195,7 @@ export default function SessionsPage() {
                             {'Therapist'}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            {session.session_type} Session
+                            {session.session_type || 'Video'} Session
                           </p>
                         </div>
                       </div>
