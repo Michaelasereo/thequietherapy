@@ -29,6 +29,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Admin signup restriction - only allow specific email
+    if (userType === 'admin' && email !== 'michaelasereoo@gmail.com') {
+      console.log('❌ Admin signup attempt with unauthorized email:', email)
+      return NextResponse.json(
+        { success: false, error: 'Admin signup is restricted to authorized personnel only.' },
+        { status: 403 }
+      )
+    }
+
     // Check if user already exists and is verified
     const { data: existingUser, error: checkError } = await supabase
       .from('users')
