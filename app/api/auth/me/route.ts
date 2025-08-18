@@ -110,18 +110,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 })
     }
 
-    // Type assertion to ensure users is treated as an object, not an array
-    const user = sessionData.users as {
-      id: string
-      email: string
-      full_name: string
-      user_type: string
-      is_verified: boolean
-      is_active: boolean
-      credits: number
-      package_type: string
-    }
-    
+    // Access the users object properly - it should be a single object, not an array
+    const user = sessionData.users
     console.log('✅ Session validated for user:', user.email)
 
     // Update last accessed time
