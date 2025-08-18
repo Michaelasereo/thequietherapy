@@ -181,12 +181,34 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
       return { success: false, error: 'User account not found' }
     }
 
-    // Create session token (temporary without database storage)
-    console.log('🔑 Creating session token...')
+    // Create session token and store in database
+    console.log('🔑 Creating session token and storing in database...')
     const sessionToken = randomUUID()
     const sessionExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
 
-    console.log('✅ Session token created successfully')
+    // Clear any existing sessions for this user
+    await supabase
+      .from('user_sessions')
+      .delete()
+      .eq('user_id', finalUser.id)
+
+    // Create new session in database
+    const { error: sessionError } = await supabase
+      .from('user_sessions')
+      .insert({
+        user_id: finalUser.id,
+        session_token: sessionToken,
+        expires_at: sessionExpiresAt.toISOString(),
+        created_at: now.toISOString(),
+        last_accessed_at: now.toISOString()
+      })
+
+    if (sessionError) {
+      console.error('❌ Error creating session:', sessionError)
+      return { success: false, error: 'Error creating session' }
+    }
+
+    console.log('✅ Session created and stored in database')
 
     // Update user's last login
     await supabase

@@ -25,25 +25,43 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Parsed cookies:', cookies)
 
-    const trpiUserCookie = cookies['trpi_user']
-    if (!trpiUserCookie) {
-      console.log('❌ No trpi_user cookie found')
+    // Check for user type specific cookies first
+    const cookieNames = ['trpi_individual_user', 'trpi_therapist_user', 'trpi_partner_user', 'trpi_admin_user', 'trpi_user']
+    let userCookie = null
+    let detectedUserType: 'individual' | 'therapist' | 'partner' | 'admin' | null = null
+
+    for (const cookieName of cookieNames) {
+      const cookie = cookies[cookieName]
+      if (cookie) {
+        userCookie = cookie
+        if (cookieName === 'trpi_user') {
+          detectedUserType = 'individual'
+        } else {
+          detectedUserType = cookieName.replace('trpi_', '').replace('_user', '') as 'individual' | 'therapist' | 'partner' | 'admin'
+        }
+        console.log('🔍 Found user cookie:', cookieName)
+        break
+      }
+    }
+
+    if (!userCookie || !detectedUserType) {
+      console.log('❌ No user cookie found')
       console.log('🔍 Available cookies:', Object.keys(cookies))
       return NextResponse.json({ error: 'No session found' }, { status: 401 })
     }
 
-    console.log('🔍 Found trpi_user cookie:', trpiUserCookie)
+    console.log('🔍 Found user cookie:', userCookie)
 
     let userData
     try {
       // Handle both URL-encoded and plain JSON
-      const decodedCookie = decodeURIComponent(trpiUserCookie)
+      const decodedCookie = decodeURIComponent(userCookie)
       console.log('🔍 Decoded cookie:', decodedCookie)
       userData = JSON.parse(decodedCookie)
       console.log('🔍 Parsed user data:', userData)
     } catch (parseError) {
       console.log('❌ Error parsing user cookie:', parseError)
-      console.log('🔍 Raw cookie value:', trpiUserCookie)
+      console.log('🔍 Raw cookie value:', userCookie)
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
     }
 
@@ -92,7 +110,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 })
     }
 
-    const user = sessionData.users[0]
+    const user = sessionData.users
     console.log('✅ Session validated for user:', user.email)
 
     // Update last accessed time

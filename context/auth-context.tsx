@@ -41,87 +41,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Validate session from cookie
   const validateSession = async (): Promise<boolean> => {
     try {
-      // Check all possible cookie names
-      const cookieNames = ['trpi_individual_user', 'trpi_therapist_user', 'trpi_partner_user', 'trpi_admin_user']
-      let userCookie = null
-      let detectedUserType: 'individual' | 'therapist' | 'partner' | 'admin' | null = null
-
-      for (const cookieName of cookieNames) {
-        const cookie = Cookies.get(cookieName)
-        if (cookie) {
-          userCookie = cookie
-          detectedUserType = cookieName.replace('trpi_', '').replace('_user', '') as 'individual' | 'therapist' | 'partner' | 'admin'
-          break
-        }
-      }
-      
-      if (!userCookie || !detectedUserType) {
-        setUser(null)
-        setUserType(null)
-        return false
-      }
-      
-      let userData
-      try {
-        userData = JSON.parse(userCookie)
-      } catch (parseError) {
-        console.error('Failed to parse user cookie:', parseError)
-        setUser(null)
-        setUserType(null)
-        return false
-      }
-      
-      const sessionToken = userData.session_token
-      if (!sessionToken) {
-        console.error('No session token in cookie')
-        setUser(null)
-        setUserType(null)
-        return false
-      }
-
-      // Validate session with backend
+      // Call the /api/auth/me endpoint which can read HTTP-only cookies server-side
       const response = await fetch('/api/auth/me', {
-        credentials: 'include',
+        credentials: 'include', // This ensures cookies are sent
         headers: {
-          'Cache-Control': 'no-cache',
-          'Authorization': `Bearer ${sessionToken}`
+          'Cache-Control': 'no-cache'
         }
       })
       
       if (response.ok) {
         const data = await response.json()
-        if (data.success) {
+        if (data.success && data.user) {
           setUser(data.user)
-          setUserType(detectedUserType)
+          // Determine user type from the user data
+          const userType = data.user.user_type as 'individual' | 'therapist' | 'partner' | 'admin'
+          setUserType(userType)
           return true
         }
       }
       
-      // Clear invalid cookies
-      const cookieKeys: string[] = [
-        'trpi_individual_user',
-        'trpi_therapist_user',
-        'trpi_partner_user',
-        'trpi_admin_user'
-      ]
-      cookieKeys.forEach((name) => Cookies.remove(name))
+      // If we get here, the session is invalid
       setUser(null)
       setUserType(null)
       return false
-      } catch (error: unknown) {
-    console.error('Session validation error:', error)
-    // Clear all auth cookies on error
-    const cookieKeys: string[] = [
-      'trpi_individual_user',
-      'trpi_therapist_user',
-      'trpi_partner_user',
-      'trpi_admin_user'
-    ]
-    cookieKeys.forEach((name) => Cookies.remove(name))
-    setUser(null)
-    setUserType(null)
-    return false
-  }
+      
+    } catch (error: unknown) {
+      console.error('Session validation error:', error)
+      setUser(null)
+      setUserType(null)
+      return false
+    }
   }
 
   // Refresh user data

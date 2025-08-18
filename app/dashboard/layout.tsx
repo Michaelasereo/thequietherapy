@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react"
+import React, { useEffect } from "react"
 import { Suspense } from "react"
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar"
 import DashboardSidebar from "@/components/dashboard-sidebar"
@@ -31,6 +31,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   
   console.log('🔍 DashboardLayout: Auth state - loading:', loading, 'isAuthenticated:', isAuthenticated, 'user:', user)
   
+  // Handle redirect in useEffect to avoid React errors
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      console.log('🔍 DashboardLayout: Not authenticated, redirecting to login')
+      router.push('/login');
+    }
+  }, [loading, isAuthenticated, router]);
+  
   // Get user's first name for display
   const userName = user?.full_name ? user.full_name.split(' ')[0] : "User";
   
@@ -47,11 +55,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // Only redirect if not authenticated and not loading
-  if (!isAuthenticated && !loading) {
-    console.log('🔍 DashboardLayout: Not authenticated, redirecting to login')
-    router.push('/login');
-    return null;
+  // Show loading while redirecting
+  if (!isAuthenticated) {
+    console.log('🔍 DashboardLayout: Not authenticated, showing loading while redirecting')
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
   
   console.log('🔍 DashboardLayout: Rendering dashboard content')

@@ -10,17 +10,24 @@ export function middleware(request: NextRequest) {
   
   // Check if user is authenticated by looking for the auth cookie
   const userCookie = request.cookies.get('trpi_user')
+  const individualCookie = request.cookies.get('trpi_individual_user')
   const therapistCookie = request.cookies.get('trpi_therapist_user')
   const partnerCookie = request.cookies.get('trpi_partner_user')
+  const adminCookie = request.cookies.get('trpi_admin_user')
   
   console.log('🍪 Cookies found:', {
     user: !!userCookie,
+    individual: !!individualCookie,
     therapist: !!therapistCookie,
-    partner: !!partnerCookie
+    partner: !!partnerCookie,
+    admin: !!adminCookie
   })
   
-  if (partnerCookie) {
-    console.log('🍪 Partner cookie value:', partnerCookie.value.substring(0, 100) + '...')
+  // Check if any auth cookie exists
+  const hasAnyAuthCookie = userCookie || individualCookie || therapistCookie || partnerCookie || adminCookie
+  
+  if (hasAnyAuthCookie) {
+    console.log('✅ Auth cookie found, allowing access')
   }
   
   // Protected routes that require authentication
@@ -36,7 +43,8 @@ export function middleware(request: NextRequest) {
   
   if (isProtectedRoute) {
     // If no auth cookie is found, redirect to appropriate auth page
-    if (!userCookie && !therapistCookie && !partnerCookie) {
+    if (!hasAnyAuthCookie) {
+      console.log('❌ No auth cookie found, redirecting to login')
       if (pathname.startsWith('/therapist/dashboard')) {
         return NextResponse.redirect(new URL('/therapist/login', request.url))
       } else if (pathname.startsWith('/admin/dashboard')) {
@@ -48,14 +56,18 @@ export function middleware(request: NextRequest) {
       }
     }
     
-    // For user dashboard, validate the session token
-    if (pathname.startsWith('/dashboard') && userCookie) {
+    // For individual dashboard, validate the session token
+    if (pathname.startsWith('/dashboard') && (userCookie || individualCookie)) {
       try {
-        const userData = JSON.parse(decodeURIComponent(userCookie.value))
+        const cookieToCheck = individualCookie || userCookie
+        const userData = JSON.parse(decodeURIComponent(cookieToCheck!.value))
         if (!userData.session_token) {
+          console.log('❌ No session token in individual cookie, redirecting to login')
           return NextResponse.redirect(new URL('/login', request.url))
         }
+        console.log('✅ Individual session token validated')
       } catch (error) {
+        console.log('❌ Invalid individual cookie format, redirecting to login')
         // Invalid cookie format, redirect to login
         return NextResponse.redirect(new URL('/login', request.url))
       }
@@ -66,9 +78,12 @@ export function middleware(request: NextRequest) {
       try {
         const therapistData = JSON.parse(decodeURIComponent(therapistCookie.value))
         if (!therapistData.session_token) {
+          console.log('❌ No session token in therapist cookie, redirecting to therapist login')
           return NextResponse.redirect(new URL('/therapist/login', request.url))
         }
+        console.log('✅ Therapist session token validated')
       } catch (error) {
+        console.log('❌ Invalid therapist cookie format, redirecting to therapist login')
         // Invalid cookie format, redirect to therapist login
         return NextResponse.redirect(new URL('/therapist/login', request.url))
       }
@@ -93,6 +108,22 @@ export function middleware(request: NextRequest) {
         console.log('❌ Invalid partner cookie format, redirecting to partner auth')
         // Invalid cookie format, redirect to partner auth
         return NextResponse.redirect(new URL('/partner/auth', request.url))
+      }
+    }
+    
+    // For admin dashboard, validate the session token
+    if (pathname.startsWith('/admin/dashboard') && adminCookie) {
+      try {
+        const adminData = JSON.parse(decodeURIComponent(adminCookie.value))
+        if (!adminData.session_token) {
+          console.log('❌ No session token in admin cookie, redirecting to admin login')
+          return NextResponse.redirect(new URL('/admin/login', request.url))
+        }
+        console.log('✅ Admin session token validated')
+      } catch (error) {
+        console.log('❌ Invalid admin cookie format, redirecting to admin login')
+        // Invalid cookie format, redirect to admin login
+        return NextResponse.redirect(new URL('/admin/login', request.url))
       }
     }
   }
