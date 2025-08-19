@@ -5,7 +5,14 @@ import { cookies } from "next/headers"
 export async function GET() {
   try {
     const cookieStore = await cookies()
-    const therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+    
+    // Check for therapist user cookie first
+    let therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
+    
+    // If no therapist cookie, check for individual user cookie (therapists are enrolled as individuals)
+    if (!therapistUserCookie) {
+      therapistUserCookie = cookieStore.get("trpi_individual_user")?.value
+    }
     
     if (!therapistUserCookie) {
       return NextResponse.json({
@@ -14,8 +21,10 @@ export async function GET() {
       }, { status: 401 })
     }
 
-    const therapistUser = JSON.parse(therapistUserCookie)
+    const therapistUser = JSON.parse(decodeURIComponent(therapistUserCookie))
     const email = therapistUser.email
+
+    console.log('🔍 Therapist profile API: Looking for therapist with email:', email)
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,6 +37,9 @@ export async function GET() {
       .select('*')
       .eq('email', email)
       .single()
+
+    console.log('🔍 Enrollment data:', enrollment)
+    console.log('🔍 Enrollment error:', enrollmentError)
 
     if (enrollmentError || !enrollment) {
       return NextResponse.json({
@@ -42,6 +54,9 @@ export async function GET() {
       .select('*')
       .eq('email', email)
       .single()
+
+    console.log('🔍 User data:', user)
+    console.log('🔍 User error:', userError)
 
     if (userError || !user) {
       return NextResponse.json({
@@ -62,7 +77,7 @@ export async function GET() {
       rating: 4.8, // Default rating
       total_sessions: 0, // Will be calculated from sessions table
       total_clients: 0, // Will be calculated from clients table
-      hourly_rate: enrollment.hourly_rate || 150,
+      hourly_rate: enrollment.hourly_rate || 5000,
       availability: {
         monday: true,
         tuesday: true,
@@ -77,6 +92,8 @@ export async function GET() {
       bio: enrollment.bio,
       status: enrollment.status
     }
+
+    console.log('🔍 Returning therapist data:', therapistData)
 
     return NextResponse.json({
       success: true,

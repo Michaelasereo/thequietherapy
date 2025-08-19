@@ -3,6 +3,8 @@
 import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Clock, CheckCircle, XCircle } from "lucide-react"
 
 // Twitter-style verification badge component
 function TwitterVerifiedBadge(props: React.SVGProps<SVGSVGElement>) {
@@ -56,6 +58,8 @@ interface TherapistCardProps {
     age: string
     maritalStatus: string
     isVerified?: boolean
+    is_active?: boolean
+    hourly_rate?: number
   }
   onSelect: (therapistId: string) => void
   onViewProfile: (therapistId: string) => void
@@ -63,17 +67,45 @@ interface TherapistCardProps {
 }
 
 export default function TherapistCard({ therapist, onSelect, onViewProfile, isSelected }: TherapistCardProps) {
+  const isAvailable = therapist.is_active !== false
+
   return (
     <Card
       className={`flex flex-col items-center text-center p-4 shadow-sm transition-all ${isSelected ? "border-2 border-primary ring-2 ring-primary" : "hover:shadow-md"}`}
     >
-      <Image
-        src={therapist.picture || "/placeholder.svg"}
-        alt={therapist.name}
-        width={100}
-        height={100}
-        className="rounded-full object-cover mb-4"
-      />
+      <div className="relative">
+        <Image
+          src={therapist.picture || "/placeholder.svg"}
+          alt={therapist.name}
+          width={100}
+          height={100}
+          className="rounded-full object-cover mb-4"
+        />
+        {/* Availability Badge */}
+        <div className="absolute -top-2 -right-2">
+          <Badge 
+            variant={isAvailable ? "default" : "secondary"}
+            className={`flex items-center gap-1 text-xs ${
+              isAvailable 
+                ? "bg-green-100 text-green-800 border-green-200" 
+                : "bg-gray-100 text-gray-600 border-gray-200"
+            }`}
+          >
+            {isAvailable ? (
+              <>
+                <CheckCircle className="h-3 w-3" />
+                Available
+              </>
+            ) : (
+              <>
+                <XCircle className="h-3 w-3" />
+                Unavailable
+              </>
+            )}
+          </Badge>
+        </div>
+      </div>
+      
       <CardHeader className="p-0 mb-2">
         <div className="flex items-center justify-center gap-1">
           <CardTitle className="text-lg font-semibold">{therapist.name}</CardTitle>
@@ -83,16 +115,30 @@ export default function TherapistCard({ therapist, onSelect, onViewProfile, isSe
         </div>
         <CardDescription className="text-sm text-muted-foreground">{therapist.specialization}</CardDescription>
       </CardHeader>
+      
       <CardContent className="flex flex-col gap-2 p-0 w-full">
         <div className="text-xs text-muted-foreground">
           {therapist.gender}, {therapist.age}, {therapist.maritalStatus}
         </div>
+        
+        {/* Hourly Rate */}
+        {therapist.hourly_rate && (
+          <div className="flex items-center justify-center gap-1 text-sm font-medium text-green-600">
+            <Clock className="h-3 w-3" />
+            ₦{therapist.hourly_rate.toLocaleString()}/hr
+          </div>
+        )}
+        
         <div className="flex gap-2 mt-2 w-full">
           <Button variant="outline" className="flex-1 bg-transparent" onClick={() => onViewProfile(therapist.id)}>
             View Profile
           </Button>
-          <Button className="flex-1" onClick={() => onSelect(therapist.id)} disabled={isSelected}>
-            {isSelected ? "Selected" : "Select"}
+          <Button 
+            className="flex-1" 
+            onClick={() => onSelect(therapist.id)} 
+            disabled={isSelected || !isAvailable}
+          >
+            {isSelected ? "Selected" : isAvailable ? "Select" : "Unavailable"}
           </Button>
         </div>
       </CardContent>

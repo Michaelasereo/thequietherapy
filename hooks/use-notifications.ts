@@ -1,13 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { NotificationItem, getNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead } from '@/lib/notifications-client'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Helper function to safely check notification support
 const isNotificationSupported = () => {
@@ -107,7 +102,9 @@ export function useNotifications(userId: string) {
 
   // Set up real-time subscription
   useEffect(() => {
-    if (!userId) return
+    if (!userId || userId.length === 0) {
+      return
+    }
 
     // Initial fetch
     fetchNotifications()
@@ -125,8 +122,6 @@ export function useNotifications(userId: string) {
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
-          console.log('📢 Real-time notification update:', payload)
-
           if (payload.eventType === 'INSERT') {
             // New notification
             const newNotification = payload.new as NotificationItem

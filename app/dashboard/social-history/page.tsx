@@ -9,6 +9,8 @@ import { Pencil, Save, X, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { usePatientData } from "@/hooks/usePatientData"
 import { PatientSocialHistory } from "@/lib/patient-data"
+import { toast } from "sonner"
+import { useAuth } from "@/context/auth-context"
 
 export default function SocialHistoryPage() {
   const { 
@@ -18,6 +20,8 @@ export default function SocialHistoryPage() {
     refreshSocialHistory, 
     updateSocialHistory 
   } = usePatientData()
+  
+  const { user } = useAuth()
   
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<Partial<PatientSocialHistory>>({})
@@ -42,6 +46,39 @@ export default function SocialHistoryPage() {
     const success = await updateSocialHistory(formData)
     if (success) {
       setIsEditing(false)
+      toast.success('Social history updated successfully')
+      
+      // Create sidebar notification via API
+      if (user?.id) {
+        try {
+          const response = await fetch('/api/notifications/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              user_id: user.id,
+              user_type: 'individual',
+              title: 'Social History Updated',
+              message: 'Your social history and lifestyle information has been updated successfully.',
+              type: 'success',
+              category: 'general',
+              action_url: '/dashboard/social-history',
+              metadata: { updated_at: new Date().toISOString() }
+            })
+          })
+
+          const result = await response.json()
+
+          if (!response.ok) {
+            console.error('Failed to create notification:', result)
+          }
+        } catch (error) {
+          console.error('Error creating notification:', error)
+        }
+      }
+    } else {
+      toast.error('Failed to update social history')
     }
   }
 
@@ -57,8 +94,10 @@ export default function SocialHistoryPage() {
       <div className="space-y-6">
         <h2 className="text-2xl font-bold">Social History</h2>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading social history...</span>
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading your social history...</p>
+          </div>
         </div>
       </div>
     )
@@ -96,7 +135,15 @@ export default function SocialHistoryPage() {
       </div>
 
       {/* Lifestyle & Relationships Card */}
-      <Card className="shadow-sm">
+      <Card className="shadow-sm relative">
+        {loading.socialHistory && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+            <div className="text-center">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Updating...</p>
+            </div>
+          </div>
+        )}
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl font-bold">Lifestyle & Relationships</CardTitle>
           {!isEditing ? (
@@ -113,28 +160,32 @@ export default function SocialHistoryPage() {
           ) : (
             <div className="flex gap-2">
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-green-600 hover:text-green-700"
+                variant="default" 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white"
                 onClick={handleSave}
                 disabled={loading.socialHistory}
               >
                 {loading.socialHistory ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Saving...
+                  </>
                 ) : (
-                  <Save className="h-4 w-4" />
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
                 )}
-                <span className="sr-only">Save</span>
               </Button>
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-red-600 hover:text-red-700"
+                variant="outline" 
+                size="sm"
                 onClick={handleCancel}
                 disabled={loading.socialHistory}
               >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Cancel</span>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
               </Button>
             </div>
           )}
@@ -149,6 +200,7 @@ export default function SocialHistoryPage() {
                   value={formData.living_situation || ''}
                   onChange={(e) => handleInputChange('living_situation', e.target.value)}
                   placeholder="e.g., Lives alone in an apartment"
+                  disabled={loading.socialHistory}
                 />
               </div>
               <div className="flex flex-col space-y-2">
@@ -158,6 +210,7 @@ export default function SocialHistoryPage() {
                   value={formData.employment || ''}
                   onChange={(e) => handleInputChange('employment', e.target.value)}
                   placeholder="e.g., Full-time software engineer"
+                  disabled={loading.socialHistory}
                 />
               </div>
               <div className="flex flex-col space-y-2">
@@ -167,6 +220,7 @@ export default function SocialHistoryPage() {
                   value={formData.relationships || ''}
                   onChange={(e) => handleInputChange('relationships', e.target.value)}
                   placeholder="e.g., Close relationship with sister"
+                  disabled={loading.socialHistory}
                 />
               </div>
               <div className="flex flex-col space-y-2">
@@ -176,6 +230,7 @@ export default function SocialHistoryPage() {
                   value={formData.hobbies_interests || ''}
                   onChange={(e) => handleInputChange('hobbies_interests', e.target.value)}
                   placeholder="e.g., Reading, hiking, video games"
+                  disabled={loading.socialHistory}
                 />
               </div>
               <div className="flex flex-col space-y-2 sm:col-span-2">
@@ -186,6 +241,7 @@ export default function SocialHistoryPage() {
                   onChange={(e) => handleInputChange('stressors', e.target.value)}
                   placeholder="Describe current sources of stress in your life..."
                   rows={3}
+                  disabled={loading.socialHistory}
                 />
               </div>
             </>
@@ -217,7 +273,15 @@ export default function SocialHistoryPage() {
       </Card>
 
       {/* Substance Use History Card */}
-      <Card className="shadow-sm">
+      <Card className="shadow-sm relative">
+        {loading.socialHistory && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+            <div className="text-center">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Updating...</p>
+            </div>
+          </div>
+        )}
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl font-bold">Substance Use History</CardTitle>
           {!isEditing ? (
@@ -234,28 +298,32 @@ export default function SocialHistoryPage() {
           ) : (
             <div className="flex gap-2">
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-green-600 hover:text-green-700"
+                variant="default" 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white"
                 onClick={handleSave}
                 disabled={loading.socialHistory}
               >
                 {loading.socialHistory ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Saving...
+                  </>
                 ) : (
-                  <Save className="h-4 w-4" />
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
                 )}
-                <span className="sr-only">Save</span>
               </Button>
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-red-600 hover:text-red-700"
+                variant="outline" 
+                size="sm"
                 onClick={handleCancel}
                 disabled={loading.socialHistory}
               >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Cancel</span>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
               </Button>
             </div>
           )}
@@ -270,6 +338,7 @@ export default function SocialHistoryPage() {
                   value={formData.smoking_history || ''}
                   onChange={(e) => handleInputChange('smoking_history', e.target.value)}
                   placeholder="e.g., No history of smoking"
+                  disabled={loading.socialHistory}
                 />
               </div>
               <div className="flex flex-col space-y-2">
@@ -279,6 +348,7 @@ export default function SocialHistoryPage() {
                   value={formData.alcohol_history || ''}
                   onChange={(e) => handleInputChange('alcohol_history', e.target.value)}
                   placeholder="e.g., Occasional social drinking"
+                  disabled={loading.socialHistory}
                 />
               </div>
               <div className="flex flex-col space-y-2 sm:col-span-2">
@@ -289,6 +359,7 @@ export default function SocialHistoryPage() {
                   onChange={(e) => handleInputChange('other_drugs_history', e.target.value)}
                   placeholder="Describe any history of other drug use..."
                   rows={3}
+                  disabled={loading.socialHistory}
                 />
               </div>
             </>

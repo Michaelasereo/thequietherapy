@@ -1,32 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const params = await context.params
-    const { id } = params
+    const notificationId = params.id
 
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('id', id)
+    if (!notificationId) {
+      return NextResponse.json(
+        { success: false, error: 'Notification ID is required' },
+        { status: 400 }
+      )
+    }
+
+    const { error } = await supabase.rpc('mark_notification_read', {
+      p_notification_id: notificationId
+    })
 
     if (error) {
-      console.error('Error marking notification as read:', error)
-      return NextResponse.json({ error: 'Failed to mark notification as read' }, { status: 500 })
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ success: true })
+
   } catch (error) {
-    console.error('Error in mark-read POST:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Mark notification as read API error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }

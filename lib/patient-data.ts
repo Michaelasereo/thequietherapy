@@ -78,44 +78,75 @@ export interface CompletePatientProfile {
 
 // Patient Biodata Functions
 export async function getPatientBiodata(userId: string): Promise<PatientBiodata | null> {
+  console.log('🔄 getPatientBiodata called with userId:', userId)
+  
   try {
-    const { data, error } = await supabase
-      .from('patient_biodata')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
+    const response = await fetch('/api/patient/biodata', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    })
 
-    if (error) {
-      console.error('Error fetching patient biodata:', error)
-      return null
+    console.log('📞 getPatientBiodata response status:', response.status)
+
+    if (response.ok) {
+      const result = await response.json()
+      console.log('📞 getPatientBiodata response data:', result)
+      
+      if (result.success) {
+        console.log('✅ Biodata fetched successfully:', result.data)
+        return result.data
+      } else {
+        console.log('❌ API returned error:', result.error)
+      }
+    } else {
+      console.log('❌ getPatientBiodata request failed with status:', response.status)
     }
 
-    return data
+    return null
   } catch (error) {
-    console.error('Error fetching patient biodata:', error)
+    console.error('❌ Error fetching patient biodata:', error)
     return null
   }
 }
 
 export async function upsertPatientBiodata(userId: string, biodata: Partial<PatientBiodata>): Promise<PatientBiodata | null> {
+  console.log('🔄 upsertPatientBiodata called with userId:', userId, 'biodata:', biodata)
+  
   try {
-    const { data, error } = await supabase
-      .from('patient_biodata')
-      .upsert({
-        user_id: userId,
-        ...biodata
-      })
-      .select()
-      .single()
+    console.log('📤 Sending data to API:', biodata)
+    
+    const response = await fetch('/api/patient/biodata', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify(biodata)
+    })
 
-    if (error) {
-      console.error('Error upserting patient biodata:', error)
+    console.log('📞 API response status:', response.status)
+
+    if (response.ok) {
+      const result = await response.json()
+      console.log('📞 API response data:', result)
+      
+      if (result.success) {
+        console.log('✅ Upsert successful, returned data:', result.data)
+        return result.data
+      } else {
+        console.error('❌ API returned error:', result.error)
+        return null
+      }
+    } else {
+      console.error('❌ API request failed with status:', response.status)
       return null
     }
-
-    return data
   } catch (error) {
-    console.error('Error upserting patient biodata:', error)
+    console.error('❌ Exception in upsertPatientBiodata:', error)
     return null
   }
 }
@@ -123,18 +154,22 @@ export async function upsertPatientBiodata(userId: string, biodata: Partial<Pati
 // Patient Family History Functions
 export async function getPatientFamilyHistory(userId: string): Promise<PatientFamilyHistory | null> {
   try {
-    const { data, error } = await supabase
-      .from('patient_family_history')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
+    const response = await fetch('/api/patient/family-history', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    })
 
-    if (error) {
-      console.error('Error fetching patient family history:', error)
-      return null
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success) {
+        return result.data
+      }
     }
 
-    return data
+    return null
   } catch (error) {
     console.error('Error fetching patient family history:', error)
     return null
@@ -143,21 +178,24 @@ export async function getPatientFamilyHistory(userId: string): Promise<PatientFa
 
 export async function upsertPatientFamilyHistory(userId: string, familyHistory: Partial<PatientFamilyHistory>): Promise<PatientFamilyHistory | null> {
   try {
-    const { data, error } = await supabase
-      .from('patient_family_history')
-      .upsert({
-        user_id: userId,
-        ...familyHistory
-      })
-      .select()
-      .single()
+    const response = await fetch('/api/patient/family-history', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify(familyHistory)
+    })
 
-    if (error) {
-      console.error('Error upserting patient family history:', error)
-      return null
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success) {
+        return result.data
+      }
     }
 
-    return data
+    return null
   } catch (error) {
     console.error('Error upserting patient family history:', error)
     return null
@@ -167,18 +205,22 @@ export async function upsertPatientFamilyHistory(userId: string, familyHistory: 
 // Patient Social History Functions
 export async function getPatientSocialHistory(userId: string): Promise<PatientSocialHistory | null> {
   try {
-    const { data, error } = await supabase
-      .from('patient_social_history')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
+    const response = await fetch('/api/patient/social-history', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    })
 
-    if (error) {
-      console.error('Error fetching patient social history:', error)
-      return null
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success) {
+        return result.data
+      }
     }
 
-    return data
+    return null
   } catch (error) {
     console.error('Error fetching patient social history:', error)
     return null
@@ -187,21 +229,24 @@ export async function getPatientSocialHistory(userId: string): Promise<PatientSo
 
 export async function upsertPatientSocialHistory(userId: string, socialHistory: Partial<PatientSocialHistory>): Promise<PatientSocialHistory | null> {
   try {
-    const { data, error } = await supabase
-      .from('patient_social_history')
-      .upsert({
-        user_id: userId,
-        ...socialHistory
-      })
-      .select()
-      .single()
+    const response = await fetch('/api/patient/social-history', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify(socialHistory)
+    })
 
-    if (error) {
-      console.error('Error upserting patient social history:', error)
-      return null
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success) {
+        return result.data
+      }
     }
 
-    return data
+    return null
   } catch (error) {
     console.error('Error upserting patient social history:', error)
     return null
@@ -332,11 +377,36 @@ export async function getCompletePatientProfile(userId: string): Promise<Complet
 
 // Utility function to get current user ID
 export async function getCurrentUserId(): Promise<string | null> {
+  console.log('🔄 getCurrentUserId called')
+  
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    return user?.id || null
+    // Call the /api/auth/me endpoint to get current user info
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    })
+    
+    console.log('📞 /api/auth/me response status:', response.status)
+    
+    if (response.ok) {
+      const data = await response.json()
+      console.log('📞 /api/auth/me response data:', data)
+      
+      if (data.success && data.user) {
+        console.log('✅ User ID found:', data.user.id)
+        return data.user.id
+      } else {
+        console.log('❌ No user data in response')
+      }
+    } else {
+      console.log('❌ /api/auth/me request failed with status:', response.status)
+    }
+    
+    return null
   } catch (error) {
-    console.error('Error getting current user ID:', error)
+    console.error('❌ Error getting current user ID:', error)
     return null
   }
 }

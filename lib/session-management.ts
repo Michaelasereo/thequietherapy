@@ -3,17 +3,17 @@ import { supabase } from './supabase'
 // Simplified session management functions
 export interface SessionData {
   id?: string
-  client_id: string
+  user_id: string
   therapist_id: string
-  session_date: string
-  start_time: string
-  end_time: string
+  title?: string
+  description?: string
+  scheduled_date: string
+  scheduled_time: string
   duration_minutes?: number
-  session_type?: string
   status?: string
-  amount?: number
-  payment_status?: string
-  notes?: string
+  daily_room_name?: string
+  daily_room_url?: string
+  daily_room_created_at?: string
   created_at?: string
   updated_at?: string
 }
@@ -57,7 +57,7 @@ export async function checkTherapistAvailability(
       .select('*')
       .eq('therapist_id', therapistId)
       .in('status', ['scheduled', 'in_progress'])
-      .or(`start_time.lte.${startTime.toISOString()},end_time.gte.${endTime.toISOString()}`)
+      .or(`scheduled_date.eq.${startTime.toISOString().split('T')[0]}`)
 
     if (conflictError) {
       console.error('Error checking conflicts:', conflictError)
@@ -111,7 +111,7 @@ export async function getAvailableSlots(
           .select('*')
           .eq('therapist_id', therapistId)
           .in('status', ['scheduled', 'in_progress'])
-          .or(`start_time.lte.${currentStart.toISOString()},end_time.gte.${currentEnd.toISOString()}`)
+          .or(`scheduled_time.eq.${slot.start_time}`)
 
         if (!conflictError && conflicts.length === 0) {
           availableSlots.push({
@@ -137,8 +137,8 @@ export async function bookSession(sessionData: SessionData): Promise<{ success: 
     // Check if therapist is available
     const isAvailable = await checkTherapistAvailability(
       sessionData.therapist_id,
-      new Date(sessionData.start_time),
-      new Date(sessionData.end_time)
+      new Date(`${sessionData.scheduled_date}T${sessionData.scheduled_time}`),
+      new Date(`${sessionData.scheduled_date}T${sessionData.scheduled_time}`)
     )
 
     if (!isAvailable) {
@@ -149,7 +149,7 @@ export async function bookSession(sessionData: SessionData): Promise<{ success: 
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('credits')
-      .eq('id', sessionData.client_id)
+      .eq('id', sessionData.user_id)
       .single()
 
     if (userError || !user || user.credits < 1) {
@@ -163,9 +163,8 @@ export async function bookSession(sessionData: SessionData): Promise<{ success: 
         ...sessionData,
         status: sessionData.status || 'scheduled',
         duration_minutes: sessionData.duration_minutes || 60,
-        session_type: sessionData.session_type || 'video',
-        amount: sessionData.amount || 0,
-        payment_status: sessionData.payment_status || 'pending'
+        title: sessionData.title || 'Therapy Session',
+        description: sessionData.description || 'Scheduled therapy session'
       })
       .select()
       .single()
@@ -179,7 +178,7 @@ export async function bookSession(sessionData: SessionData): Promise<{ success: 
     await supabase
       .from('users')
       .update({ credits: user.credits - 1 })
-      .eq('id', sessionData.client_id)
+      .eq('id', sessionData.user_id)
 
     return { success: true, session }
   } catch (error) {
@@ -198,10 +197,10 @@ export async function getSessions(
     let query = supabase
       .from('sessions')
       .select('*')
-      .order('start_time', { ascending: true })
+      .order('scheduled_date', { ascending: true })
 
     if (userId) {
-      query = query.eq('client_id', userId)
+      query = query.eq('user_id', userId)
     }
 
     if (therapistId) {
@@ -255,8 +254,8 @@ export async function getUserSessions(userId: string): Promise<SessionData[]> {
     const { data: sessions, error } = await supabase
       .from('sessions')
       .select('*')
-      .eq('client_id', userId)
-      .order('start_time', { ascending: false })
+      .eq('user_id', userId)
+      .order('scheduled_date', { ascending: false })
 
     if (error) {
       console.error('Error fetching user sessions:', error)
@@ -273,14 +272,14 @@ export async function getUserSessions(userId: string): Promise<SessionData[]> {
 // Get upcoming sessions for a user
 export async function getUpcomingSessions(userId: string): Promise<SessionData[]> {
   try {
-    const now = new Date().toISOString()
+    const now = new Date().toISOString().split('T')[0] // Get just the date part
     const { data: sessions, error } = await supabase
       .from('sessions')
       .select('*')
-      .eq('client_id', userId)
-      .gte('start_time', now)
+      .eq('user_id', userId)
+      .gte('scheduled_date', now)
       .in('status', ['scheduled', 'confirmed'])
-      .order('start_time', { ascending: true })
+      .order('scheduled_date', { ascending: true })
 
     if (error) {
       console.error('Error fetching upcoming sessions:', error)

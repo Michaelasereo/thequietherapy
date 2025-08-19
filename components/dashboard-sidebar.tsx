@@ -22,6 +22,8 @@ import { dashboardSidebarGroups, dashboardBottomNavItems, mockUser } from "@/lib
 import { useSidebarState } from "@/hooks/useDashboardState"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
+import { useNotifications } from "@/hooks/use-notifications"
+import { Badge } from "@/components/ui/badge"
 
 export default function DashboardSidebar() {
   const pathname = usePathname()
@@ -32,6 +34,8 @@ export default function DashboardSidebar() {
     handleItemToggle
   } = useSidebarState()
   const { logout } = useAuth()
+  const { user } = useAuth()
+  const { unreadCount } = useNotifications(user?.id || '')
 
   const handleLogout = async () => {
     await logout()
@@ -57,6 +61,7 @@ export default function DashboardSidebar() {
                 <SidebarMenu>
                   {group.items.map((item) => {
                     const isItemActive = isActive(item.name) || pathname === item.href
+                    const isNotificationsItem = item.name === "Notifications"
                     
                     return (
                       <SidebarMenuItem key={item.name}>
@@ -70,9 +75,16 @@ export default function DashboardSidebar() {
                               : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           }
                         >
-                          <Link href={item.href}>
+                          <Link href={item.href} className="relative flex items-center">
                             <item.icon className="h-5 w-5" />
                             <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
+                            {isNotificationsItem && unreadCount > 0 && (
+                              <Badge 
+                                className="ml-auto h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center group-data-[state=collapsed]:hidden bg-[#A66B24] text-white border-[#A66B24]"
+                              >
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </Badge>
+                            )}
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>

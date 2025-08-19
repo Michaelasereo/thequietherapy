@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
           id,
           full_name,
           email,
-          avatar_url,
           is_verified,
           is_active
         )
@@ -40,7 +39,7 @@ export async function GET(request: NextRequest) {
       id: therapist.user_id,
       name: therapist.user?.full_name || 'Unknown Therapist',
       email: therapist.user?.email || '',
-      avatar_url: therapist.user?.avatar_url || '',
+      avatar_url: '', // Default empty string since column doesn't exist
       specialization: therapist.specialization || '',
       experience_years: therapist.experience_years || 0,
       hourly_rate: therapist.hourly_rate || 50,

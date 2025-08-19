@@ -23,6 +23,8 @@ import {
 import { NotificationItem } from '@/lib/notifications-client'
 import { formatDistanceToNow } from 'date-fns'
 import { useNotifications } from '@/hooks/use-notifications'
+import { useAuth } from '@/context/auth-context'
+import { NotificationModal } from '@/components/notifications/notification-modal'
 
 export default function DashboardNotificationsPage() {
   const [activeTab, setActiveTab] = useState('all')
@@ -30,8 +32,12 @@ export default function DashboardNotificationsPage() {
   const [filterCategory, setFilterCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([])
+  const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const userId = 'fac0056c-2f16-4417-a1ae-9c63345937c8' // Your user ID
+  const { user } = useAuth()
+  const userId = user?.id || ''
+  
   const { 
     notifications, 
     unreadCount, 
@@ -61,13 +67,8 @@ export default function DashboardNotificationsPage() {
   })
 
   const handleNotificationClick = async (notification: NotificationItem) => {
-    if (!notification.is_read) {
-      await markAsRead(notification.id)
-    }
-    
-    if (notification.action_url) {
-      window.location.href = notification.action_url
-    }
+    setSelectedNotification(notification)
+    setIsModalOpen(true)
   }
 
   const handleSelectAll = () => {
@@ -105,7 +106,7 @@ export default function DashboardNotificationsPage() {
       case 'warning':
         return 'border-yellow-200 bg-yellow-50'
       case 'error':
-        return 'border-red-200 bg-red-50'
+        return 'border-[#A66B24] bg-[#A66B24]/10'
       default:
         return 'border-blue-200 bg-blue-50'
     }
@@ -151,38 +152,35 @@ export default function DashboardNotificationsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Notifications</p>
-                <p className="text-2xl font-bold text-gray-900">{notifications.length}</p>
-              </div>
-              <Bell className="h-8 w-8 text-gray-400" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Notifications</CardTitle>
+            <Bell className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{notifications.length}</div>
+            <p className="text-xs text-muted-foreground">All notifications</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Unread</p>
-                <p className="text-2xl font-bold text-red-600">{unreadCount}</p>
-              </div>
-              <Badge variant="destructive" className="h-8 w-8 rounded-full p-0 flex items-center justify-center">
-                {unreadCount}
-              </Badge>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Unread</CardTitle>
+            <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-[#A66B24] text-white border-[#A66B24] text-xs">
+              {unreadCount}
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-[#A66B24]">{unreadCount}</div>
+            <p className="text-xs text-muted-foreground">Unread notifications</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Read</p>
-                <p className="text-2xl font-bold text-green-600">{notifications.length - unreadCount}</p>
-              </div>
-              <Check className="h-8 w-8 text-green-400" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Read</CardTitle>
+            <Check className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-600">{notifications.length - unreadCount}</div>
+            <p className="text-xs text-muted-foreground">Read notifications</p>
           </CardContent>
         </Card>
       </div>
@@ -302,19 +300,18 @@ export default function DashboardNotificationsPage() {
                     {filteredNotifications.map((notification) => (
                       <Card 
                         key={notification.id}
-                        className={`cursor-pointer transition-all hover:shadow-md ${
+                        className={`cursor-pointer transition-all hover:shadow-lg bg-white shadow-sm border ${
                           notification.is_read ? 'opacity-75' : ''
-                        } ${getNotificationColor(notification.type)}`}
+                        } ${!notification.is_read ? 'border-black' : 'border-gray-200'}`}
                         onClick={() => handleNotificationClick(notification)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
-                                <span className="text-lg">{getNotificationIcon(notification.type)}</span>
                                 <h4 className="font-medium text-gray-900">{notification.title}</h4>
                                 {!notification.is_read && (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge className="text-xs bg-green-600 text-white border-green-600">
                                     New
                                   </Badge>
                                 )}
@@ -326,7 +323,18 @@ export default function DashboardNotificationsPage() {
                               <div className="flex items-center justify-between text-sm text-gray-500">
                                 <span>{formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}</span>
                                 {notification.action_url && (
-                                  <span className="text-blue-600">Click to view →</span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setSelectedNotification(notification)
+                                      setIsModalOpen(true)
+                                    }}
+                                    className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                                  >
+                                    View Details
+                                  </Button>
                                 )}
                               </div>
                             </div>
@@ -340,7 +348,7 @@ export default function DashboardNotificationsPage() {
                                     markAsRead(notification.id)
                                   }}
                                 >
-                                  <Check className="h-4 w-4" />
+                                  <Check className="h-4 w-4 text-black" />
                                 </Button>
                               )}
                             </div>
@@ -355,6 +363,17 @@ export default function DashboardNotificationsPage() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Notification Modal */}
+      <NotificationModal
+        notification={selectedNotification}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedNotification(null)
+        }}
+        onMarkAsRead={markAsRead}
+      />
     </div>
   )
 }

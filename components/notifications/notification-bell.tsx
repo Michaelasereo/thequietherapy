@@ -14,9 +14,15 @@ interface NotificationBellProps {
 
 export function NotificationBell({ userId, userType }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { unreadCount, notifications, markAsRead, markAllAsRead, refreshNotifications } = useNotifications(userId)
+  const { unreadCount, notifications, markAsRead, markAllAsRead, refreshNotifications, loading } = useNotifications(userId)
 
+  // Debug logging
+  console.log('🔔 NotificationBell:', { userId, userType, unreadCount, notificationsCount: notifications.length, loading })
 
+  // Don't render if no valid user ID
+  if (!userId || userId.length === 0) {
+    return null
+  }
 
   return (
     <div className="relative">
@@ -29,8 +35,7 @@ export function NotificationBell({ userId, userType }: NotificationBellProps) {
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
           <Badge 
-            variant="destructive" 
-            className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+            className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-[#A66B24] text-white border-[#A66B24]"
           >
             {unreadCount > 99 ? '99+' : unreadCount}
           </Badge>

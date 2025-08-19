@@ -1,13 +1,15 @@
 "use client"
 
 import { useState } from 'react'
-import { X, Check, CheckCheck, ExternalLink, Bell } from 'lucide-react'
+import { X, Check, CheckCheck, ExternalLink, Bell, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { NotificationItem } from '@/lib/notifications-client'
 import { formatDistanceToNow } from 'date-fns'
+import Link from 'next/link'
+import { useSidebar } from '@/components/ui/sidebar'
 
 interface NotificationPanelProps {
   notifications: NotificationItem[]
@@ -27,8 +29,11 @@ export function NotificationPanel({
   userType
 }: NotificationPanelProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const { setOpen } = useSidebar()
 
-
+  // Show only recent notifications (last 5) in the dropdown
+  const recentNotifications = notifications.slice(0, 5)
+  const hasMoreNotifications = notifications.length > 5
 
   const handleMarkAllAsRead = async () => {
     setIsLoading(true)
@@ -102,20 +107,20 @@ export function NotificationPanel({
         </CardHeader>
         <CardContent className="p-0">
           <ScrollArea className="h-96">
-            {notifications.length === 0 ? (
+            {recentNotifications.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
                 <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                 <p>No notifications yet</p>
               </div>
             ) : (
               <div className="space-y-1">
-                {notifications.map((notification) => (
+                {recentNotifications.map((notification) => (
                   <div
-                    key={notification.id}
-                    className={`p-4 border-l-4 cursor-pointer transition-colors hover:bg-gray-50 ${
-                      notification.is_read ? 'opacity-75' : 'bg-blue-50'
-                    } ${getNotificationColor(notification.type)}`}
-                    onClick={() => handleNotificationClick(notification)}
+                                          key={notification.id}
+                      className={`p-4 border-l-4 cursor-pointer transition-colors hover:bg-gray-50 ${
+                        notification.is_read ? 'opacity-75' : 'bg-[#A66B24]/10 border-l-[#A66B24]'
+                      } ${getNotificationColor(notification.type)}`}
+                      onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -158,6 +163,34 @@ export function NotificationPanel({
                     </div>
                   </div>
                 ))}
+                
+                {/* See All Button */}
+                {(hasMoreNotifications || notifications.length > 0) && (
+                  <div className="p-4 border-t">
+                    <Link 
+                      href={
+                        userType === 'therapist' ? '/therapist/dashboard/notifications' :
+                        userType === 'admin' ? '/admin/dashboard/notifications' :
+                        userType === 'partner' ? '/partner/dashboard/notifications' :
+                        '/dashboard/notifications'
+                      }
+                      onClick={() => {
+                        onClose()
+                        // Ensure sidebar is open when navigating to notifications
+                        setOpen(true)
+                      }}
+                    >
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-between"
+                        size="sm"
+                      >
+                        <span>See all notifications</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
           </ScrollArea>

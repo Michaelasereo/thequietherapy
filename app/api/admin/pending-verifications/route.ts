@@ -12,15 +12,27 @@ function formatDate(dateString: string): string {
 
 export async function GET() {
   try {
-    const { data: applications, error } = await supabase
+    // Fetch pending therapist enrollments
+    const { data: therapistApplications, error: therapistError } = await supabase
       .from('therapist_enrollments')
       .select('*')
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
 
-    if (error) throw error
+    if (therapistError) throw therapistError
 
-    const formattedApplications = applications?.map(app => ({
+    // Fetch pending partner users (users with user_type = 'partner' and is_verified = false)
+    const { data: partnerApplications, error: partnerError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('user_type', 'partner')
+      .eq('is_verified', false)
+      .order('created_at', { ascending: false })
+
+    if (partnerError) throw partnerError
+
+    // Format therapist applications
+    const formattedTherapistApplications = therapistApplications?.map(app => ({
       id: app.id,
       full_name: app.full_name,
       email: app.email,
@@ -30,10 +42,30 @@ export async function GET() {
       languages: app.languages || [],
       status: app.status,
       created_at: app.created_at,
-      submitted_at: app.created_at
+      submitted_at: app.created_at,
+      type: 'therapist'
     })) || []
 
-    return NextResponse.json(formattedApplications)
+    // Format partner applications
+    const formattedPartnerApplications = partnerApplications?.map(app => ({
+      id: app.id,
+      full_name: app.full_name || app.email.split('@')[0],
+      email: app.email,
+      phone: '',
+      mdcn_code: '',
+      specialization: [],
+      languages: [],
+      status: 'pending',
+      created_at: app.created_at,
+      submitted_at: app.created_at,
+      type: 'partner'
+    })) || []
+
+    // Combine and sort by creation date
+    const allApplications = [...formattedTherapistApplications, ...formattedPartnerApplications]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+    return NextResponse.json(allApplications)
   } catch (error) {
     console.error('Error fetching pending verifications:', error)
     return NextResponse.json([], { status: 500 })

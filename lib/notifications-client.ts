@@ -1,10 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
 export interface NotificationItem {
   id: string
   user_id: string
@@ -20,79 +13,95 @@ export interface NotificationItem {
   read_at?: string
 }
 
-// Get notifications for a user (client-side)
+// Get notifications for a user (client-side) - Using API endpoint to avoid RLS issues
 export async function getNotifications(userId: string, limit: number = 50): Promise<{ success: boolean; notifications?: NotificationItem[]; error?: string }> {
   try {
-    const { data: notifications, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit)
+    const response = await fetch(`/api/notifications?userId=${userId}&limit=${limit}`, {
+      credentials: 'include'
+    })
 
-    if (error) {
-      console.error('❌ Error fetching notifications:', error)
-      return { success: false, error: error.message }
+    if (!response.ok) {
+      return { success: false, error: `API error: ${response.status}` }
     }
 
-    return { success: true, notifications: notifications || [] }
+    const result = await response.json()
+
+    if (result.success) {
+      return { success: true, notifications: result.notifications || [] }
+    } else {
+      return { success: false, error: result.error }
+    }
   } catch (error) {
-    console.error('❌ getNotifications error:', error)
+    console.error('getNotifications error:', error)
     return { success: false, error: 'Failed to fetch notifications' }
   }
 }
 
-// Get unread notifications count (client-side)
+// Get unread notifications count (client-side) - Using API endpoint to avoid RLS issues
 export async function getUnreadCount(userId: string): Promise<{ success: boolean; count?: number; error?: string }> {
   try {
-    const { data: count, error } = await supabase.rpc('get_unread_notification_count', {
-      p_user_id: userId
+    const response = await fetch(`/api/notifications/unread-count?userId=${userId}`, {
+      credentials: 'include'
     })
 
-    if (error) {
-      console.error('❌ Error getting unread count:', error)
-      return { success: false, error: error.message }
+    if (!response.ok) {
+      return { success: false, error: `API error: ${response.status}` }
     }
 
-    return { success: true, count: count || 0 }
+    const result = await response.json()
+
+    if (result.success) {
+      return { success: true, count: result.count || 0 }
+    } else {
+      return { success: false, error: result.error }
+    }
   } catch (error) {
-    console.error('❌ getUnreadCount error:', error)
+    console.error('getUnreadCount error:', error)
     return { success: false, error: 'Failed to get unread count' }
   }
 }
 
-// Mark notification as read (client-side)
+// Mark notification as read (client-side) - Using API endpoint to avoid RLS issues
 export async function markNotificationRead(notificationId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase.rpc('mark_notification_read', {
-      p_notification_id: notificationId
+    const response = await fetch(`/api/notifications/${notificationId}/mark-read`, {
+      method: 'POST',
+      credentials: 'include'
     })
 
-    if (error) {
-      console.error('❌ Error marking notification as read:', error)
-      return { success: false, error: error.message }
+    if (!response.ok) {
+      return { success: false, error: `API error: ${response.status}` }
     }
 
-    return { success: true }
+    const result = await response.json()
+    return result.success ? { success: true } : { success: false, error: result.error }
   } catch (error) {
     console.error('❌ markNotificationRead error:', error)
     return { success: false, error: 'Failed to mark notification as read' }
   }
 }
 
-// Mark all notifications as read for a user (client-side)
+// Mark all notifications as read for a user (client-side) - Using API endpoint to avoid RLS issues
 export async function markAllNotificationsRead(userId: string): Promise<{ success: boolean; count?: number; error?: string }> {
   try {
-    const { data: count, error } = await supabase.rpc('mark_all_notifications_read', {
-      p_user_id: userId
+    const response = await fetch('/api/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        userId,
+        action: 'mark_all_read'
+      })
     })
 
-    if (error) {
-      console.error('❌ Error marking all notifications as read:', error)
-      return { success: false, error: error.message }
+    if (!response.ok) {
+      return { success: false, error: `API error: ${response.status}` }
     }
 
-    return { success: true, count: count || 0 }
+    const result = await response.json()
+    return result.success ? { success: true, count: result.count } : { success: false, error: result.error }
   } catch (error) {
     console.error('❌ markAllNotificationsRead error:', error)
     return { success: false, error: 'Failed to mark all notifications as read' }

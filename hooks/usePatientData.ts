@@ -126,21 +126,31 @@ export function usePatientData(): UsePatientDataReturn {
   
   // Update biodata
   const updateBiodata = useCallback(async (data: Partial<PatientBiodata>): Promise<boolean> => {
-    if (!userId) return false
+    console.log('🔄 updateBiodata called with userId:', userId, 'data:', data)
+    
+    if (!userId) {
+      console.log('❌ No userId available')
+      return false
+    }
     
     setLoading(prev => ({ ...prev, biodata: true }))
     setErrors(prev => ({ ...prev, biodata: null }))
     
     try {
+      console.log('📞 Calling upsertPatientBiodata...')
       const updatedData = await upsertPatientBiodata(userId, data)
+      console.log('📞 upsertPatientBiodata result:', updatedData)
+      
       if (updatedData) {
         setBiodata(updatedData)
         toast({
           title: "Success",
           description: "Personal information updated successfully.",
         })
+        console.log('✅ Biodata updated successfully')
         return true
       } else {
+        console.log('❌ upsertPatientBiodata returned null')
         throw new Error('Failed to update biodata')
       }
     } catch (error) {
@@ -151,7 +161,7 @@ export function usePatientData(): UsePatientDataReturn {
         description: "Failed to update information. Please try again.",
         variant: "destructive",
       })
-      console.error('Error updating biodata:', error)
+      console.error('❌ Error updating biodata:', error)
       return false
     } finally {
       setLoading(prev => ({ ...prev, biodata: false }))

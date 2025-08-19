@@ -8,6 +8,8 @@ import { Pencil, Save, X, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { usePatientData } from "@/hooks/usePatientData"
 import { PatientFamilyHistory } from "@/lib/patient-data"
+import { toast } from "sonner"
+import { useAuth } from "@/context/auth-context"
 
 export default function FamilyHistoryPage() {
   const { 
@@ -17,6 +19,8 @@ export default function FamilyHistoryPage() {
     refreshFamilyHistory, 
     updateFamilyHistory 
   } = usePatientData()
+  
+  const { user } = useAuth()
   
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<Partial<PatientFamilyHistory>>({})
@@ -41,6 +45,39 @@ export default function FamilyHistoryPage() {
     const success = await updateFamilyHistory(formData)
     if (success) {
       setIsEditing(false)
+      toast.success('Family history updated successfully')
+      
+      // Create sidebar notification via API
+      if (user?.id) {
+        try {
+          const response = await fetch('/api/notifications/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              user_id: user.id,
+              user_type: 'individual',
+              title: 'Family History Updated',
+              message: 'Your family medical and mental health history has been updated successfully.',
+              type: 'success',
+              category: 'general',
+              action_url: '/dashboard/family-history',
+              metadata: { updated_at: new Date().toISOString() }
+            })
+          })
+
+          const result = await response.json()
+
+          if (!response.ok) {
+            console.error('Failed to create notification:', result)
+          }
+        } catch (error) {
+          console.error('Error creating notification:', error)
+        }
+      }
+    } else {
+      toast.error('Failed to update family history')
     }
   }
 
@@ -56,8 +93,10 @@ export default function FamilyHistoryPage() {
       <div className="space-y-6">
         <h2 className="text-2xl font-bold">Family History</h2>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading family history...</span>
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading your family history...</p>
+          </div>
         </div>
       </div>
     )
@@ -94,7 +133,15 @@ export default function FamilyHistoryPage() {
         <p className="text-sm text-muted-foreground">Share your family's medical and mental health history</p>
       </div>
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm relative">
+        {loading.familyHistory && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+            <div className="text-center">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Updating...</p>
+            </div>
+          </div>
+        )}
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl font-bold">Family Medical & Mental Health History</CardTitle>
           {!isEditing ? (
@@ -111,28 +158,32 @@ export default function FamilyHistoryPage() {
           ) : (
             <div className="flex gap-2">
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-green-600 hover:text-green-700"
+                variant="default" 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white"
                 onClick={handleSave}
                 disabled={loading.familyHistory}
               >
                 {loading.familyHistory ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Saving...
+                  </>
                 ) : (
-                  <Save className="h-4 w-4" />
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
                 )}
-                <span className="sr-only">Save</span>
               </Button>
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-red-600 hover:text-red-700"
+                variant="outline" 
+                size="sm"
                 onClick={handleCancel}
                 disabled={loading.familyHistory}
               >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Cancel</span>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
               </Button>
             </div>
           )}
@@ -148,6 +199,7 @@ export default function FamilyHistoryPage() {
                   onChange={(e) => handleInputChange('mental_health_history', e.target.value)}
                   placeholder="Describe any mental health conditions in your family (e.g., depression, anxiety, bipolar disorder)..."
                   rows={4}
+                  disabled={loading.familyHistory}
                 />
               </div>
               <div className="flex flex-col space-y-2">
@@ -158,6 +210,7 @@ export default function FamilyHistoryPage() {
                   onChange={(e) => handleInputChange('substance_abuse_history', e.target.value)}
                   placeholder="Describe any history of substance abuse in your family (alcohol, drugs, etc.)..."
                   rows={4}
+                  disabled={loading.familyHistory}
                 />
               </div>
               <div className="flex flex-col space-y-2">
@@ -168,6 +221,7 @@ export default function FamilyHistoryPage() {
                   onChange={(e) => handleInputChange('other_medical_history', e.target.value)}
                   placeholder="Describe any other medical conditions that run in your family (diabetes, heart disease, cancer, etc.)..."
                   rows={4}
+                  disabled={loading.familyHistory}
                 />
               </div>
             </>

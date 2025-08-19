@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, Save, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
+import { useTherapistData } from "@/hooks/useTherapistDashboardState"
 
 interface AvailabilitySlot {
   day_of_week: number
@@ -30,6 +31,7 @@ const DAYS_OF_WEEK = [
 ]
 
 export function AvailabilitySchedule() {
+  const { therapistInfo } = useTherapistData()
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -71,18 +73,20 @@ export function AvailabilitySchedule() {
   }
 
   const handleSave = async () => {
+    if (!therapistInfo?.email) {
+      toast.error('Therapist email not found. Please refresh the page.')
+      return
+    }
+
     setSaving(true)
     try {
-      // Get therapist email from context or session
-      const therapistEmail = "test@example.com" // Replace with actual therapist email
-
       const response = await fetch('/api/therapist/availability', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          therapistEmail,
+          therapistEmail: therapistInfo.email,
           availability: availability.filter(slot => slot.is_available)
         }),
       })
@@ -92,7 +96,8 @@ export function AvailabilitySchedule() {
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
       } else {
-        toast.error('Failed to save availability schedule')
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Failed to save availability schedule')
       }
     } catch (error) {
       console.error('Error saving availability:', error)
@@ -117,7 +122,7 @@ export function AvailabilitySchedule() {
         </div>
         <Button 
           onClick={handleSave} 
-          disabled={saving}
+          disabled={saving || !therapistInfo?.email}
           className="flex items-center gap-2"
         >
           {saving ? (

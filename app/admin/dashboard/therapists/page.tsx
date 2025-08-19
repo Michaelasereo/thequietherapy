@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea"
 import { UserCheck, Search, Eye, Shield, Calendar, Mail, Phone, FileText, Star, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
 import { toast } from "sonner"
+import { useSearchParams } from 'next/navigation'
 
 interface Therapist {
   id: string
@@ -31,16 +32,39 @@ interface Therapist {
 }
 
 export default function TherapistsPage() {
+  const searchParams = useSearchParams()
+  const reviewId = searchParams.get('review')
+  
   const [therapists, setTherapists] = useState<Therapist[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [verificationFilter, setVerificationFilter] = useState("all")
+  const [selectedTherapist, setSelectedTherapist] = useState<Therapist | null>(null)
 
   // Fetch therapists on component mount
   useEffect(() => {
     fetchTherapists()
   }, [])
+
+  // Handle review parameter from URL
+  useEffect(() => {
+    if (reviewId && therapists.length > 0) {
+      const therapist = therapists.find(t => t.id === reviewId)
+      if (therapist) {
+        setSelectedTherapist(therapist)
+        // Scroll to the therapist in the table
+        const element = document.getElementById(`therapist-${reviewId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          element.classList.add('ring-2', 'ring-blue-500', 'ring-opacity-50')
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50')
+          }, 3000)
+        }
+      }
+    }
+  }, [reviewId, therapists])
 
   const fetchTherapists = async () => {
     try {

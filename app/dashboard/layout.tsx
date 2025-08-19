@@ -20,8 +20,6 @@ import { NotificationBell } from '@/components/notifications/notification-bell'
 import { useRouter } from 'next/navigation'
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  console.log('🔍 DashboardLayout: Component rendered')
-  
   // Connect to global state
   useCrossDashboardSync('user');
   
@@ -29,12 +27,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
   
-  console.log('🔍 DashboardLayout: Auth state - loading:', loading, 'isAuthenticated:', isAuthenticated, 'user:', user)
-  
   // Handle redirect in useEffect to avoid React errors
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      console.log('🔍 DashboardLayout: Not authenticated, redirecting to login')
       router.push('/login');
     }
   }, [loading, isAuthenticated, router]);
@@ -44,7 +39,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   
   // Show loading state
   if (loading) {
-    console.log('🔍 DashboardLayout: Showing loading state')
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
@@ -57,7 +51,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   
   // Show loading while redirecting
   if (!isAuthenticated) {
-    console.log('🔍 DashboardLayout: Not authenticated, showing loading while redirecting')
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
@@ -67,8 +60,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  
-  console.log('🔍 DashboardLayout: Rendering dashboard content')
   
   return (
     <SidebarProvider defaultOpen={true}>

@@ -31,12 +31,15 @@ export default function PatientBiodataPage() {
 
   // Load data on mount
   useEffect(() => {
+    console.log('🔄 Biodata page: Loading data on mount')
     refreshBiodata()
   }, [refreshBiodata])
 
   // Update form data when biodata changes
   useEffect(() => {
+    console.log('🔄 Biodata page: biodata changed:', biodata)
     if (biodata) {
+      console.log('✅ Setting form data with biodata:', biodata)
       setFormData(biodata)
       setTherapyFormData({
         complaints: biodata.complaints || '',
@@ -54,19 +57,37 @@ export default function PatientBiodataPage() {
   }
 
   const handleSave = async () => {
-    const success = await updateBiodata(formData)
-    if (success) {
-      setIsEditing(false)
+    console.log('Saving biodata:', formData)
+    try {
+      const success = await updateBiodata(formData)
+      console.log('Save result:', success)
+      if (success) {
+        setIsEditing(false)
+        console.log('✅ Save successful, editing mode disabled')
+      } else {
+        console.log('❌ Save failed')
+      }
+    } catch (error) {
+      console.error('Error in handleSave:', error)
     }
   }
 
   const handleTherapySave = async () => {
-    const success = await updateBiodata({
-      complaints: therapyFormData.complaints,
-      therapist_preference: therapyFormData.therapist_preference,
-    })
-    if (success) {
-      setIsEditingTherapy(false)
+    console.log('Saving therapy data:', therapyFormData)
+    try {
+      const success = await updateBiodata({
+        complaints: therapyFormData.complaints,
+        therapist_preference: therapyFormData.therapist_preference,
+      })
+      console.log('Therapy save result:', success)
+      if (success) {
+        setIsEditingTherapy(false)
+        console.log('✅ Therapy save successful, editing mode disabled')
+      } else {
+        console.log('❌ Therapy save failed')
+      }
+    } catch (error) {
+      console.error('Error in handleTherapySave:', error)
     }
   }
 
@@ -148,28 +169,32 @@ export default function PatientBiodataPage() {
           ) : (
             <div className="flex gap-2">
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-green-600 hover:text-green-700"
+                variant="default" 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white"
                 onClick={handleSave}
                 disabled={loading.biodata}
               >
                 {loading.biodata ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Saving...
+                  </>
                 ) : (
-                  <Save className="h-4 w-4" />
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
                 )}
-                <span className="sr-only">Save</span>
               </Button>
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-red-600 hover:text-red-700"
+                variant="outline" 
+                size="sm"
                 onClick={handleCancel}
                 disabled={loading.biodata}
               >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Cancel</span>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
               </Button>
             </div>
           )}
@@ -326,28 +351,32 @@ export default function PatientBiodataPage() {
           ) : (
             <div className="flex gap-2">
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-green-600 hover:text-green-700"
+                variant="default" 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white"
                 onClick={handleTherapySave}
                 disabled={loading.biodata}
               >
                 {loading.biodata ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Saving...
+                  </>
                 ) : (
-                  <Save className="h-4 w-4" />
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
                 )}
-                <span className="sr-only">Save</span>
               </Button>
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-red-600 hover:text-red-700"
+                variant="outline" 
+                size="sm"
                 onClick={handleTherapyCancel}
                 disabled={loading.biodata}
               >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Cancel</span>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
               </Button>
             </div>
           )}

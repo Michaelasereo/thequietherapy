@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
 
 // Types for therapist dashboard state
 interface TherapistData {
@@ -474,7 +474,7 @@ export function TherapistDashboardProvider({ children }: { children: React.React
   const [state, dispatch] = useReducer(therapistDashboardReducer, initialState)
 
   // Fetch therapist data
-  const fetchTherapistData = async () => {
+  const fetchTherapistData = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
       
@@ -496,10 +496,10 @@ export function TherapistDashboardProvider({ children }: { children: React.React
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false })
     }
-  }
+  }, [dispatch])
 
   // Fetch clients
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     try {
       const response = await fetch('/api/therapist/clients')
       if (response.ok) {
@@ -511,10 +511,10 @@ export function TherapistDashboardProvider({ children }: { children: React.React
     } catch (error) {
       console.error('Failed to fetch clients:', error)
     }
-  }
+  }, [dispatch])
 
   // Fetch sessions
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     try {
       const response = await fetch('/api/therapist/sessions')
       if (response.ok) {
@@ -532,10 +532,10 @@ export function TherapistDashboardProvider({ children }: { children: React.React
     } catch (error) {
       console.error('Failed to fetch sessions:', error)
     }
-  }
+  }, [dispatch])
 
   // Fetch dashboard stats
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       // This would typically come from an API
       const mockStats: TherapistStats = {
@@ -553,7 +553,7 @@ export function TherapistDashboardProvider({ children }: { children: React.React
     } catch (error) {
       console.error('Failed to fetch stats:', error)
     }
-  }
+  }, [dispatch, state.clients, state.upcomingSessions.length, state.pastSessions.length, state.therapist?.rating])
 
   // Helper functions
   const toggleSidebar = () => {

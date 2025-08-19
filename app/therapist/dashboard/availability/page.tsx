@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Clock, AlertTriangle, CheckCircle2, Calendar } from "lucide-react"
 import { useTherapistData } from "@/hooks/useTherapistDashboardState"
 import { AvailabilitySchedule } from "@/components/availability-schedule"
+import { AvailabilityCalendar } from "@/components/availability-calendar"
 
 export default function TherapistAvailabilityPage() {
   const { therapistInfo, fetchTherapistData } = useTherapistData()
@@ -17,7 +18,7 @@ export default function TherapistAvailabilityPage() {
 
   useEffect(() => {
     fetchTherapistData()
-  }, [fetchTherapistData])
+  }, []) // Remove fetchTherapistData from dependencies to prevent infinite loop
 
   useEffect(() => {
     if (therapistInfo) {
@@ -44,8 +45,8 @@ export default function TherapistAvailabilityPage() {
 
       if (response.ok) {
         setIsActive(checked)
-        // Refresh therapist data
-        fetchTherapistData()
+        // Don't refresh therapist data immediately to prevent infinite loops
+        // The state will be updated on the next component mount or manual refresh
       } else {
         console.error('Failed to update availability')
       }
@@ -141,11 +142,26 @@ export default function TherapistAvailabilityPage() {
         </CardContent>
       </Card>
 
-      {/* Availability Schedule */}
+      {/* Availability Calendar - New Enhanced Interface */}
       {therapistInfo?.isApproved && isActive && (
         <Card>
           <CardHeader>
-            <CardTitle>Weekly Schedule</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              7-Day Calendar View
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AvailabilityCalendar />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Traditional Weekly Schedule */}
+      {therapistInfo?.isApproved && isActive && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Traditional Weekly Schedule</CardTitle>
           </CardHeader>
           <CardContent>
             <AvailabilitySchedule />
