@@ -61,64 +61,16 @@ export default function PartnersPage() {
   const fetchPartners = async () => {
     try {
       setLoading(true)
-      // This would be replaced with actual API call
-      const mockPartners: Partner[] = [
-        {
-          id: "1",
-          name: "Health Corp Ltd",
-          email: "admin@healthcorp.com",
-          phone: "+2348012345678",
-          memberCount: 45,
-          totalCredits: 500,
-          usedCredits: 320,
-          status: "active",
-          is_verified: true,
-          created_at: "2024-01-05T11:00:00Z",
-          lastActivity: "2024-01-20T14:30:00Z"
-        },
-        {
-          id: "2",
-          name: "Tech Solutions Inc",
-          email: "hr@techsolutions.com",
-          phone: "+2348098765432",
-          memberCount: 23,
-          totalCredits: 300,
-          usedCredits: 180,
-          status: "active",
-          is_verified: true,
-          created_at: "2024-01-10T09:15:00Z",
-          lastActivity: "2024-01-19T16:45:00Z"
-        },
-        {
-          id: "3",
-          name: "Education Foundation",
-          email: "contact@edufoundation.org",
-          memberCount: 67,
-          totalCredits: 800,
-          usedCredits: 450,
-          status: "active",
-          is_verified: true,
-          created_at: "2024-01-15T13:20:00Z",
-          lastActivity: "2024-01-20T10:15:00Z"
-        },
-        {
-          id: "4",
-          name: "New Startup Corp",
-          email: "admin@newstartup.com",
-          phone: "+2348076543210",
-          memberCount: 12,
-          totalCredits: 100,
-          usedCredits: 0,
-          status: "pending",
-          is_verified: false,
-          created_at: "2024-01-21T08:30:00Z"
-        }
-      ]
-      
-      setPartners(mockPartners)
+      const response = await fetch('/api/admin/partners')
+      if (response.ok) {
+        const data = await response.json()
+        setPartners(data)
+      } else {
+        toast.error('Failed to fetch partners')
+      }
     } catch (error) {
       console.error('Error fetching partners:', error)
-      toast.error('Failed to fetch partners')
+      toast.error('Error loading partners')
     } finally {
       setLoading(false)
     }

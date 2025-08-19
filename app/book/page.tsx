@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,8 @@ import BookingProgress from "@/components/booking-progress"
 import BookingStep1 from "@/components/booking-step-1"
 import BookingStep2 from "@/components/booking-step-2"
 import BookingStep3 from "@/components/booking-step-3"
+import BookingStep3Wrapper from "@/components/booking-step-3-wrapper"
+import BookingStep4 from "@/components/booking-step-4"
 
 // Types for the booking data
 interface PatientBiodata {
@@ -20,6 +22,18 @@ interface PatientBiodata {
   gender: "Male" | "Female" | "Non-binary" | "Prefer not to say"
   maritalStatus: "Single" | "Married" | "Divorced" | "Widowed" | "Other"
   therapistPreference?: string
+}
+
+interface TimeSlot {
+  id: string
+  date: string
+  day_name: string
+  start_time: string
+  end_time: string
+  session_duration: number
+  session_title: string
+  session_type: 'individual' | 'group'
+  is_available: boolean
 }
 
 export default function BookingPage() {
@@ -34,22 +48,50 @@ export default function BookingPage() {
     therapistPreference: "",
   })
   const [selectedTherapistId, setSelectedTherapistId] = useState<string>("")
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
+  const [therapistInfo, setTherapistInfo] = useState<any>(null)
 
-  const stepLabels = ["Patient Biodata", "Select Therapist", "Payment"]
+  const stepLabels = ["Patient Biodata", "Select Therapist", "Select Time", "Payment"]
+
+  // Create the step 3 handler function outside of render
+  const handleStep3Complete = useCallback((slot: TimeSlot) => {
+    console.log('handleStep3Complete called with slot:', slot)
+    setSelectedSlot(slot)
+    setCurrentStep(4)
+  }, [])
 
   const handleStep1Complete = (data: PatientBiodata) => {
     setPatientData(data)
     setCurrentStep(2)
   }
 
-  const handleStep2Complete = (therapistId: string) => {
+  const handleStep2Complete = async (therapistId: string) => {
     setSelectedTherapistId(therapistId)
+    
+    // Fetch therapist info for step 3
+    try {
+      const response = await fetch(`/api/therapists/${therapistId}`)
+      const data = await response.json()
+      if (data.success) {
+        setTherapistInfo(data.therapist)
+      }
+    } catch (error) {
+      console.error('Error fetching therapist info:', error)
+    }
+    
     setCurrentStep(3)
   }
 
-  const handleStep3Complete = () => {
+  const handleStep3Complete = useCallback((slot: TimeSlot) => {
+    console.log('handleStep3Complete called with slot:', slot)
+    setSelectedSlot(slot)
+    // Keep the existing therapist info, don't overwrite with slot
+    setCurrentStep(4)
+  }, [])
+
+  const handleStep4Complete = () => {
     // Handle booking completion
-    console.log("Booking completed:", { patientData, selectedTherapistId })
+    console.log("Booking completed:", { patientData, selectedTherapistId, selectedSlot })
     
     // Redirect to authentication if not logged in, then dashboard
     router.push("/auth?redirect=/dashboard&success=true")
@@ -81,11 +123,62 @@ export default function BookingPage() {
           />
         )
       case 3:
+        const step3Props = {
+          onNext: handleStep3Complete,
+          onBack: () => setCurrentStep(2),
+          selectedTherapistId
+        }
+        
+        console.log('Rendering BookingStep3 with props:', step3Props)
+        console.log('onNext function:', handleStep3Complete)
+        console.log('onNext type:', typeof handleStep3Complete)
+        console.log('onNext toString:', handleStep3Complete?.toString())
+        console.log('BookingStep3 component:', BookingStep3)
+        
+        if (!BookingStep3) {
+          return (
+            <div className="p-6 text-center">
+              <p className="text-red-600">Error: BookingStep3 component not found</p>
+            </div>
+          )
+        }
+        
+        if (!handleStep3Complete) {
+          console.error('handleStep3Complete is undefined!')
+          return (
+            <div className="p-6 text-center">
+              <p className="text-red-600">Error: handleStep3Complete function is undefined</p>
+            </div>
+          )
+        }
+        
+        // Test with a simple div first to see if the function works
+        const testFunction = (slot: TimeSlot) => {
+          console.log('TEST FUNCTION CALLED with slot:', slot)
+          alert('Test function works!')
+          setSelectedSlot(slot)
+          setCurrentStep(4)
+        }
+        
+        console.log('Test function:', testFunction)
+        console.log('Test function type:', typeof testFunction)
+        
         return (
-          <BookingStep3
-            onBack={() => setCurrentStep(2)}
-            onCheckout={handleStep3Complete}
+          <BookingStep3Wrapper
             selectedTherapistId={selectedTherapistId}
+            onBack={() => setCurrentStep(2)}
+            onComplete={handleStep3Complete}
+          />
+        )
+      case 4:
+        return (
+          <BookingStep4
+            onBack={() => setCurrentStep(3)}
+            onCheckout={handleStep4Complete}
+            selectedTherapistId={selectedTherapistId}
+            selectedSlot={selectedSlot!}
+            therapistInfo={therapistInfo}
+            patientData={patientData}
           />
         )
       default:
@@ -135,7 +228,8 @@ export default function BookingPage() {
               <CardTitle className="text-2xl">
                 {currentStep === 1 && "Tell us about yourself"}
                 {currentStep === 2 && "Choose your therapist"}
-                {currentStep === 3 && "Complete your booking"}
+                {currentStep === 3 && "Select available time"}
+                {currentStep === 4 && "Complete your booking"}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">

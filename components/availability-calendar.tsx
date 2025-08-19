@@ -55,8 +55,8 @@ interface WeeklyAvailability {
 }
 
 const SESSION_TYPES = [
-  { value: 'individual', label: 'Individual Session', icon: Users, color: 'bg-blue-100 text-blue-800' },
-  { value: 'group', label: 'Group Session', icon: Users, color: 'bg-purple-100 text-purple-800' }
+  { value: 'individual', label: 'Individual Session', icon: Users, color: 'bg-gray-100 text-gray-800' },
+  { value: 'group', label: 'Group Session', icon: Users, color: 'bg-gray-100 text-gray-800' }
 ]
 
 const SESSION_DURATIONS = [
@@ -111,6 +111,11 @@ export function AvailabilityCalendar() {
     initializeWeeklyAvailability()
   }, [currentWeekOffset])
 
+  // Debug: Monitor saved state changes
+  useEffect(() => {
+    console.log('🔄 Saved state changed to:', saved)
+  }, [saved])
+
   const initializeWeeklyAvailability = () => {
     const days = generateWeekDays(currentWeekOffset)
     const initialAvailability: WeeklyAvailability = {}
@@ -159,9 +164,11 @@ export function AvailabilityCalendar() {
     
     setWeeklyAvailability(initialAvailability)
     setLoading(false)
+    // Don't reset saved state when navigating weeks - preserve the saved status
   }
 
   const handleToggleDay = (date: string, checked: boolean) => {
+    setSaved(false) // Reset saved state when making changes
     setWeeklyAvailability(prev => ({
       ...prev,
       [date]: {
@@ -173,6 +180,7 @@ export function AvailabilityCalendar() {
   }
 
   const handleAddTimeSlot = (date: string) => {
+    setSaved(false) // Reset saved state when making changes
     const newSlot: TimeSlot = {
       id: `slot-${date}-${Date.now()}`,
       start_time: "09:00",
@@ -194,6 +202,7 @@ export function AvailabilityCalendar() {
   }
 
   const handleRemoveTimeSlot = (date: string, slotId: string) => {
+    setSaved(false) // Reset saved state when making changes
     setWeeklyAvailability(prev => ({
       ...prev,
       [date]: {
@@ -204,6 +213,7 @@ export function AvailabilityCalendar() {
   }
 
   const handleUpdateTimeSlot = (date: string, slotId: string, updates: Partial<TimeSlot>) => {
+    setSaved(false) // Reset saved state when making changes
     setWeeklyAvailability(prev => ({
       ...prev,
       [date]: {
@@ -221,6 +231,7 @@ export function AvailabilityCalendar() {
       return
     }
 
+    console.log('🔄 Starting save process...')
     setSaving(true)
     try {
       const availabilityData = Object.values(weeklyAvailability)
@@ -246,8 +257,10 @@ export function AvailabilityCalendar() {
 
       if (response.ok) {
         toast.success('Availability schedule saved successfully')
+        console.log('✅ Before setting saved=true, current saved state:', saved)
         setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
+        console.log('✅ Availability saved successfully, setting saved state to true')
+        // Don't auto-reset saved state - keep it as "Edit Availability" until user makes changes
       } else {
         const errorData = await response.json()
         toast.error(errorData.error || 'Failed to save availability schedule')
@@ -267,9 +280,9 @@ export function AvailabilityCalendar() {
     const baseClass = "relative p-6 border-2 rounded-xl transition-all duration-300 cursor-pointer hover:shadow-lg hover:scale-105 transform"
     
     if (day.is_available && day.time_slots.length > 0) {
-      return `${baseClass} border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100`
+      return `${baseClass} border-gray-400 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200`
     } else if (day.is_available) {
-      return `${baseClass} border-blue-300 bg-gradient-to-br from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100`
+      return `${baseClass} border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200`
     } else {
       return `${baseClass} border-gray-200 bg-gradient-to-br from-gray-50 to-slate-50 hover:from-gray-100 hover:to-slate-100`
     }
@@ -300,7 +313,7 @@ export function AvailabilityCalendar() {
     return (
       <div className="flex items-center justify-center p-12">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading calendar...</p>
         </div>
       </div>
@@ -312,7 +325,7 @@ export function AvailabilityCalendar() {
       {/* Header with Week Navigation */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h3 className="text-2xl font-bold text-gray-900">
             Weekly Availability Calendar
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
@@ -347,7 +360,7 @@ export function AvailabilityCalendar() {
           <Button 
             onClick={handleSave} 
             disabled={saving || !therapistInfo?.email}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+            className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white"
           >
             {saving ? (
               <>
@@ -356,8 +369,8 @@ export function AvailabilityCalendar() {
               </>
             ) : saved ? (
               <>
-                <CheckCircle className="h-4 w-4" />
-                Saved
+                <Settings className="h-4 w-4" />
+                Edit Availability
               </>
             ) : (
               <>
@@ -369,8 +382,8 @@ export function AvailabilityCalendar() {
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
+      {/* Calendar Grid - 3 per row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Object.entries(weeklyAvailability).map(([date, day]) => {
           const DayIcon = DAY_ICONS[day.day_of_week as keyof typeof DAY_ICONS] || Calendar
           return (
@@ -389,7 +402,6 @@ export function AvailabilityCalendar() {
                     <Switch
                       checked={day.is_available}
                       onCheckedChange={(checked) => handleToggleDay(date, checked)}
-                      size="sm"
                     />
                   </div>
 
@@ -411,15 +423,15 @@ export function AvailabilityCalendar() {
                       {/* Time Slots Preview */}
                       <div className="space-y-1">
                         {day.time_slots.slice(0, 2).map(slot => (
-                          <div key={slot.id} className="text-xs text-muted-foreground flex items-center gap-1">
+                          <div key={slot.id} className="text-xs text-muted-foreground flex items-center gap-1 p-1 bg-white/50 rounded">
                             <Clock className="h-3 w-3" />
-                            {slot.start_time} - {slot.end_time}
+                            <span className="font-medium">{slot.start_time} - {slot.end_time}</span>
                             <Badge 
                               variant="outline" 
                               className={`ml-auto text-xs ${
                                 slot.session_type === 'individual' 
-                                  ? 'border-blue-300 text-blue-700 bg-blue-50' 
-                                  : 'border-purple-300 text-purple-700 bg-purple-50'
+                                  ? 'border-gray-300 text-gray-700 bg-gray-50' 
+                                  : 'border-gray-300 text-gray-700 bg-gray-50'
                               }`}
                             >
                               {slot.session_type === 'individual' ? '1:1' : 'Group'}
@@ -428,7 +440,7 @@ export function AvailabilityCalendar() {
                         ))}
                         
                         {day.time_slots.length > 2 && (
-                          <div className="text-xs text-muted-foreground text-center py-1 bg-gray-50 rounded">
+                          <div className="text-xs text-muted-foreground text-center py-1 bg-white/50 rounded">
                             +{day.time_slots.length - 2} more slots
                           </div>
                         )}
@@ -479,7 +491,7 @@ export function AvailabilityCalendar() {
               <Button
                 onClick={() => handleAddTimeSlot(selectedDate)}
                 variant="outline"
-                className="w-full h-12 text-lg hover:bg-blue-50 hover:border-blue-300"
+                className="w-full h-12 text-lg hover:bg-gray-50 hover:border-gray-300"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Add New Time Slot
@@ -488,12 +500,12 @@ export function AvailabilityCalendar() {
               {/* Time Slots */}
               <div className="space-y-4">
                 {weeklyAvailability[selectedDate].time_slots.map((slot, index) => (
-                  <Card key={slot.id} className="p-6 border-2 hover:border-blue-300 transition-colors">
+                  <Card key={slot.id} className="p-6 border-2 hover:border-gray-300 transition-colors">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-semibold text-blue-700">{index + 1}</span>
+                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-semibold text-gray-700">{index + 1}</span>
                           </div>
                           <h4 className="font-semibold text-lg">Time Slot {index + 1}</h4>
                         </div>
@@ -620,30 +632,30 @@ export function AvailabilityCalendar() {
       </Dialog>
 
       {/* Tips */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-200">
-        <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
+        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <Zap className="h-5 w-5" />
           Calendar Tips
         </h4>
-        <ul className="text-sm text-blue-800 space-y-2">
+        <ul className="text-sm text-gray-700 space-y-2">
           <li className="flex items-start gap-2">
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-1.5 h-1.5 bg-gray-600 rounded-full mt-2 flex-shrink-0"></div>
             <span>Click on any day to set custom time slots</span>
           </li>
           <li className="flex items-start gap-2">
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-1.5 h-1.5 bg-gray-600 rounded-full mt-2 flex-shrink-0"></div>
             <span>Each time slot can have different session types and durations</span>
           </li>
           <li className="flex items-start gap-2">
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-1.5 h-1.5 bg-gray-600 rounded-full mt-2 flex-shrink-0"></div>
             <span>Session titles will be automatically used for Daily.co room creation</span>
           </li>
           <li className="flex items-start gap-2">
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-1.5 h-1.5 bg-gray-600 rounded-full mt-2 flex-shrink-0"></div>
             <span>Use the week navigation to plan ahead</span>
           </li>
           <li className="flex items-start gap-2">
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+            <div className="w-1.5 h-1.5 bg-gray-600 rounded-full mt-2 flex-shrink-0"></div>
             <span>Changes are saved automatically when you click "Save Schedule"</span>
           </li>
         </ul>

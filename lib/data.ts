@@ -230,7 +230,7 @@ export const dashboardSummaryCards = [
   },
   {
     title: "Average Session Time",
-    value: "50 min",
+    value: "0 min",
     description: "Typical duration",
     icon: Clock,
   },
@@ -258,60 +258,14 @@ export const sessionNotesSummaryCards = [
   },
 ]
 
-export const upcomingSessions = [
-  {
-    id: "s1",
-    date: "2025-09-15",
-    time: "10:00 AM",
-    therapist: "Dr. Emily White",
-    topic: "Coping with Stress",
-  },
-  {
-    id: "s2",
-    date: "2025-09-18",
-    time: "02:30 PM",
-    therapist: "Mr. John Davis",
-    topic: "Processing Past Trauma",
-  },
-]
+// Real data - Will be populated from database
+export const upcomingSessions = []
 
 
 
-export const medicalHistory = [
-  {
-    id: "mh1",
-    condition: "Generalized Anxiety Disorder (GAD)",
-    diagnosisDate: "2023-01-10",
-    notes: "Diagnosed by primary care physician. Managed with therapy and lifestyle changes.",
-  },
-  {
-    id: "mh2",
-    condition: "Seasonal Allergies",
-    diagnosisDate: "2010-03-01",
-    notes: "Seasonal allergies to pollen. Managed with over-the-counter antihistamines.",
-  },
-]
-
-export const medications = [
-  {
-    id: "med1",
-    name: "Sertraline (Zoloft)",
-    dosage: "50mg daily",
-    startDate: "2023-02-15",
-    prescribingDoctor: "Dr. Smith (PCP)",
-    notes: "Prescribed for GAD. No significant side effects reported.",
-    durationOfUsage: "2 years", // Added duration of usage
-  },
-  {
-    id: "med2",
-    name: "Ibuprofen",
-    dosage: "200mg as needed",
-    startDate: "22024-01-01",
-    prescribingDoctor: "Self-prescribed",
-    notes: "For occasional headaches.",
-    durationOfUsage: "Ongoing (1 year)", // Added duration of usage
-  },
-]
+// Real data - Will be populated from database
+export const medicalHistory = []
+export const medications = []
 
 // Centralized patient profile data
 export const patientProfileData = {
@@ -362,14 +316,14 @@ export const partnerPackages = [
   { id: "pro", name: "Pro", credits: -1, price: 200000 },
 ]
 
-// Mock user data with package info
+// Real user data - Will be populated from database
 export const mockUser = {
-  name: "John Doe",
-  email: "john@example.com",
-  package: "Standard" as UserPackage,
-  credits: 15,
-  isPartnerUser: true,
-  partnerName: "TechCorp Solutions", // Partner name if user came from partner
+  name: "",
+  email: "",
+  package: "Basic" as UserPackage,
+  credits: 0,
+  isPartnerUser: false,
+  partnerName: "",
 }
 
 // Recent applications data
@@ -378,65 +332,8 @@ export const recentApplications = [
   // Applications will be populated when users actually apply to tasks
 ]
 
-// Smart matches data
-export const smartMatches = [
-  {
-    id: "task-001",
-    title: "Senior React Developer",
-    salary: "$80-120k",
-    type: "Full-time",
-    location: "Remote",
-    date: "2024-01-15",
-    matchScore: "95%",
-    description: "We're looking for an experienced React developer to join our team and help build scalable web applications.",
-    tags: ["React", "TypeScript", "Node.js", "AWS"],
-    company: "TechCorp Solutions",
-    verified: true,
-    applicants: 12
-  },
-  {
-    id: "task-002",
-    title: "UI/UX Designer",
-    salary: "$70-100k",
-    type: "Contract",
-    location: "San Francisco, CA",
-    date: "2024-01-14",
-    matchScore: "88%",
-    description: "Join our design team to create beautiful and intuitive user experiences for our products.",
-    tags: ["Figma", "Sketch", "Adobe Creative Suite", "Prototyping"],
-    company: "Design Studio Inc",
-    verified: true,
-    applicants: 8
-  }
-]
+// Real data - Will be populated from database
+export const smartMatches = []
 
-// Updated session notes with IDs and therapy tags
-export const sessionNotes = [
-  {
-    id: "SN-2024-001",
-    sessionId: "SES-2024-001",
-    date: "2024-09-15",
-    therapist: "Dr. Emily White",
-    summary: "Initial assessment session. Patient presented with symptoms of anxiety and stress related to work pressure. Discussed coping mechanisms and established treatment goals. Patient showed good engagement and willingness to work on identified issues.",
-    therapyType: "Cognitive Behavioral Therapy",
-    tags: ["Anxiety", "Stress Management", "CBT"]
-  },
-  {
-    id: "SN-2024-002", 
-    sessionId: "SES-2024-002",
-    date: "2024-09-22",
-    therapist: "Dr. Emily White",
-    summary: "Follow-up session focusing on cognitive restructuring. Patient reported improved sleep patterns and reduced anxiety levels. Introduced mindfulness techniques and breathing exercises. Homework assigned for daily practice.",
-    therapyType: "Mindfulness-Based Therapy",
-    tags: ["Mindfulness", "Breathing Exercises", "Sleep Improvement"]
-  },
-  {
-    id: "SN-2024-003",
-    sessionId: "SES-2024-003", 
-    date: "2024-09-29",
-    therapist: "Dr. Sarah Johnson",
-    summary: "Session focused on interpersonal relationships and communication skills. Patient expressed concerns about work relationships. Explored assertiveness training and boundary setting. Good progress noted in applying previous techniques.",
-    therapyType: "Interpersonal Therapy",
-    tags: ["Communication", "Assertiveness", "Boundaries"]
-  }
-]
+// Real data - Will be populated from database
+export const sessionNotes = []

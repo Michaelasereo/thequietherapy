@@ -6,10 +6,11 @@ import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
 import { StatefulButton } from "@/components/ui/stateful-button"
 import { StatefulStatsCard } from "@/components/ui/stateful-card"
-import { CalendarIcon, Video as VideoIcon, CheckCircle, CheckCircle2, TrendingUp, Clock, ArrowLeft } from "lucide-react"
+import { CalendarIcon, Video as VideoIcon, CheckCircle, CheckCircle2, TrendingUp, Clock, ArrowLeft, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
 import { useSearchParams, useRouter } from "next/navigation"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import BookingProgress from "@/components/booking-progress"
 import BookingStep1 from "@/components/booking-step-1"
 import BookingStep2 from "@/components/booking-step-2"
@@ -18,6 +19,7 @@ import { useDashboard } from "@/context/dashboard-context"
 import { useNotificationState } from "@/hooks/useDashboardState"
 import { useCrossDashboardBroadcast } from '@/hooks/useCrossDashboardSync';
 import { useAuth } from '@/context/auth-context'
+import { usePatientData } from "@/hooks/usePatientData"
 
 // Authentication check component
 function AuthCheck({ children }: { children: React.ReactNode }) {
@@ -160,23 +162,30 @@ function DashboardContent() {
   
   const { toast } = useToast()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { state, fetchSessions } = useDashboard()
   const { addSuccessNotification } = useNotificationState()
   const { user } = useAuth() // Get user from AuthContext instead of DashboardContext
+  const { biodata, loading, refreshBiodata } = usePatientData()
   // const { broadcastEvent } = useCrossDashboardBroadcast();
   
   // Booking state
   const [showBooking, setShowBooking] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
   const [patientData, setPatientData] = useState({
-    name: "",
+    firstName: "",
+    email: "",
+    phone: "",
+    country: "",
     complaints: "",
     age: "",
     gender: "Male" as "Male" | "Female" | "Non-binary" | "Prefer not to say",
     maritalStatus: "Single" as "Single" | "Married" | "Divorced" | "Widowed" | "Other",
-    therapistPreference: "",
+    therapistGenderPreference: "no-preference",
+    therapistSpecializationPreference: "no-preference",
   })
   const [selectedTherapistId, setSelectedTherapistId] = useState<string>("")
+  const [showBiodataPrompt, setShowBiodataPrompt] = useState(false)
   
   // Default data for new users
   const defaultStats = {
@@ -255,6 +264,25 @@ function DashboardContent() {
     }
   }, [searchParams, toast])
 
+  // Load biodata and check if user needs to complete profile
+  useEffect(() => {
+    refreshBiodata()
+  }, [refreshBiodata])
+
+  useEffect(() => {
+    if (biodata && !loading.biodata) {
+      const hasContactInfo = biodata.firstName && biodata.email && biodata.phone && biodata.country
+      
+      // Check if user was recently approved (within 24 hours)
+      const approvalDate = biodata.approved_at ? new Date(biodata.approved_at) : null
+      const now = new Date()
+      const isRecentlyApproved = approvalDate && (now.getTime() - approvalDate.getTime()) < 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+      
+      // Show prompt only if user doesn't have contact info AND was recently approved
+      setShowBiodataPrompt(!hasContactInfo && !!isRecentlyApproved)
+    }
+  }, [biodata, loading.biodata])
+
   const format = (date: Date, formatStr: string) => {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -322,7 +350,7 @@ function DashboardContent() {
         return (
           <BookingStep3
             onBack={() => setCurrentStep(2)}
-            onCheckout={handleStep3Complete}
+            onNext={handleStep3Complete}
             selectedTherapistId={selectedTherapistId}
           />
         )
@@ -363,6 +391,24 @@ function DashboardContent() {
               Book a Session
             </Button>
           </div>
+
+          {/* Biodata Prompt */}
+          {showBiodataPrompt && (
+            <Alert className="border-orange-200 bg-orange-50">
+              <AlertCircle className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-orange-800">
+                <strong>Complete your profile!</strong> To make booking easier and get personalized recommendations, please fill out your{" "}
+                <Button
+                  variant="link"
+                  className="p-0 h-auto text-orange-800 underline"
+                  onClick={() => router.push("/dashboard/biodata")}
+                >
+                  personal information
+                </Button>{" "}
+                in your dashboard. This will auto-fill your booking forms in the future.
+              </AlertDescription>
+            </Alert>
+          )}
 
       {/* Summary Cards Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

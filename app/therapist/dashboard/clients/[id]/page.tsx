@@ -1,3 +1,6 @@
+'use client'
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -5,59 +8,86 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
-import { ArrowLeft, FileText, Stethoscope, Pill } from "lucide-react"
+import { ArrowLeft, FileText, Stethoscope, Pill, User, Loader2 } from "lucide-react"
+import { useTherapistUser } from "@/context/therapist-user-context"
 
 function formatDate(input: string) {
   return new Date(input).toLocaleDateString()
 }
 
-export default async function TherapistClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+export default function TherapistClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  // Default data in case imports are not available during build
-  const therapistClients = [
-    {
-      id: "1",
-      name: "Sarah Johnson",
-      picture: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-      lastSeen: "2 days ago",
-      sessions: [
-        { id: "s1", date: "2024-09-15", time: "10:00 AM", type: "CBT" },
-        { id: "s2", date: "2024-09-08", time: "10:00 AM", type: "CBT" }
-      ],
-      notes: [
-        {
-          date: "2024-09-15",
-          summary: "Discussed anxiety management techniques and assigned homework.",
-          tags: ["Anxiety", "CBT", "Homework"]
-        },
-        {
-          date: "2024-09-08", 
-          summary: "Initial assessment session. Patient showed good engagement.",
-          tags: ["Assessment", "Engagement"]
+  const { therapistUser } = useTherapistUser()
+  const [clientData, setClientData] = useState<any>(null)
+  const [sessions, setSessions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch client data
+  useEffect(() => {
+    const fetchClientData = async () => {
+      if (!therapistUser?.id || !id) return
+
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/therapist/clients?therapistId=${therapistUser.id}&clientId=${id}`)
+        const data = await response.json()
+        
+        if (data.client) {
+          setClientData(data.client)
+          setSessions(data.sessions || [])
         }
-      ],
-      medicalHistory: [
-        {
-          condition: "Generalized Anxiety Disorder",
-          notes: "Diagnosed by primary care physician",
-          diagnosisDate: "2023-01-10"
-        }
-      ]
+      } catch (error) {
+        console.error('Error fetching client data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
 
-  // id is already extracted from params above
-  const baseClient = therapistClients.find((c) => c.id === id)
-  if (!baseClient) return <div>Client not found</div>
+    fetchClientData()
+  }, [therapistUser?.id, id])
 
-  const notes = baseClient.notes
-  const newNote = ""
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button asChild variant="ghost">
+            <Link href="/therapist/dashboard/clients">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Clients
+            </Link>
+          </Button>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading client data...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-  const totalSessions = baseClient.sessions.length
-  const totalNotes = notes.length
-  const lastSeen = baseClient.lastSeen
-  const amountEarned = `$${(totalSessions * 50).toFixed(2)}`
-  const hasUpcoming = baseClient.sessions.some((s) => new Date(s.date) > new Date())
+  if (!clientData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button asChild variant="ghost">
+            <Link href="/therapist/dashboard/clients">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Clients
+            </Link>
+          </Button>
+        </div>
+        <div className="text-center py-12">
+          <p className="text-red-600">Client not found</p>
+        </div>
+      </div>
+    )
+  }
+
+  const totalSessions = clientData.totalSessions
+  const completedSessions = clientData.completedSessions
+  const upcomingSessions = clientData.upcomingSessions
+  const amountEarned = `₦${clientData.amountEarned.toLocaleString()}`
+  const hasUpcoming = upcomingSessions > 0
 
   return (
     <div className="space-y-6">
@@ -71,11 +101,13 @@ export default async function TherapistClientDetailsPage({ params }: { params: P
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={baseClient.picture} alt={baseClient.name} className="h-16 w-16 rounded-full" />
+          <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
+            <User className="h-8 w-8 text-gray-600" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold">{baseClient.name}</h1>
-            <p className="text-sm text-muted-foreground">Last seen {lastSeen}</p>
+            <h1 className="text-2xl font-bold">{clientData.name}</h1>
+            <p className="text-sm text-muted-foreground">Last seen {clientData.lastSeen}</p>
+            <p className="text-sm text-muted-foreground">{clientData.email}</p>
           </div>
         </div>
         
@@ -102,10 +134,10 @@ export default async function TherapistClientDetailsPage({ params }: { params: P
         </Card>
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Notes</CardTitle>
+            <CardTitle className="text-base">Completed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">{totalNotes}</div>
+            <div className="text-2xl font-semibold">{completedSessions}</div>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -140,7 +172,7 @@ export default async function TherapistClientDetailsPage({ params }: { params: P
           </Button>
         </CardHeader>
         <CardContent>
-          {baseClient.medicalHistory.length === 0 ? (
+          {clientData.medicalHistory.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               <Stethoscope className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No medical history recorded yet.</p>
@@ -148,11 +180,11 @@ export default async function TherapistClientDetailsPage({ params }: { params: P
             </div>
           ) : (
             <div className="space-y-3">
-              {baseClient.medicalHistory.map((m, idx) => (
+              {clientData.medicalHistory.map((m: any, idx: number) => (
                 <div key={idx} className="p-3 rounded-md bg-muted/40">
                   <div className="font-medium">{m.condition}</div>
                   <div className="text-sm">{m.notes}</div>
-                  <div className="text-xs text-muted-foreground">Diagnosed: {m.diagnosisDate}</div>
+                  <div className="text-xs text-muted-foreground">Diagnosed: {formatDate(m.diagnosis_date)}</div>
                 </div>
               ))}
             </div>
@@ -166,95 +198,54 @@ export default async function TherapistClientDetailsPage({ params }: { params: P
           <CardTitle>Sessions</CardTitle>
         </CardHeader>
         <CardContent>
-          {baseClient.sessions.length === 0 ? (
+          {sessions.length === 0 ? (
             <p className="text-muted-foreground">No sessions found.</p>
           ) : (
             <div className="space-y-4">
-              {baseClient.sessions.map((s) => {
-                const sessionNote = notes.find(n => new Date(n.date).toDateString() === new Date(s.date).toDateString());
-                return (
-                  <Card key={s.id} className="shadow-sm">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-gray-100 px-3 py-1 rounded-md">
-                            <span className="text-sm font-medium text-gray-900">Session {s.id}</span>
-                          </div>
-                          <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">{s.id}</span>
+              {sessions.map((s) => (
+                <Card key={s.id} className="shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-gray-100 px-3 py-1 rounded-md">
+                          <span className="text-sm font-medium text-gray-900">Session #{s.id}</span>
                         </div>
-                        <div className="text-right">
-                          <div className="font-medium">Dr. Emily White</div>
-                          <div className="text-sm text-muted-foreground">{formatDate(s.date)} at {s.time}</div>
-                        </div>
+                        <Badge variant={s.status === 'completed' ? 'default' : s.status === 'scheduled' ? 'secondary' : 'outline'}>
+                          {s.status}
+                        </Badge>
                       </div>
-
-                      <div className="mb-4">
-                        <p className="text-sm text-muted-foreground line-clamp-3">
-                          {sessionNote ? sessionNote.summary : "No notes available for this session."}
-                        </p>
+                      <div className="text-right">
+                        <div className="font-medium">{clientData.name}</div>
+                        <div className="text-sm text-muted-foreground">{formatDate(s.created_at)}</div>
                       </div>
+                    </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {s.type}
+                    <div className="mb-4">
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {s.notes || "No notes available for this session."}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {s.session_type || 'Individual'}
+                        </Badge>
+                        {s.session_duration && (
+                          <Badge variant="outline" className="text-xs">
+                            {s.session_duration} min
                           </Badge>
-                          {sessionNote?.tags?.map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                        
-                        {sessionNote && (
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <FileText className="mr-2 h-4 w-4" />
-                                View Full Note
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[600px]">
-                              <DialogHeader>
-                                <DialogTitle>Session Note - {s.id}</DialogTitle>
-                                <DialogDescription>
-                                  Dr. Emily White • {formatDate(s.date)} at {s.time}
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <h4 className="font-medium mb-2">Session Type</h4>
-                                  <Badge variant="secondary">{s.type}</Badge>
-                                </div>
-                                
-                                {sessionNote.tags && (
-                                  <div>
-                                    <h4 className="font-medium mb-2">Tags</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                      {sessionNote.tags.map((tag, index) => (
-                                        <Badge key={index} variant="outline">
-                                          {tag}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                
-                                <div>
-                                  <h4 className="font-medium mb-2">Session Summary</h4>
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {sessionNote.summary}
-                                  </p>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      
+                      <Button variant="outline" size="sm">
+                        <FileText className="mr-2 h-4 w-4" />
+                        View Details
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </CardContent>

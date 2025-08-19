@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Clock, AlertTriangle, CheckCircle2, Calendar } from "lucide-react"
+import { Clock, AlertTriangle, CheckCircle2, Calendar, CalendarDays } from "lucide-react"
 import { useTherapistData } from "@/hooks/useTherapistDashboardState"
 import { AvailabilitySchedule } from "@/components/availability-schedule"
 import { AvailabilityCalendar } from "@/components/availability-calendar"
@@ -15,6 +15,7 @@ export default function TherapistAvailabilityPage() {
   const { therapistInfo, fetchTherapistData } = useTherapistData()
   const [isActive, setIsActive] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [availabilityMode, setAvailabilityMode] = useState<'calendar' | 'weekly'>('calendar')
 
   useEffect(() => {
     fetchTherapistData()
@@ -142,8 +143,50 @@ export default function TherapistAvailabilityPage() {
         </CardContent>
       </Card>
 
-      {/* Availability Calendar - New Enhanced Interface */}
+      {/* Availability Mode Toggle */}
       {therapistInfo?.isApproved && isActive && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Availability Mode
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="text-base font-medium">Choose Your Availability Method</Label>
+                <p className="text-sm text-muted-foreground">
+                  Select between detailed calendar view or simple weekly schedule
+                </p>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <Button
+                  variant={availabilityMode === 'calendar' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setAvailabilityMode('calendar')}
+                  className="flex items-center gap-2"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Calendar View
+                </Button>
+                <Button
+                  variant={availabilityMode === 'weekly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setAvailabilityMode('weekly')}
+                  className="flex items-center gap-2"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  Weekly Schedule
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Availability Calendar - New Enhanced Interface */}
+      {therapistInfo?.isApproved && isActive && availabilityMode === 'calendar' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -158,10 +201,13 @@ export default function TherapistAvailabilityPage() {
       )}
 
       {/* Traditional Weekly Schedule */}
-      {therapistInfo?.isApproved && isActive && (
+      {therapistInfo?.isApproved && isActive && availabilityMode === 'weekly' && (
         <Card>
           <CardHeader>
-            <CardTitle>Traditional Weekly Schedule</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5" />
+              Weekly Schedule
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <AvailabilitySchedule />

@@ -11,7 +11,10 @@ import { Button } from "@/components/ui/button"
 import { therapists } from "@/lib/data"
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  phone: z.string().min(10, { message: "Please enter a valid phone number." }),
+  country: z.string().min(1, { message: "Please select your country." }),
   complaints: z.string().min(10, { message: "Please describe your concerns in more detail." }),
   age: z.string().min(1, { message: "Age is required." }),
   gender: z.enum(["Male", "Female", "Non-binary", "Prefer not to say"], {
@@ -35,7 +38,10 @@ export default function BookingStep1({ onNext, initialData }: BookingStep1Props)
   const form = useForm<PatientBiodataFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
-      name: "",
+      firstName: "",
+      email: "",
+      phone: "",
+      country: "",
       complaints: "",
       age: "",
       gender: "Male",
@@ -58,23 +64,270 @@ export default function BookingStep1({ onNext, initialData }: BookingStep1Props)
     "Addiction & Recovery"
   ]
 
+  // Countries list
+  const countries = [
+    "Nigeria",
+    "Ghana",
+    "Kenya",
+    "South Africa",
+    "Egypt",
+    "Morocco",
+    "Tunisia",
+    "Algeria",
+    "Ethiopia",
+    "Uganda",
+    "Tanzania",
+    "Rwanda",
+    "Cameroon",
+    "Senegal",
+    "Ivory Coast",
+    "Mali",
+    "Burkina Faso",
+    "Niger",
+    "Chad",
+    "Sudan",
+    "Somalia",
+    "Djibouti",
+    "Eritrea",
+    "Libya",
+    "Mauritania",
+    "Gambia",
+    "Guinea-Bissau",
+    "Sierra Leone",
+    "Liberia",
+    "Togo",
+    "Benin",
+    "Central African Republic",
+    "Gabon",
+    "Congo",
+    "Democratic Republic of the Congo",
+    "Angola",
+    "Zambia",
+    "Zimbabwe",
+    "Botswana",
+    "Namibia",
+    "Lesotho",
+    "Eswatini",
+    "Madagascar",
+    "Mauritius",
+    "Seychelles",
+    "Comoros",
+    "Cape Verde",
+    "São Tomé and Príncipe",
+    "Equatorial Guinea",
+    "Guinea",
+    "Burundi",
+    "Malawi",
+    "Mozambique",
+    "United States",
+    "Canada",
+    "United Kingdom",
+    "Germany",
+    "France",
+    "Italy",
+    "Spain",
+    "Netherlands",
+    "Belgium",
+    "Switzerland",
+    "Austria",
+    "Sweden",
+    "Norway",
+    "Denmark",
+    "Finland",
+    "Ireland",
+    "Portugal",
+    "Greece",
+    "Poland",
+    "Czech Republic",
+    "Hungary",
+    "Slovakia",
+    "Slovenia",
+    "Croatia",
+    "Serbia",
+    "Bosnia and Herzegovina",
+    "Montenegro",
+    "Albania",
+    "North Macedonia",
+    "Bulgaria",
+    "Romania",
+    "Moldova",
+    "Ukraine",
+    "Belarus",
+    "Lithuania",
+    "Latvia",
+    "Estonia",
+    "Russia",
+    "Turkey",
+    "Cyprus",
+    "Malta",
+    "Iceland",
+    "Luxembourg",
+    "Liechtenstein",
+    "Monaco",
+    "Andorra",
+    "San Marino",
+    "Vatican City",
+    "Australia",
+    "New Zealand",
+    "India",
+    "China",
+    "Japan",
+    "South Korea",
+    "Singapore",
+    "Malaysia",
+    "Thailand",
+    "Vietnam",
+    "Philippines",
+    "Indonesia",
+    "Myanmar",
+    "Cambodia",
+    "Laos",
+    "Brunei",
+    "East Timor",
+    "Pakistan",
+    "Bangladesh",
+    "Sri Lanka",
+    "Nepal",
+    "Bhutan",
+    "Maldives",
+    "Afghanistan",
+    "Iran",
+    "Iraq",
+    "Syria",
+    "Lebanon",
+    "Jordan",
+    "Israel",
+    "Palestine",
+    "Saudi Arabia",
+    "Yemen",
+    "Oman",
+    "United Arab Emirates",
+    "Qatar",
+    "Bahrain",
+    "Kuwait",
+    "Kazakhstan",
+    "Uzbekistan",
+    "Turkmenistan",
+    "Kyrgyzstan",
+    "Tajikistan",
+    "Azerbaijan",
+    "Georgia",
+    "Armenia",
+    "Mongolia",
+    "Brazil",
+    "Argentina",
+    "Chile",
+    "Peru",
+    "Colombia",
+    "Venezuela",
+    "Ecuador",
+    "Bolivia",
+    "Paraguay",
+    "Uruguay",
+    "Guyana",
+    "Suriname",
+    "French Guiana",
+    "Mexico",
+    "Guatemala",
+    "Belize",
+    "El Salvador",
+    "Honduras",
+    "Nicaragua",
+    "Costa Rica",
+    "Panama",
+    "Cuba",
+    "Jamaica",
+    "Haiti",
+    "Dominican Republic",
+    "Puerto Rico",
+    "Trinidad and Tobago",
+    "Barbados",
+    "Grenada",
+    "Saint Vincent and the Grenadines",
+    "Saint Lucia",
+    "Dominica",
+    "Antigua and Barbuda",
+    "Saint Kitts and Nevis",
+    "Bahamas",
+    "Other"
+  ]
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-4 md:p-6">
-        <h3 className="text-xl font-semibold mb-4">Patient Biodata</h3>
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>First Name</FormLabel>
-              <FormControl>
-                <Input placeholder="John" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <h3 className="text-xl font-semibold mb-4">Patient Information</h3>
+        
+        {/* Contact Information Section */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-medium text-gray-900">Contact Information</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="firstName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="john@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input type="tel" placeholder="+234 801 234 5678" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="country"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your country" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg max-h-60">
+                      {countries.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
         <FormField
           control={form.control}
           name="complaints"

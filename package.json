@@ -44,7 +44,10 @@
     "@radix-ui/react-tooltip": "1.1.6",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.54.0",
+    "@types/node": "^22.17.1",
     "@types/nodemailer": "^6.4.17",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -60,6 +63,7 @@
     "next": "15.2.4",
     "next-themes": "^0.4.4",
     "nodemailer": "^7.0.5",
+    "openai": "^5.12.2",
     "paystack": "^2.0.1",
     "react": "^19",
     "react-day-picker": "9.8.0",
@@ -72,9 +76,6 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.9.2",
-    "@types/node": "^22.17.1",
-    "@types/react": "^19.1.10",
-    "@types/react-dom": "^19.1.7",
     "zod": "^3.24.1"
   },
   "devDependencies": {

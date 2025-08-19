@@ -42,63 +42,16 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      // This would be replaced with actual API call
-      // For now, we'll simulate the data structure
-      const mockUsers: User[] = [
-        {
-          id: "1",
-          full_name: "John Doe",
-          email: "john@example.com",
-          user_type: "user",
-          is_active: true,
-          is_verified: true,
-          status: "active",
-          created_at: "2024-01-15T10:30:00Z",
-          last_activity: "2024-01-20T14:45:00Z",
-          phone: "+2348012345678"
-        },
-        {
-          id: "2",
-          full_name: "Jane Smith",
-          email: "jane@example.com",
-          user_type: "user",
-          is_active: true,
-          is_verified: true,
-          status: "active",
-          created_at: "2024-01-12T08:20:00Z",
-          last_activity: "2024-01-19T15:30:00Z",
-          phone: "+2348076543210"
-        },
-        {
-          id: "3",
-          full_name: "Michael Brown",
-          email: "michael@example.com",
-          user_type: "user",
-          is_active: false,
-          is_verified: false,
-          status: "suspended",
-          created_at: "2024-01-08T14:15:00Z",
-          last_activity: "2024-01-15T11:45:00Z",
-          phone: "+2348055555555"
-        },
-        {
-          id: "4",
-          full_name: "Sarah Wilson",
-          email: "sarah.wilson@example.com",
-          user_type: "user",
-          is_active: true,
-          is_verified: true,
-          status: "active",
-          created_at: "2024-01-20T09:30:00Z",
-          last_activity: "2024-01-21T10:20:00Z",
-          phone: "+2348066666666"
-        }
-      ]
-      
-      setUsers(mockUsers)
+      const response = await fetch('/api/admin/users')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data)
+      } else {
+        toast.error('Failed to fetch users')
+      }
     } catch (error) {
       console.error('Error fetching users:', error)
-      toast.error('Failed to fetch users')
+      toast.error('Error loading users')
     } finally {
       setLoading(false)
     }

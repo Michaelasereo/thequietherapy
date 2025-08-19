@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Clock, Save, CheckCircle } from "lucide-react"
+import { Clock, Save, CheckCircle, Settings } from "lucide-react"
 import { toast } from "sonner"
 import { useTherapistData } from "@/hooks/useTherapistDashboardState"
 
@@ -53,6 +53,7 @@ export function AvailabilitySchedule() {
   }, [])
 
   const handleToggleDay = (dayOfWeek: number, checked: boolean) => {
+    setSaved(false) // Reset saved state when making changes
     setAvailability(prev => 
       prev.map(slot => 
         slot.day_of_week === dayOfWeek 
@@ -63,6 +64,7 @@ export function AvailabilitySchedule() {
   }
 
   const handleTimeChange = (dayOfWeek: number, field: 'start_time' | 'end_time', value: string) => {
+    setSaved(false) // Reset saved state when making changes
     setAvailability(prev => 
       prev.map(slot => 
         slot.day_of_week === dayOfWeek 
@@ -94,7 +96,7 @@ export function AvailabilitySchedule() {
       if (response.ok) {
         toast.success('Availability schedule saved successfully')
         setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
+        // Don't auto-reset saved state - keep it as "Edit Availability" until user makes changes
       } else {
         const errorData = await response.json()
         toast.error(errorData.error || 'Failed to save availability schedule')
@@ -129,8 +131,8 @@ export function AvailabilitySchedule() {
             "Saving..."
           ) : saved ? (
             <>
-              <CheckCircle className="h-4 w-4" />
-              Saved
+              <Settings className="h-4 w-4" />
+              Edit Availability
             </>
           ) : (
             <>

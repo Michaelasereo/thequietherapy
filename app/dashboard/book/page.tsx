@@ -1,41 +1,86 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, AlertCircle } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import BookingProgress from "@/components/booking-progress"
 import BookingStep1 from "@/components/booking-step-1"
 import BookingStep2 from "@/components/booking-step-2"
 import BookingStep3 from "@/components/booking-step-3"
+import { usePatientData } from "@/hooks/usePatientData"
 
 // Types for the booking data
 interface PatientBiodata {
-  name: string
+  firstName: string
+  email: string
+  phone: string
+  country: string
   complaints: string
   age: string
   gender: "Male" | "Female" | "Non-binary" | "Prefer not to say"
   maritalStatus: "Single" | "Married" | "Divorced" | "Widowed" | "Other"
-  therapistPreference?: string
+  therapistGenderPreference?: string
+  therapistSpecializationPreference?: string
 }
 
 export default function DashboardBookingPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { biodata, loading, errors, refreshBiodata } = usePatientData()
   const [currentStep, setCurrentStep] = useState(1)
   const [patientData, setPatientData] = useState<PatientBiodata>({
-    name: "",
+    firstName: "",
+    email: "",
+    phone: "",
+    country: "",
     complaints: "",
     age: "",
     gender: "Male",
     maritalStatus: "Single",
-    therapistPreference: "",
+    therapistGenderPreference: "no-preference",
+    therapistSpecializationPreference: "no-preference",
   })
   const [selectedTherapistId, setSelectedTherapistId] = useState<string>("")
+  const [showBiodataPrompt, setShowBiodataPrompt] = useState(false)
 
-  const stepLabels = ["Patient Biodata", "Select Therapist", "Payment"]
+  const stepLabels = ["Contact Info", "Select Therapist", "Payment"]
+
+  // Load biodata on mount and auto-fill if available
+  useEffect(() => {
+    refreshBiodata()
+  }, [refreshBiodata])
+
+  // Auto-fill patient data from biodata when available
+  useEffect(() => {
+    if (biodata) {
+      const hasContactInfo = biodata.firstName && biodata.email && biodata.phone && biodata.country
+      
+      if (hasContactInfo) {
+        setPatientData({
+          firstName: biodata.firstName || "",
+          email: biodata.email || "",
+          phone: biodata.phone || "",
+          country: biodata.country || "",
+          complaints: biodata.complaints || "",
+          age: biodata.age?.toString() || "",
+          gender: biodata.sex === 'male' ? 'Male' : biodata.sex === 'female' ? 'Female' : 'Prefer not to say',
+          maritalStatus: biodata.marital_status === 'single' ? 'Single' : 
+                        biodata.marital_status === 'married' ? 'Married' : 
+                        biodata.marital_status === 'divorced' ? 'Divorced' : 
+                        biodata.marital_status === 'widowed' ? 'Widowed' : 'Other',
+          therapistGenderPreference: biodata.therapist_gender_preference || "no-preference",
+          therapistSpecializationPreference: biodata.therapist_specialization_preference || "no-preference",
+        })
+        setShowBiodataPrompt(false)
+      } else {
+        setShowBiodataPrompt(true)
+      }
+    }
+  }, [biodata])
 
   const handleStep1Complete = (data: PatientBiodata) => {
     setPatientData(data)
@@ -123,12 +168,32 @@ export default function DashboardBookingPage() {
         labels={stepLabels}
       />
 
+      {/* Biodata Prompt Alert */}
+      {showBiodataPrompt && currentStep === 1 && (
+        <div className="max-w-2xl mx-auto mb-4">
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertCircle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <strong>Complete your profile first!</strong> To make booking easier, please fill out your{" "}
+              <Button
+                variant="link"
+                className="p-0 h-auto text-orange-800 underline"
+                onClick={() => router.push("/dashboard/biodata")}
+              >
+                personal information
+              </Button>{" "}
+              in your dashboard. This will auto-fill your booking forms in the future.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="max-w-2xl mx-auto">
         <Card className="shadow-lg">
           <CardHeader className="text-center pb-4">
             <CardTitle className="text-2xl">
-              {currentStep === 1 && "Tell us about yourself"}
+              {currentStep === 1 && "Enter your contact information"}
               {currentStep === 2 && "Choose your therapist"}
               {currentStep === 3 && "Complete your booking"}
             </CardTitle>

@@ -71,21 +71,38 @@ export default function TherapistCard({ therapist, onSelect, onViewProfile, isSe
 
   return (
     <Card
-      className={`flex flex-col items-center text-center p-4 shadow-sm transition-all ${isSelected ? "border-2 border-primary ring-2 ring-primary" : "hover:shadow-md"}`}
+      className={`relative overflow-hidden transition-all duration-300 ${
+        isSelected 
+          ? "border-2 border-primary ring-2 ring-primary shadow-lg" 
+          : "hover:shadow-lg hover:scale-[1.02] border-gray-200"
+      }`}
     >
-      <div className="relative">
+      {/* Image Section with Overlay Button */}
+      <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
         <Image
           src={therapist.picture || "/placeholder.svg"}
           alt={therapist.name}
-          width={100}
-          height={100}
-          className="rounded-full object-cover mb-4"
+          fill
+          className="object-cover"
         />
+        
+        {/* View Profile Button - Overlaid on image */}
+        <div className="absolute bottom-3 right-3">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="bg-white/90 backdrop-blur-sm border-gray-300 hover:bg-white text-gray-700 font-medium"
+            onClick={() => onViewProfile(therapist.id)}
+          >
+            View Profile
+          </Button>
+        </div>
+        
         {/* Availability Badge */}
-        <div className="absolute -top-2 -right-2">
+        <div className="absolute top-3 left-3">
           <Badge 
             variant={isAvailable ? "default" : "secondary"}
-            className={`flex items-center gap-1 text-xs ${
+            className={`flex items-center gap-1 text-xs font-medium ${
               isAvailable 
                 ? "bg-green-100 text-green-800 border-green-200" 
                 : "bg-gray-100 text-gray-600 border-gray-200"
@@ -106,41 +123,69 @@ export default function TherapistCard({ therapist, onSelect, onViewProfile, isSe
         </div>
       </div>
       
-      <CardHeader className="p-0 mb-2">
-        <div className="flex items-center justify-center gap-1">
-          <CardTitle className="text-lg font-semibold">{therapist.name}</CardTitle>
-          {therapist.isVerified && (
-            <TwitterVerifiedBadge className="h-4 w-4" />
-          )}
+      {/* Content Section */}
+      <CardContent className="p-4 space-y-3">
+        {/* Name and Specialization */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold text-gray-900">{therapist.name}</CardTitle>
+            {therapist.isVerified && (
+              <TwitterVerifiedBadge className="h-4 w-4 flex-shrink-0" />
+            )}
+          </div>
+          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+            {therapist.specialization}
+          </Badge>
         </div>
-        <CardDescription className="text-sm text-muted-foreground">{therapist.specialization}</CardDescription>
-      </CardHeader>
-      
-      <CardContent className="flex flex-col gap-2 p-0 w-full">
-        <div className="text-xs text-muted-foreground">
-          {therapist.gender}, {therapist.age}, {therapist.maritalStatus}
+        
+        {/* Service Description */}
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-gray-500">Callout:</p>
+          <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+            Professional therapy services delivered through individual sessions and teletherapy, 
+            tailored to your specific needs and preferences. Evidence-based interventions for 
+            comprehensive mental health support.
+          </p>
         </div>
         
         {/* Hourly Rate */}
         {therapist.hourly_rate && (
-          <div className="flex items-center justify-center gap-1 text-sm font-medium text-green-600">
+          <div className="flex items-center gap-1 text-sm font-medium text-green-600">
             <Clock className="h-3 w-3" />
             ₦{therapist.hourly_rate.toLocaleString()}/hr
           </div>
         )}
         
-        <div className="flex gap-2 mt-2 w-full">
-          <Button variant="outline" className="flex-1 bg-transparent" onClick={() => onViewProfile(therapist.id)}>
-            View Profile
-          </Button>
-          <Button 
-            className="flex-1" 
-            onClick={() => onSelect(therapist.id)} 
-            disabled={isSelected || !isAvailable}
-          >
-            {isSelected ? "Selected" : isAvailable ? "Select" : "Unavailable"}
-          </Button>
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 pt-2">
+          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+            {therapist.gender}
+          </Badge>
+          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+            {therapist.maritalStatus}
+          </Badge>
+          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+            {therapist.age}
+          </Badge>
+          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+            Virtual
+          </Badge>
         </div>
+        
+        {/* Select Button */}
+        <Button 
+          className={`w-full mt-3 ${
+            isSelected 
+              ? "bg-primary text-white" 
+              : isAvailable 
+                ? "bg-green-600 hover:bg-green-700 text-white" 
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+          onClick={() => onSelect(therapist.id)} 
+          disabled={isSelected || !isAvailable}
+        >
+          {isSelected ? "Selected" : isAvailable ? "Select Therapist" : "Unavailable"}
+        </Button>
       </CardContent>
     </Card>
   )

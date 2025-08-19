@@ -4,16 +4,21 @@ import { supabase } from '@/lib/supabase'
 export interface PatientBiodata {
   id?: string
   user_id?: string
-  name?: string
+  firstName?: string
+  email?: string
+  phone?: string
+  country?: string
   age?: number
   sex?: 'male' | 'female' | 'other'
   religion?: string
   occupation?: string
   marital_status?: 'single' | 'married' | 'divorced' | 'widowed' | 'separated'
-  tribe?: string
   level_of_education?: 'primary' | 'secondary' | 'diploma' | 'bachelor' | 'master' | 'phd' | 'other'
   complaints?: string
   therapist_preference?: string
+  therapist_gender_preference?: string
+  therapist_specialization_preference?: string
+  approved_at?: string
   created_at?: string
   updated_at?: string
 }

@@ -57,31 +57,21 @@ export const partnerSidebarGroups = [
   },
 ]
 
+// Real data - Will be populated from database
 export const partnerSummary = {
-  totalCreditsPurchased: 1000,
-  creditsRemaining: 640,
-  activeMembers: 24,
-  totalSessionsBooked: 180,
+  totalCreditsPurchased: 0,
+  creditsRemaining: 0,
+  activeMembers: 0,
+  totalSessionsBooked: 0,
 }
 
 export const recentActivity = {
-  latestMembers: [
-    { id: "m31", name: "Ada Lovelace", email: "ada@example.com" },
-    { id: "m32", name: "Grace Hopper", email: "grace@example.com" },
-  ],
-  latestPurchases: [
-    { id: "p21", date: "2025-09-10", credits: 200, amount: 100000 },
-  ],
-  recentUsage: [
-    { id: "u91", member: "John Doe", date: "2025-09-09", credits: 5 },
-  ],
+  latestMembers: [],
+  latestPurchases: [],
+  recentUsage: [],
 }
 
-export const partnerMembers: PartnerMember[] = [
-  { id: "m1", name: "John Doe", email: "john@example.com", creditsAssigned: 40, sessionsUsed: 8, status: "Active" },
-  { id: "m2", name: "Jane Smith", email: "jane@example.com", creditsAssigned: 30, sessionsUsed: 5, status: "Active" },
-  { id: "m3", name: "Bob Lee", email: "bob@example.com", creditsAssigned: 0, sessionsUsed: 0, status: "Removed" },
-]
+export const partnerMembers: PartnerMember[] = []
 
 export const creditPackages = [
   { id: "pkg100", label: "100 credits", credits: 100, price: 500000 },
@@ -96,20 +86,9 @@ export const partnerPackages = [
   { id: "pro", name: "Pro", credits: -1, price: 200000 },
 ]
 
-export const creditHistory: CreditTransaction[] = [
-  { id: "t1", date: "2025-09-01", type: "Purchase", creditsIn: 200, creditsOut: 0, balanceAfter: 800 },
-  { id: "t2", date: "2025-09-03", type: "Assignment", member: "John Doe", creditsIn: 0, creditsOut: 20, balanceAfter: 780 },
-  { id: "t3", date: "2025-09-07", type: "Deduction", member: "John Doe", creditsIn: 0, creditsOut: 5, balanceAfter: 775 },
-]
-
-export const sessionUsage: SessionUsage[] = [
-  { id: "s1", memberName: "John Doe", sessionDate: "2025-09-07", therapist: "Dr. Emily White", creditsUsed: 5, status: "Completed" },
-  { id: "s2", memberName: "Jane Smith", sessionDate: "2025-09-12", therapist: "Mr. John Davis", creditsUsed: 5, status: "Upcoming" },
-]
-
-export const payments: Payment[] = [
-  { id: "pm1", date: "2025-09-01", method: "Paystack", creditsBought: 200, amountPaid: 1000000, status: "Successful" },
-  { id: "pm2", date: "2025-08-10", method: "Bank Transfer", creditsBought: 100, amountPaid: 500000, status: "Successful" },
-]
+// Real data - Will be populated from database
+export const creditHistory: CreditTransaction[] = []
+export const sessionUsage: SessionUsage[] = []
+export const payments: Payment[] = []
 
 

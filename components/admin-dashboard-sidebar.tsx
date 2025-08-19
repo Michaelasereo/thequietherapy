@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LogOut, Shield } from "lucide-react"
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { Logo } from "@/components/ui/logo"
 import {
   Sidebar,
@@ -33,6 +33,32 @@ export default function AdminDashboardSidebar() {
     handleItemClick,
     handleItemToggle
   } = useAdminSidebarState()
+
+  // State for real sidebar data
+  const [sidebarData, setSidebarData] = useState({
+    pendingActions: 0,
+    criticalAlerts: 0,
+    unreadNotifications: 0
+  })
+  const [loading, setLoading] = useState(true)
+
+  // Fetch real sidebar data
+  useEffect(() => {
+    const fetchSidebarData = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/admin/sidebar-data')
+        const data = await response.json()
+        setSidebarData(data.sidebarData)
+      } catch (error) {
+        console.error('Error fetching sidebar data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSidebarData()
+  }, [])
 
   // Simple isActive function using pathname
   const isActive = (href: string) => pathname === href
@@ -79,19 +105,19 @@ export default function AdminDashboardSidebar() {
                         <Link href={item.href}>
                           <item.icon className="h-5 w-5" />
                           <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
-                          {item.name === 'Therapists' && pendingActions > 0 && (
+                          {item.name === 'Therapists' && sidebarData.pendingActions > 0 && (
                             <Badge variant="destructive" className="ml-auto text-xs">
-                              {pendingActions}
+                              {sidebarData.pendingActions}
                             </Badge>
                           )}
-                          {item.name === 'Partners' && pendingActions > 0 && (
+                          {item.name === 'Partners' && sidebarData.pendingActions > 0 && (
                             <Badge variant="destructive" className="ml-auto text-xs">
-                              {pendingActions}
+                              {sidebarData.pendingActions}
                             </Badge>
                           )}
-                          {item.name === 'Notifications' && criticalAlerts > 0 && (
+                          {item.name === 'Notifications' && sidebarData.unreadNotifications > 0 && (
                             <Badge variant="destructive" className="ml-auto text-xs">
-                              {criticalAlerts}
+                              {sidebarData.unreadNotifications}
                             </Badge>
                           )}
                         </Link>

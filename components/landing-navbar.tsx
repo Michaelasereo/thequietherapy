@@ -39,9 +39,6 @@ export default function LandingNavbar() {
           <Button asChild className="bg-black text-white hover:bg-gray-800 rounded-xl border border-white">
             <Link href="/book-session">Book a Session</Link>
           </Button>
-          <Button asChild variant="outline" className="border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl">
-            <Link href="/test-login">Test Dashboards</Link>
-          </Button>
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="md:hidden bg-transparent">

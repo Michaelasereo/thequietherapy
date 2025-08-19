@@ -11,48 +11,88 @@ import BookingProgress from "@/components/booking-progress"
 import BookingStep1 from "@/components/booking-step-1"
 import BookingStep2 from "@/components/booking-step-2"
 import BookingStep3 from "@/components/booking-step-3"
+import BookingStep4 from "@/components/booking-step-4"
 
 // Types for the booking data
 interface PatientBiodata {
-  name: string
+  firstName: string
+  email: string
+  phone: string
+  country: string
   complaints: string
   age: string
   gender: "Male" | "Female" | "Non-binary" | "Prefer not to say"
   maritalStatus: "Single" | "Married" | "Divorced" | "Widowed" | "Other"
-  therapistPreference?: string
+  therapistGenderPreference?: string
+  therapistSpecializationPreference?: string
+}
+
+interface TimeSlot {
+  id: string
+  date: string
+  day_name: string
+  start_time: string
+  end_time: string
+  session_duration: number
+  session_title: string
+  session_type: 'individual' | 'group'
+  is_available: boolean
 }
 
 export default function BookSessionPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [patientData, setPatientData] = useState<PatientBiodata>({
-    name: "",
+    firstName: "",
+    email: "",
+    phone: "",
+    country: "",
     complaints: "",
     age: "",
     gender: "Male",
     maritalStatus: "Single",
-    therapistPreference: "",
+    therapistGenderPreference: "no-preference",
+    therapistSpecializationPreference: "no-preference",
   })
   const [selectedTherapistId, setSelectedTherapistId] = useState<string>("")
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
+  const [therapistInfo, setTherapistInfo] = useState<any>(null)
 
-  const stepLabels = ["Patient Biodata", "Select Therapist", "Payment"]
+  const stepLabels = ["Contact Info", "Select Therapist", "Select Time", "Payment"]
 
   const handleStep1Complete = (data: PatientBiodata) => {
     setPatientData(data)
     setCurrentStep(2)
   }
 
-  const handleStep2Complete = (therapistId: string) => {
+  const handleStep2Complete = async (therapistId: string) => {
     setSelectedTherapistId(therapistId)
+    
+    // Fetch therapist info for step 3
+    try {
+      const response = await fetch(`/api/therapists/${therapistId}`)
+      const data = await response.json()
+      if (data.success) {
+        setTherapistInfo(data.therapist)
+      }
+    } catch (error) {
+      console.error('Error fetching therapist info:', error)
+    }
+    
     setCurrentStep(3)
   }
 
-  const handleStep3Complete = () => {
+  const handleStep3Complete = (slot: TimeSlot) => {
+    setSelectedSlot(slot)
+    setCurrentStep(4)
+  }
+
+  const handleStep4Complete = () => {
     // Handle booking completion
-    console.log("Booking completed:", { patientData, selectedTherapistId })
+    console.log("Booking completed:", { patientData, selectedTherapistId, selectedSlot })
     
-    // Redirect to dashboard with success message
-    router.push("/dashboard?booking=success")
+    // Redirect to authentication if not logged in, then dashboard
+    router.push("/auth?redirect=/dashboard&success=true")
   }
 
   const handleBack = () => {
@@ -84,8 +124,19 @@ export default function BookSessionPage() {
         return (
           <BookingStep3
             onBack={() => setCurrentStep(2)}
-            onCheckout={handleStep3Complete}
+            onNext={handleStep3Complete}
             selectedTherapistId={selectedTherapistId}
+          />
+        )
+      case 4:
+        return (
+          <BookingStep4
+            onBack={() => setCurrentStep(3)}
+            onCheckout={handleStep4Complete}
+            selectedTherapistId={selectedTherapistId}
+            selectedSlot={selectedSlot!}
+            therapistInfo={therapistInfo}
+            patientData={patientData}
           />
         )
       default:
@@ -133,9 +184,10 @@ export default function BookSessionPage() {
           <Card className="shadow-lg">
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-2xl">
-                {currentStep === 1 && "Tell us about yourself"}
+                {currentStep === 1 && "Enter your contact information"}
                 {currentStep === 2 && "Choose your therapist"}
-                {currentStep === 3 && "Complete your booking"}
+                {currentStep === 3 && "Select available time"}
+                {currentStep === 4 && "Complete your booking"}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">

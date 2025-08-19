@@ -1,20 +1,47 @@
 'use client';
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, Video, CheckCircle2, TrendingUp, Clock, Users, Mail, DollarSign } from "lucide-react"
 import { useTherapistData, useTherapistButtonState, useTherapistNotificationState } from "@/hooks/useTherapistDashboardState"
 import { useCrossDashboardBroadcast } from '@/hooks/useCrossDashboardSync';
 import { StatefulButton } from "@/components/ui/stateful-button"
+import { useTherapistUser } from "@/context/therapist-user-context"
 
 export default function TherapistDashboardPage() {
   console.log('🔍 TherapistDashboardPage: Component rendered')
   
+  const { therapistUser } = useTherapistUser()
   const { therapistInfo, sessionStats, clientStats, fetchTherapistData, fetchClients, fetchSessions, fetchStats } = useTherapistData()
   const { getPrimaryButtonState, setButtonLoading } = useTherapistButtonState()
   const { addSuccessNotification, addErrorNotification } = useTherapistNotificationState()
   const { broadcastSessionStatusChange } = useCrossDashboardBroadcast();
+
+  // State for real data
+  const [dashboardData, setDashboardData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch real therapist dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!therapistUser?.id) return
+
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/therapist/dashboard-data?therapistId=${therapistUser.id}`)
+        const data = await response.json()
+        setDashboardData(data)
+      } catch (error) {
+        console.error('Error fetching therapist dashboard data:', error)
+        addErrorNotification('Data Fetch Error', 'Failed to load dashboard data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [therapistUser?.id, addErrorNotification])
 
   // Fetch therapist data on component mount
   useEffect(() => {
@@ -34,20 +61,25 @@ export default function TherapistDashboardPage() {
     fetchStats()
   }, []) // Empty dependency array to run only once
 
-  // Calculate earnings this month (₦5,000 per session)
-  const earningsThisMonth = (therapistInfo?.totalSessions || 0) * 5000
+  // Use real data from API
+  const therapist = dashboardData?.therapist
+  const sessions = dashboardData?.sessions || []
+  const clients = dashboardData?.clients || 0
 
-  // Dynamic data based on therapist info
+  // Calculate earnings this month (₦5,000 per session)
+  const earningsThisMonth = (therapist?.completedSessions || 0) * 5000
+
+  // Dynamic data based on real therapist info
   const therapistSummaryCards = [
     {
       title: "Total Clients",
-      value: therapistInfo?.totalClients?.toString() || "0",
+      value: therapist?.totalClients?.toString() || "0",
       description: "Active clients",
       icon: Users,
     },
     {
       title: "Sessions This Month",
-      value: therapistInfo?.totalSessions?.toString() || "0",
+      value: therapist?.totalSessions?.toString() || "0",
       description: "Completed sessions",
       icon: CheckCircle2,
     },
@@ -59,14 +91,14 @@ export default function TherapistDashboardPage() {
     },
     {
       title: "Session Rate",
-      value: `₦${therapistInfo?.hourlyRate || 5000}`,
+      value: `₦${therapist?.hourlyRate || 5000}`,
       description: "Per session",
       icon: Clock,
     },
   ]
 
-  // Use real session data from the context
-  const therapistUpcomingSessions: any[] = [] // Will be populated when sessions are fetched
+  // Use real session data from API
+  const therapistUpcomingSessions = sessions.filter((s: any) => s.status === 'scheduled')
 
   const format = (date: Date, formatStr: string) => {
     return date.toLocaleDateString('en-US', {
@@ -87,10 +119,37 @@ export default function TherapistDashboardPage() {
     addSuccessNotification('Session Updated', `Session status changed to ${newStatus}`);
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Therapist Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Loading dashboard data...</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                  <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6">
       {/* Email Verification Banner - Show if not verified */}
-      {!therapistInfo?.isVerified && (
+      {!therapist?.isVerified && (
         <Card className="border-orange-200 bg-orange-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -116,7 +175,7 @@ export default function TherapistDashboardPage() {
       )}
 
       {/* Admin Approval Banner - Show if verified but not approved */}
-      {therapistInfo?.isVerified && !therapistInfo?.isApproved && (
+      {therapist?.isVerified && !therapist?.isApproved && (
         <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -143,7 +202,7 @@ export default function TherapistDashboardPage() {
       )}
 
       {/* Fully Approved Banner - Show when verified and approved */}
-      {therapistInfo?.isVerified && therapistInfo?.isApproved && (
+      {therapist?.isVerified && therapist?.isApproved && (
         <Card className="border-green-200 bg-green-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -170,14 +229,14 @@ export default function TherapistDashboardPage() {
 
       <div>
         <h1 className="text-2xl font-semibold text-foreground">
-          Welcome, {therapistInfo?.name || 'Therapist'}
+          Welcome, {therapist?.name || 'Therapist'}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {therapistInfo?.specialization && Array.isArray(therapistInfo.specialization) && therapistInfo.specialization.length > 0 
-            ? therapistInfo.specialization.join(' • ') 
+          {therapist?.specialization && Array.isArray(therapist.specialization) && therapist.specialization.length > 0 
+            ? therapist.specialization.join(' • ') 
             : 'Licensed Therapist'
           }
-          {therapistInfo?.licenseNumber && ` • License: ${therapistInfo.licenseNumber}`}
+          {therapist?.licenseNumber && ` • License: ${therapist.licenseNumber}`}
         </p>
       </div>
 
@@ -210,7 +269,7 @@ export default function TherapistDashboardPage() {
           <CardContent>
             {therapistUpcomingSessions.length > 0 ? (
               <div className="space-y-4">
-                {therapistUpcomingSessions.map((session) => (
+                {therapistUpcomingSessions.map((session: any) => (
                   <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
@@ -220,18 +279,17 @@ export default function TherapistDashboardPage() {
                           </div>
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{session.clientName}</h4>
-                          <p className="text-sm text-gray-600">{session.type}</p>
-                          <p className="text-xs text-gray-500">{session.date} at {session.time}</p>
+                          <h4 className="font-medium text-gray-900">Session #{session.id}</h4>
+                          <p className="text-sm text-gray-600">{session.status}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(session.created_at).toLocaleDateString()} at {new Date(session.created_at).toLocaleTimeString()}
+                          </p>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="outline" size="sm">
-                        Join
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        Reschedule
+                        View Details
                       </Button>
                     </div>
                   </div>

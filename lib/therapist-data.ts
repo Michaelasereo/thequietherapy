@@ -156,37 +156,8 @@ export const therapistUpcomingSessions = []
 // Real data for therapist's past sessions - Will be populated from database
 export const therapistPastSessions = []
 
-// Mock data for earnings transactions
-export const earningsTransactions = [
-  {
-    id: "e1",
-    date: "2025-09-01",
-    description: "Session with John Doe",
-    amount: 50.0,
-    type: "credit",
-  },
-  {
-    id: "e2",
-    date: "2025-09-05",
-    description: "Session with Jane Smith",
-    amount: 75.0,
-    type: "credit",
-  },
-  {
-    id: "e3",
-    date: "2025-09-08",
-    description: "Payout Request",
-    amount: 200.0,
-    type: "debit",
-  },
-  {
-    id: "e4",
-    date: "2025-09-10",
-    description: "Session with Michael Brown",
-    amount: 50.0,
-    type: "credit",
-  },
-]
+// Real data for earnings transactions - Will be populated from database
+export const earningsTransactions = []
 
 // Real data for therapist profile - Will be populated from database
 export const therapistProfile = null

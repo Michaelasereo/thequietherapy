@@ -11,6 +11,194 @@ import { useState, useEffect } from "react"
 import { usePatientData } from "@/hooks/usePatientData"
 import { PatientBiodata } from "@/lib/patient-data"
 
+// Countries list
+const countries = [
+  "Nigeria",
+  "Ghana",
+  "Kenya",
+  "South Africa",
+  "Egypt",
+  "Morocco",
+  "Tunisia",
+  "Algeria",
+  "Ethiopia",
+  "Uganda",
+  "Tanzania",
+  "Rwanda",
+  "Cameroon",
+  "Senegal",
+  "Ivory Coast",
+  "Mali",
+  "Burkina Faso",
+  "Niger",
+  "Chad",
+  "Sudan",
+  "Somalia",
+  "Djibouti",
+  "Eritrea",
+  "Libya",
+  "Mauritania",
+  "Gambia",
+  "Guinea-Bissau",
+  "Sierra Leone",
+  "Liberia",
+  "Togo",
+  "Benin",
+  "Central African Republic",
+  "Gabon",
+  "Congo",
+  "Democratic Republic of the Congo",
+  "Angola",
+  "Zambia",
+  "Zimbabwe",
+  "Botswana",
+  "Namibia",
+  "Lesotho",
+  "Eswatini",
+  "Madagascar",
+  "Mauritius",
+  "Seychelles",
+  "Comoros",
+  "Cape Verde",
+  "São Tomé and Príncipe",
+  "Equatorial Guinea",
+  "Guinea",
+  "Burundi",
+  "Malawi",
+  "Mozambique",
+  "United States",
+  "Canada",
+  "United Kingdom",
+  "Germany",
+  "France",
+  "Italy",
+  "Spain",
+  "Netherlands",
+  "Belgium",
+  "Switzerland",
+  "Austria",
+  "Sweden",
+  "Norway",
+  "Denmark",
+  "Finland",
+  "Ireland",
+  "Portugal",
+  "Greece",
+  "Poland",
+  "Czech Republic",
+  "Hungary",
+  "Slovakia",
+  "Slovenia",
+  "Croatia",
+  "Serbia",
+  "Bosnia and Herzegovina",
+  "Montenegro",
+  "Albania",
+  "North Macedonia",
+  "Bulgaria",
+  "Romania",
+  "Moldova",
+  "Ukraine",
+  "Belarus",
+  "Lithuania",
+  "Latvia",
+  "Estonia",
+  "Russia",
+  "Turkey",
+  "Cyprus",
+  "Malta",
+  "Iceland",
+  "Luxembourg",
+  "Liechtenstein",
+  "Monaco",
+  "Andorra",
+  "San Marino",
+  "Vatican City",
+  "Australia",
+  "New Zealand",
+  "India",
+  "China",
+  "Japan",
+  "South Korea",
+  "Singapore",
+  "Malaysia",
+  "Thailand",
+  "Vietnam",
+  "Philippines",
+  "Indonesia",
+  "Myanmar",
+  "Cambodia",
+  "Laos",
+  "Brunei",
+  "East Timor",
+  "Pakistan",
+  "Bangladesh",
+  "Sri Lanka",
+  "Nepal",
+  "Bhutan",
+  "Maldives",
+  "Afghanistan",
+  "Iran",
+  "Iraq",
+  "Syria",
+  "Lebanon",
+  "Jordan",
+  "Israel",
+  "Palestine",
+  "Saudi Arabia",
+  "Yemen",
+  "Oman",
+  "United Arab Emirates",
+  "Qatar",
+  "Bahrain",
+  "Kuwait",
+  "Kazakhstan",
+  "Uzbekistan",
+  "Turkmenistan",
+  "Kyrgyzstan",
+  "Tajikistan",
+  "Azerbaijan",
+  "Georgia",
+  "Armenia",
+  "Mongolia",
+  "Brazil",
+  "Argentina",
+  "Chile",
+  "Peru",
+  "Colombia",
+  "Venezuela",
+  "Ecuador",
+  "Bolivia",
+  "Paraguay",
+  "Uruguay",
+  "Guyana",
+  "Suriname",
+  "French Guiana",
+  "Mexico",
+  "Guatemala",
+  "Belize",
+  "El Salvador",
+  "Honduras",
+  "Nicaragua",
+  "Costa Rica",
+  "Panama",
+  "Cuba",
+  "Jamaica",
+  "Haiti",
+  "Dominican Republic",
+  "Puerto Rico",
+  "Trinidad and Tobago",
+  "Barbados",
+  "Grenada",
+  "Saint Vincent and the Grenadines",
+  "Saint Lucia",
+  "Dominica",
+  "Antigua and Barbuda",
+  "Saint Kitts and Nevis",
+  "Bahamas",
+  "Other"
+]
+
 export default function PatientBiodataPage() {
   const { 
     biodata, 
@@ -202,131 +390,191 @@ export default function PatientBiodataPage() {
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
           {isEditing ? (
             <>
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name || ''}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Enter your full name"
-                />
+              {/* Contact Information */}
+              <div className="col-span-2">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Contact Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      value={formData.firstName || ''}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      placeholder="Enter your first name"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email || ''}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone || ''}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Select value={formData.country || ''} onValueChange={(value) => handleInputChange('country', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your country" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {countries.map((country) => (
+                          <SelectItem key={country} value={country}>
+                            {country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="age">Age</Label>
-                <Input
-                  id="age"
-                  type="number"
-                  value={formData.age || ''}
-                  onChange={(e) => handleInputChange('age', parseInt(e.target.value) || 0)}
-                  placeholder="Enter your age"
-                />
-              </div>
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="sex">Sex</Label>
-                <Select value={formData.sex || ''} onValueChange={(value) => handleInputChange('sex', value as 'male' | 'female' | 'other')}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your sex" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="religion">Religion</Label>
-                <Input
-                  id="religion"
-                  value={formData.religion || ''}
-                  onChange={(e) => handleInputChange('religion', e.target.value)}
-                  placeholder="Enter your religion"
-                />
-              </div>
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="occupation">Occupation</Label>
-                <Input
-                  id="occupation"
-                  value={formData.occupation || ''}
-                  onChange={(e) => handleInputChange('occupation', e.target.value)}
-                  placeholder="Enter your occupation"
-                />
-              </div>
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="maritalStatus">Marital Status</Label>
-                <Select value={formData.marital_status || ''} onValueChange={(value) => handleInputChange('marital_status', value as any)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select marital status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="single">Single</SelectItem>
-                    <SelectItem value="married">Married</SelectItem>
-                    <SelectItem value="divorced">Divorced</SelectItem>
-                    <SelectItem value="widowed">Widowed</SelectItem>
-                    <SelectItem value="separated">Separated</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="tribe">Tribe</Label>
-                <Input
-                  id="tribe"
-                  value={formData.tribe || ''}
-                  onChange={(e) => handleInputChange('tribe', e.target.value)}
-                  placeholder="Enter your tribe"
-                />
-              </div>
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="levelOfEducation">Level of Education</Label>
-                <Select value={formData.level_of_education || ''} onValueChange={(value) => handleInputChange('level_of_education', value as any)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select education level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="primary">Primary School</SelectItem>
-                    <SelectItem value="secondary">Secondary School</SelectItem>
-                    <SelectItem value="diploma">Diploma</SelectItem>
-                    <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-                    <SelectItem value="master">Master's Degree</SelectItem>
-                    <SelectItem value="phd">PhD</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+
+              {/* Personal Information */}
+              <div className="col-span-2">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input
+                      id="age"
+                      type="number"
+                      value={formData.age || ''}
+                      onChange={(e) => handleInputChange('age', parseInt(e.target.value) || 0)}
+                      placeholder="Enter your age"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="sex">Sex</Label>
+                    <Select value={formData.sex || ''} onValueChange={(value) => handleInputChange('sex', value as 'male' | 'female' | 'other')}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your sex" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="religion">Religion</Label>
+                    <Input
+                      id="religion"
+                      value={formData.religion || ''}
+                      onChange={(e) => handleInputChange('religion', e.target.value)}
+                      placeholder="Enter your religion"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="occupation">Occupation</Label>
+                    <Input
+                      id="occupation"
+                      value={formData.occupation || ''}
+                      onChange={(e) => handleInputChange('occupation', e.target.value)}
+                      placeholder="Enter your occupation"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="maritalStatus">Marital Status</Label>
+                    <Select value={formData.marital_status || ''} onValueChange={(value) => handleInputChange('marital_status', value as any)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select marital status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single">Single</SelectItem>
+                        <SelectItem value="married">Married</SelectItem>
+                        <SelectItem value="divorced">Divorced</SelectItem>
+                        <SelectItem value="widowed">Widowed</SelectItem>
+                        <SelectItem value="separated">Separated</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Label htmlFor="levelOfEducation">Level of Education</Label>
+                    <Select value={formData.level_of_education || ''} onValueChange={(value) => handleInputChange('level_of_education', value as any)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select education level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="primary">Primary School</SelectItem>
+                        <SelectItem value="secondary">Secondary School</SelectItem>
+                        <SelectItem value="diploma">Diploma</SelectItem>
+                        <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
+                        <SelectItem value="master">Master's Degree</SelectItem>
+                        <SelectItem value="phd">PhD</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </>
           ) : (
             <>
-              <div className="flex flex-col">
-                <p className="font-medium text-sm text-muted-foreground">Name</p>
-                <p className="text-base font-semibold">{biodata?.name || "Not provided"}</p>
+              {/* Contact Information Display */}
+              <div className="col-span-2">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Contact Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm text-muted-foreground">First Name</p>
+                    <p className="text-base font-semibold">{biodata?.firstName || "Not provided"}</p>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm text-muted-foreground">Email Address</p>
+                    <p className="text-base font-semibold">{biodata?.email || "Not provided"}</p>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm text-muted-foreground">Phone Number</p>
+                    <p className="text-base font-semibold">{biodata?.phone || "Not provided"}</p>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm text-muted-foreground">Country</p>
+                    <p className="text-base font-semibold">{biodata?.country || "Not provided"}</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <p className="font-medium text-sm text-muted-foreground">Age</p>
-                <p className="text-base font-semibold">{biodata?.age || "Not provided"}</p>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-medium text-sm text-muted-foreground">Sex</p>
-                <p className="text-base font-semibold">{biodata?.sex || "Not provided"}</p>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-medium text-sm text-muted-foreground">Religion</p>
-                <p className="text-base font-semibold">{biodata?.religion || "Not provided"}</p>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-medium text-sm text-muted-foreground">Occupation</p>
-                <p className="text-base font-semibold">{biodata?.occupation || "Not provided"}</p>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-medium text-sm text-muted-foreground">Marital Status</p>
-                <p className="text-base font-semibold">{biodata?.marital_status || "Not provided"}</p>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-medium text-sm text-muted-foreground">Tribe</p>
-                <p className="text-base font-semibold">{biodata?.tribe || "Not provided"}</p>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-medium text-sm text-muted-foreground">Level of Education</p>
-                <p className="text-base font-semibold">{biodata?.level_of_education || "Not provided"}</p>
+
+              {/* Personal Information Display */}
+              <div className="col-span-2">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm text-muted-foreground">Age</p>
+                    <p className="text-base font-semibold">{biodata?.age || "Not provided"}</p>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm text-muted-foreground">Sex</p>
+                    <p className="text-base font-semibold">{biodata?.sex || "Not provided"}</p>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm text-muted-foreground">Religion</p>
+                    <p className="text-base font-semibold">{biodata?.religion || "Not provided"}</p>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm text-muted-foreground">Occupation</p>
+                    <p className="text-base font-semibold">{biodata?.occupation || "Not provided"}</p>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm text-muted-foreground">Marital Status</p>
+                    <p className="text-base font-semibold">{biodata?.marital_status || "Not provided"}</p>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="font-medium text-sm text-muted-foreground">Level of Education</p>
+                    <p className="text-base font-semibold">{biodata?.level_of_education || "Not provided"}</p>
+                  </div>
+                </div>
               </div>
             </>
           )}

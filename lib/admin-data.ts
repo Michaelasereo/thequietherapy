@@ -107,7 +107,7 @@ function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString()
 }
 
-// Export default data for fallback
+// Real data - Will be populated from database
 export const adminSummary = {
   totalUsers: 0,
   totalTherapists: 0,
@@ -119,5 +119,6 @@ export const adminSummary = {
   platformHealth: "Unknown"
 }
 
+// Real data - Will be populated from database
 export const recentActivities = []
 export const pendingVerifications = []

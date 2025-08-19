@@ -3,41 +3,83 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CreditCard, Users, Calendar, TrendingUp } from "lucide-react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 export default function PartnerOverviewPage() {
   console.log('🚀 PARTNER DASHBOARD PAGE STARTED');
   console.log('🔍 Partner dashboard component rendering...');
 
+  // State for real data
+  const [dashboardData, setDashboardData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
     console.log('🔍 Partner dashboard page useEffect - component mounted');
+    
+    // Fetch real partner dashboard data
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true)
+        // Get partner ID from session or context
+        const response = await fetch('/api/partner/me')
+        const partnerData = await response.json()
+        
+        if (partnerData.id) {
+          const dashboardResponse = await fetch(`/api/partner/dashboard-data?partnerId=${partnerData.id}`)
+          const data = await dashboardResponse.json()
+          setDashboardData(data)
+        }
+      } catch (error) {
+        console.error('Error fetching partner dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
     console.log('✅ PARTNER DASHBOARD PAGE MOUNTED SUCCESSFULLY');
   }, []);
 
-  // Default data in case imports are not available during build
-  const partnerSummary = {
-    totalCreditsPurchased: 5000,
-    creditsRemaining: 2340,
-    activeMembers: 45,
-    totalSessionsBooked: 156
+  // Use real data from API or fallback to defaults
+  const partnerSummary = dashboardData?.summary || {
+    totalCreditsPurchased: 0,
+    creditsRemaining: 0,
+    activeMembers: 0,
+    totalSessionsBooked: 0
   }
 
-  const recentActivity = {
-    latestMembers: [
-      { id: "1", name: "John Smith", email: "john@company.com" },
-      { id: "2", name: "Sarah Johnson", email: "sarah@company.com" }
-    ],
-    latestPurchases: [
-      { id: "1", date: "2024-09-15", credits: 1000, amount: 5000000 },
-      { id: "2", date: "2024-09-10", credits: 500, amount: 2500000 }
-    ],
-    recentUsage: [
-      { id: "1", date: "2024-09-15", member: "John Smith", credits: 5 },
-      { id: "2", date: "2024-09-14", member: "Sarah Johnson", credits: 5 }
-    ]
+  const recentActivity = dashboardData?.recentActivity || {
+    latestMembers: [],
+    latestPurchases: [],
+    recentUsage: []
   }
 
   console.log('🔍 Partner dashboard data loaded:', { partnerSummary, recentActivity });
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Partner Overview</h1>
+          <p className="text-sm text-muted-foreground mt-1">Loading dashboard data...</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2"></div>
+                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   try {
     return (
@@ -96,21 +138,43 @@ export default function PartnerOverviewPage() {
             <CardContent className="space-y-4">
               <div>
                 <div className="text-sm font-medium mb-1">Latest member additions</div>
-                <ul className="text-sm list-disc pl-5">
-                  {recentActivity.latestMembers.map(m => (<li key={m.id}>{m.name} — {m.email}</li>))}
-                </ul>
+                {recentActivity.latestMembers.length > 0 ? (
+                  <ul className="text-sm list-disc pl-5">
+                    {recentActivity.latestMembers.map((m: any) => (
+                      <li key={m.id}>{m.name} — {m.email}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No recent member additions</p>
+                )}
               </div>
               <div>
                 <div className="text-sm font-medium mb-1">Latest credit purchases</div>
-                <ul className="text-sm list-disc pl-5">
-                  {recentActivity.latestPurchases.map(p => (<li key={p.id}>{p.date}: {p.credits} credits — ₦{p.amount.toLocaleString()}</li>))}
-                </ul>
+                {recentActivity.latestPurchases.length > 0 ? (
+                  <ul className="text-sm list-disc pl-5">
+                    {recentActivity.latestPurchases.map((p: any) => (
+                      <li key={p.id}>
+                        {new Date(p.date).toLocaleDateString()}: {p.credits} credits — ₦{p.amount.toLocaleString()}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No recent credit purchases</p>
+                )}
               </div>
               <div>
                 <div className="text-sm font-medium mb-1">Recent session usage</div>
-                <ul className="text-sm list-disc pl-5">
-                  {recentActivity.recentUsage.map(u => (<li key={u.id}>{u.date}: {u.member} used {u.credits} credits</li>))}
-                </ul>
+                {recentActivity.recentUsage.length > 0 ? (
+                  <ul className="text-sm list-disc pl-5">
+                    {recentActivity.recentUsage.map((u: any) => (
+                      <li key={u.id}>
+                        {new Date(u.date).toLocaleDateString()}: {u.member} used {u.credits} credits
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No recent session usage</p>
+                )}
               </div>
             </CardContent>
           </Card>

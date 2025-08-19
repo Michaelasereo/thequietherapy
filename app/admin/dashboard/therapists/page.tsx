@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { UserCheck, Search, Eye, Shield, Calendar, Mail, Phone, FileText, Star, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
+import { UserCheck, Search, Eye, Shield, Calendar, Mail, Phone, FileText, Star, AlertTriangle, CheckCircle, XCircle, Info } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
 import { useSearchParams } from 'next/navigation'
 
@@ -69,60 +70,16 @@ export default function TherapistsPage() {
   const fetchTherapists = async () => {
     try {
       setLoading(true)
-      // This would be replaced with actual API call
-      const mockTherapists: Therapist[] = [
-        {
-          id: "1",
-          full_name: "Dr. Sarah Johnson",
-          email: "sarah@example.com",
-          phone: "+2348098765432",
-          mdcn_code: "MDCN12345",
-          specialization: ["Cognitive Behavioral Therapy", "Anxiety", "Depression"],
-          languages: ["English", "Yoruba"],
-          is_verified: true,
-          is_active: true,
-          status: "active",
-          rating: 4.8,
-          totalSessions: 156,
-          created_at: "2024-01-10T09:15:00Z",
-          lastActivity: "2024-01-20T16:20:00Z"
-        },
-        {
-          id: "2",
-          full_name: "Dr. Michael Brown",
-          email: "michael@example.com",
-          phone: "+2348012345678",
-          mdcn_code: "MDCN67890",
-          specialization: ["Family Therapy", "Marriage Counseling"],
-          languages: ["English", "Hausa"],
-          is_verified: true,
-          is_active: true,
-          status: "active",
-          rating: 4.6,
-          totalSessions: 89,
-          created_at: "2024-01-12T11:30:00Z",
-          lastActivity: "2024-01-19T14:45:00Z"
-        },
-        {
-          id: "3",
-          full_name: "Dr. Emily White",
-          email: "emily@example.com",
-          phone: "+2348076543210",
-          mdcn_code: "MDCN11111",
-          specialization: ["Trauma Therapy", "PTSD"],
-          languages: ["English", "Igbo"],
-          is_verified: false,
-          is_active: false,
-          status: "pending",
-          totalSessions: 0,
-          created_at: "2024-01-15T13:20:00Z"
-        }
-      ]
-      
-      setTherapists(mockTherapists)
+      const response = await fetch('/api/admin/therapists')
+      if (response.ok) {
+        const data = await response.json()
+        setTherapists(data)
+      } else {
+        toast.error('Failed to fetch therapists')
+      }
     } catch (error) {
       console.error('Error fetching therapists:', error)
-      toast.error('Failed to fetch therapists')
+      toast.error('Error loading therapists')
     } finally {
       setLoading(false)
     }
@@ -286,6 +243,15 @@ export default function TherapistsPage() {
         <h1 className="text-2xl font-semibold">Therapist Management</h1>
         <p className="text-sm text-muted-foreground mt-1">Manage licensed therapists and their specializations</p>
       </div>
+
+      {/* Manual Verification Notice */}
+      <Alert className="border-blue-200 bg-blue-50">
+        <Info className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-blue-800">
+          <strong>Manual Verification Process:</strong> All therapist ID and license verifications are reviewed manually by the admin team. 
+          Please carefully review uploaded documents before approving or rejecting applications.
+        </AlertDescription>
+      </Alert>
 
       {/* Therapist Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
