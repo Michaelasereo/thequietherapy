@@ -8,10 +8,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
-    const notificationId = params.id
+    const notificationId = id
 
     if (!notificationId) {
       return NextResponse.json(
