@@ -53,13 +53,6 @@ export default function BookingPage() {
 
   const stepLabels = ["Patient Biodata", "Select Therapist", "Select Time", "Payment"]
 
-  // Create the step 3 handler function outside of render
-  const handleStep3Complete = useCallback((slot: TimeSlot) => {
-    console.log('handleStep3Complete called with slot:', slot)
-    setSelectedSlot(slot)
-    setCurrentStep(4)
-  }, [])
-
   const handleStep1Complete = (data: PatientBiodata) => {
     setPatientData(data)
     setCurrentStep(2)
@@ -85,7 +78,6 @@ export default function BookingPage() {
   const handleStep3Complete = useCallback((slot: TimeSlot) => {
     console.log('handleStep3Complete called with slot:', slot)
     setSelectedSlot(slot)
-    // Keep the existing therapist info, don't overwrite with slot
     setCurrentStep(4)
   }, [])
 

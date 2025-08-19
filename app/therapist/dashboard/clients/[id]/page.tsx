@@ -15,7 +15,7 @@ function formatDate(input: string) {
   return new Date(input).toLocaleDateString()
 }
 
-export default function TherapistClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TherapistClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { therapistUser } = useTherapistUser()
   const [clientData, setClientData] = useState<any>(null)
