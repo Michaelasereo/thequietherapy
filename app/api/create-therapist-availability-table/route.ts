@@ -29,19 +29,6 @@ export async function POST() {
       note: 'The availability API will handle missing table gracefully by returning empty availability.'
     })
 
-    if (error) {
-      console.error('Error creating therapist_availability table:', error)
-      return NextResponse.json(
-        { success: false, error: 'Failed to create table' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Therapist availability table created successfully'
-    })
-
   } catch (error) {
     console.error('Error creating table:', error)
     return NextResponse.json(

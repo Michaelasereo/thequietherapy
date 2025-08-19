@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Brain, Video, Users, Clock, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import SessionNotesPanel from "@/components/session-notes-panel"
 
 function VideoCallContent() {
   const router = useRouter()

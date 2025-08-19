@@ -24,10 +24,10 @@ interface SessionNotesPanelProps {
 
 interface SessionNote {
   id?: string
-  session_id: string
-  therapist_id: string
-  user_id: string
-  notes: string
+  session_id?: string
+  therapist_id?: string
+  user_id?: string
+  notes?: string
   mood_rating?: number
   progress_notes?: string
   homework_assigned?: string

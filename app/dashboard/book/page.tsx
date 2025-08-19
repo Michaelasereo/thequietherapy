@@ -135,7 +135,7 @@ export default function DashboardBookingPage() {
         return (
           <BookingStep3
             onBack={() => setCurrentStep(2)}
-            onCheckout={handleStep3Complete}
+            onNext={handleStep3Complete}
             selectedTherapistId={selectedTherapistId}
           />
         )

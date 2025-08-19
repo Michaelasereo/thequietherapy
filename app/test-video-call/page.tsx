@@ -12,7 +12,7 @@ import {
   CheckCircle, 
   AlertCircle,
   Play,
-  Stop,
+  Square,
   Settings
 } from "lucide-react"
 import Link from 'next/link'

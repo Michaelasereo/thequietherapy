@@ -53,8 +53,17 @@ export default function BookingPage() {
 
   const stepLabels = ["Patient Biodata", "Select Therapist", "Select Time", "Payment"]
 
-  const handleStep1Complete = (data: PatientBiodata) => {
-    setPatientData(data)
+  const handleStep1Complete = (data: any) => {
+    // Convert the form data to match PatientBiodata structure
+    const patientBiodata: PatientBiodata = {
+      name: data.firstName || data.name || "",
+      complaints: data.complaints || "",
+      age: data.age || "",
+      gender: data.gender || "Male",
+      maritalStatus: data.maritalStatus || "Single",
+      therapistPreference: data.therapistSpecializationPreference || ""
+    }
+    setPatientData(patientBiodata)
     setCurrentStep(2)
   }
 
@@ -103,7 +112,18 @@ export default function BookingPage() {
         return (
           <BookingStep1
             onNext={handleStep1Complete}
-            initialData={patientData}
+            initialData={{
+              firstName: patientData.name,
+              email: "",
+              phone: "",
+              country: "",
+              complaints: patientData.complaints,
+              age: patientData.age,
+              gender: patientData.gender,
+              maritalStatus: patientData.maritalStatus,
+              therapistGenderPreference: "no-preference",
+              therapistSpecializationPreference: patientData.therapistPreference || "no-preference"
+            }}
           />
         )
       case 2:

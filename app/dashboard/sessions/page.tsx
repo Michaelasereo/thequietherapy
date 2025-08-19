@@ -147,7 +147,7 @@ export default function SessionsPage() {
 
   const canJoinSession = (session: SessionData) => {
     const now = new Date()
-    const sessionTime = new Date(session.start_time)
+    const sessionTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
     const timeDiff = sessionTime.getTime() - now.getTime()
     const minutesDiff = timeDiff / (1000 * 60)
     
@@ -195,7 +195,7 @@ export default function SessionsPage() {
                             {'Therapist'}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            {session.session_type || 'Video'} Session
+                            Video Session
                           </p>
                         </div>
                       </div>
@@ -205,12 +205,14 @@ export default function SessionsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{formatDate(session.start_time)}</span>
+                        <span className="text-sm">{formatDate(session.scheduled_date)}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {formatTime(session.start_time)} - {formatTime(session.end_time)}
+                          {session.scheduled_time} - {session.duration_minutes ? 
+                            new Date(new Date(`${session.scheduled_date}T${session.scheduled_time}`).getTime() + session.duration_minutes * 60000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) 
+                            : 'TBD'}
                         </span>
                       </div>
                     </div>
@@ -276,7 +278,7 @@ export default function SessionsPage() {
                             {'Therapist'}
                           </h4>
                           <p className="text-sm text-muted-foreground">
-                            {formatDate(session.start_time)} at {formatTime(session.start_time)}
+                            {formatDate(session.scheduled_date)} at {session.scheduled_time}
                           </p>
                         </div>
                       </div>

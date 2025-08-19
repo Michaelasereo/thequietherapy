@@ -82,7 +82,7 @@ export default function MedicalHistoryPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Name</label>
-              <p className="font-medium">{biodata?.name || "Not provided"}</p>
+              <p className="font-medium">{biodata?.firstName || "Not provided"}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Age</label>

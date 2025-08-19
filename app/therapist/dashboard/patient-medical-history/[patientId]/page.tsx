@@ -87,8 +87,8 @@ export default function PatientMedicalHistoryPage() {
         setTherapistId(currentTherapistId)
         
         // Set patient name from biodata
-        if (patientBiodata?.name) {
-          setPatientName(patientBiodata.name)
+        if (patientBiodata?.firstName) {
+          setPatientName(patientBiodata.firstName)
         } else {
           setPatientName("Client")
         }

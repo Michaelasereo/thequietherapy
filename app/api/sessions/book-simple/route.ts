@@ -31,7 +31,9 @@ export async function POST(request: NextRequest) {
       end_time: sessionEndTime.toISOString(),
       duration: sessionDuration,
       session_type: sessionType,
-      notes: notes
+      notes: notes,
+      scheduled_date: sessionDate,
+      scheduled_time: sessionTime
     }
 
     // Book the session using simplified logic

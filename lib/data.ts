@@ -333,7 +333,20 @@ export const recentApplications = [
 ]
 
 // Real data - Will be populated from database
-export const smartMatches = []
+export const smartMatches: Array<{
+  id: string
+  title: string
+  salary: string
+  type: string
+  location: string
+  date: string
+  matchScore: string
+  description: string
+  tags: string[]
+  company: string
+  verified: boolean
+  applicants: number
+}> = []
 
 // Real data - Will be populated from database
 export const sessionNotes = []

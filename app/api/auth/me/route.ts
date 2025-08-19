@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Access the users object properly - it should be a single object, not an array
-    const user = sessionData.users
+    const user = sessionData.users as any
     console.log('✅ Session validated for user:', user.email)
 
     // Update last accessed time

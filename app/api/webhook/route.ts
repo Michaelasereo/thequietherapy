@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processSessionInBackground } from '@/lib/session-ai-processor'
+import { processSessionRecordingMock } from '@/lib/session-ai-processor-mock'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -40,8 +41,17 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', sessionId)
 
-      // Start AI processing in background
-      await processSessionInBackground(sessionId, recordingId)
+                   // Use mock processor for test recordings, real processor for actual recordings
+             if (recordingId.startsWith('test-recording-')) {
+               console.log('🎭 Using mock AI processor for test recording')
+               console.log('🎭 Session ID:', sessionId, 'Recording ID:', recordingId)
+               processSessionRecordingMock(sessionId, recordingId).catch(error => {
+                 console.error('Background processing failed for session', sessionId, ':', error)
+               })
+             } else {
+               console.log('🤖 Using real AI processor for actual recording')
+               await processSessionInBackground(sessionId, recordingId)
+             }
 
       return NextResponse.json({ 
         success: true, 

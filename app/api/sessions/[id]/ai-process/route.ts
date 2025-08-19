@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processSessionRecording, getProcessingStatus, retryProcessing } from '@/lib/session-ai-processor'
+import { processSessionRecordingMock } from '@/lib/session-ai-processor-mock'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -38,6 +39,8 @@ export async function POST(
     const { id } = await params
     const body = await request.json()
     const { action, recordingId } = body
+    
+    console.log('🔍 AI Process Request:', { id, action, recordingId, body })
 
     if (action === 'start') {
       // Manual start of AI processing
@@ -57,10 +60,25 @@ export async function POST(
         }
 
         const sessionRecordingId = session.daily_room_recording_id
-        await processSessionRecording(id, sessionRecordingId)
-      } else {
-        await processSessionRecording(id, recordingId)
-      }
+        
+        // Use mock processor for test recordings
+        if (sessionRecordingId.startsWith('test-recording-')) {
+          console.log('🎭 Using mock AI processor for test recording')
+          await processSessionRecordingMock(id, sessionRecordingId)
+        } else {
+          console.log('🤖 Using real AI processor for actual recording')
+          await processSessionRecording(id, sessionRecordingId)
+        }
+              } else {
+          // Use mock processor for test recordings
+          if (recordingId.startsWith('test-recording-')) {
+            console.log('🎭 Using mock AI processor for test recording')
+            await processSessionRecordingMock(id, recordingId)
+          } else {
+            console.log('🤖 Using real AI processor for actual recording')
+            await processSessionRecording(id, recordingId)
+          }
+        }
 
       return NextResponse.json({
         success: true,
@@ -103,6 +121,11 @@ export async function POST(
 
   } catch (error) {
     console.error('Error processing AI request:', error)
+    console.error('Error details:', {
+      message: (error as any).message,
+      stack: (error as any).stack,
+      name: (error as any).name
+    })
     return NextResponse.json(
       { error: 'Failed to process AI request' },
       { status: 500 }

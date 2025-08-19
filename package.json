@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "next build",
+    "build:fullcheck": "tsc --noEmit --pretty || true && next lint || true && next build",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start"

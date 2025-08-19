@@ -170,18 +170,20 @@ export default function SessionPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{formatDate(session.start_time)}</span>
+                <span className="text-sm">{formatDate(session.scheduled_date)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  {formatTimeString(session.start_time)} - {formatTimeString(session.end_time)}
+                  {session.scheduled_time} - {session.duration_minutes ? 
+                    new Date(new Date(`${session.scheduled_date}T${session.scheduled_time}`).getTime() + session.duration_minutes * 60000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) 
+                    : 'TBD'}
                 </span>
               </div>
             </div>
             <div className="mt-4">
               <p className="font-medium">{'Therapist'}</p>
-              <p className="text-sm text-muted-foreground">{session.session_type} Session</p>
+              <p className="text-sm text-muted-foreground">Video Session</p>
             </div>
           </CardContent>
         </Card>

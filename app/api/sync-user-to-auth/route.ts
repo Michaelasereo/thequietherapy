@@ -53,8 +53,7 @@ export async function POST(request: NextRequest) {
         full_name: userData.name,
         user_type: 'individual'
       },
-      email_confirm: true,
-      user_id: userId // Use the same ID as your custom auth
+      email_confirm: true
     })
 
     if (createError) {
