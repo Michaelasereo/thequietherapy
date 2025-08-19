@@ -9,25 +9,28 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Get all active therapists with user data
-    const { data: therapists, error } = await supabase
-      .from('therapists')
+    // Get all approved and active therapists from therapist_enrollments and users tables
+    const { data: therapistEnrollments, error: enrollmentError } = await supabase
+      .from('therapist_enrollments')
       .select(`
         *,
-        user:user_id (
+        users!inner (
           id,
           full_name,
           email,
           is_verified,
-          is_active
+          is_active,
+          user_type
         )
       `)
-      .eq('is_active', true)
-      .eq('is_verified', true)
-      .order('user(full_name)', { ascending: true })
+      .eq('status', 'approved')
+      .eq('users.is_verified', true)
+      .eq('users.is_active', true)
+      .eq('users.user_type', 'therapist')
+      .order('users(full_name)', { ascending: true })
 
-    if (error) {
-      console.error('Get therapists error:', error)
+    if (enrollmentError) {
+      console.error('Get therapist enrollments error:', enrollmentError)
       return NextResponse.json(
         { error: 'Failed to get therapists' },
         { status: 500 }
@@ -35,25 +38,30 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match the expected format
-    const transformedTherapists = therapists?.map(therapist => ({
-      id: therapist.user_id,
-      name: therapist.user?.full_name || 'Unknown Therapist',
-      email: therapist.user?.email || '',
+    const transformedTherapists = therapistEnrollments?.map(enrollment => ({
+      id: enrollment.users.id,
+      name: enrollment.users.full_name || enrollment.full_name || 'Unknown Therapist',
+      email: enrollment.users.email || enrollment.email || '',
       avatar_url: '', // Default empty string since column doesn't exist
-      specialization: therapist.specialization || '',
-      experience_years: therapist.experience_years || 0,
-      hourly_rate: therapist.hourly_rate || 50,
-      bio: therapist.bio || '',
-      languages: therapist.languages || [],
-      education: therapist.education || '',
-      certifications: therapist.certifications || [],
-      is_verified: therapist.user?.is_verified || false,
-      is_active: therapist.user?.is_active || false,
+      specialization: enrollment.specialization ? enrollment.specialization.join(', ') : '',
+      experience_years: 5, // Default value
+      hourly_rate: enrollment.hourly_rate || 5000,
+      bio: enrollment.bio || '',
+      languages: enrollment.languages || [],
+      education: '', // Default empty string
+      certifications: [], // Default empty array
+      is_verified: enrollment.users.is_verified || false,
+      is_active: enrollment.users.is_active || false,
       // Add some mock data for filtering
-      gender: 'Female', // You can add this to the therapists table
+      gender: 'Male', // You can add this to the therapist_enrollments table
       age: '30s',
-      maritalStatus: 'Single'
+      maritalStatus: 'Single',
+      phone: enrollment.phone || '',
+      mdcn_code: enrollment.mdcn_code || '',
+      status: enrollment.status
     })) || []
+
+    console.log(`Found ${transformedTherapists.length} available therapists`)
 
     return NextResponse.json({
       success: true,
