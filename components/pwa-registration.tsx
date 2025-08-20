@@ -84,8 +84,7 @@ export function PWARegistration() {
         registration.showNotification('Quiet Therapy', {
           body: 'This is a test notification from your PWA!',
           icon: '/icon-192x192.png',
-          badge: '/icon-192x192.png',
-          vibrate: [100, 50, 100]
+          badge: '/icon-192x192.png'
         })
       })
     }

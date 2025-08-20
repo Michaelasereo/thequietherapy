@@ -31,7 +31,7 @@ export async function GET() {
       .rpc('get_soap_notes_stats')
 
     // Test 5: Try to insert a test SOAP note (if we have session data)
-    let insertTest = { success: false, error: 'No test session available' }
+    let insertTest: { success: boolean; error: string | null; result?: any } = { success: false, error: 'No test session available' }
     if (sessionsData && sessionsData.length > 0) {
       const testSession = sessionsData[0]
       const { data: insertResult, error: insertError } = await supabase
@@ -56,7 +56,7 @@ export async function GET() {
       insertTest = {
         success: !insertError,
         result: insertResult,
-        error: insertError
+        error: insertError ? insertError.message : null
       }
     }
 

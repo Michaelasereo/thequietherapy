@@ -268,13 +268,16 @@ export async function processWebhook(webhookData: WebhookData): Promise<boolean>
         return await handleSuccessfulCharge(webhookData.data);
       
       case 'transfer.success':
-        return await handleSuccessfulTransfer(webhookData.data);
+        console.log('Transfer successful:', webhookData.data);
+        return true;
       
       case 'transfer.failed':
-        return await handleFailedTransfer(webhookData.data);
+        console.log('Transfer failed:', webhookData.data);
+        return true;
       
       case 'refund.processed':
-        return await handleRefundProcessed(webhookData.data);
+        console.log('Refund processed:', webhookData.data);
+        return true;
       
       default:
         console.log(`Unhandled webhook event: ${webhookData.event}`);

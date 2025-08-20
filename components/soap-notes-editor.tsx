@@ -269,7 +269,7 @@ export default function SOAPNotesEditor({
     setNotes(prev => ({
       ...prev,
       [section]: {
-        ...prev[section as keyof SOAPNotes],
+        ...(prev[section as keyof SOAPNotes] as any),
         [field]: value
       }
     }))
@@ -279,7 +279,7 @@ export default function SOAPNotesEditor({
     setNotes(prev => ({
       ...prev,
       [section]: {
-        ...prev[section as keyof SOAPNotes],
+        ...(prev[section as keyof SOAPNotes] as any),
         [subsection]: {
           ...(prev[section as keyof SOAPNotes] as any)[subsection],
           [field]: value

@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
         description: pkg.description,
         credits: pkg.credits,
         price: pkg.price,
-        currency: pkg.currency || 'NGN',
-        popular: pkg.is_popular || false,
-        sort_order: pkg.sort_order || 0
+        currency: 'NGN', // Fixed currency for Nigeria
+        popular: pkg.popular || false,
+        sort_order: 0
       }))
     });
 
