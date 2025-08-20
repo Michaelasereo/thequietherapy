@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { createMagicLink, verifyMagicLink } from "@/lib/auth"
+import { createMagicLinkForAuthType, verifyMagicLinkForAuthType } from "@/lib/auth"
 
 // Simulate a therapist user type
 type TherapistUser = {
@@ -23,9 +23,10 @@ export async function therapistMagicLinkAction(_prevState: any, formData: FormDa
   }
 
   try {
-    // Create magic link for therapist
-    const result = await createMagicLink(
+    // Create magic link for therapist using the auth type specific function
+    const result = await createMagicLinkForAuthType(
       email.trim(),
+      'therapist',
       'login',
       {
         user_type: 'therapist'
@@ -45,7 +46,7 @@ export async function therapistMagicLinkAction(_prevState: any, formData: FormDa
 
 export async function therapistVerifyMagicLinkAction(token: string) {
   try {
-    const result = await verifyMagicLink(token)
+    const result = await verifyMagicLinkForAuthType(token, 'therapist')
     
     if (result.success && result.user) {
       // Check if user is a therapist
@@ -114,16 +115,28 @@ export async function therapistEnrollAction(_prevState: any, formData: FormData)
       return { error: "You must accept the terms and conditions." }
     }
 
-    // Here you would typically:
-    // 1. Validate the MDCN code
-    // 2. Create the therapist user account
-    // 3. Send verification email
-    // 4. Store the enrollment data
+    // Create magic link for therapist signup
+    const result = await createMagicLinkForAuthType(
+      email.trim(),
+      'therapist',
+      'signup',
+      {
+        first_name: fullName,
+        user_type: 'therapist',
+        phone,
+        mdcn_code: mdcnCode,
+        specialization,
+        languages
+      }
+    )
 
-    console.log("Therapist enrollment successful for:", email)
-    
-    return { 
-      success: "Enrollment submitted successfully! We'll review your application and contact you soon." 
+    if (result.success) {
+      console.log("Therapist enrollment successful for:", email)
+      return { 
+        success: "Enrollment submitted successfully! Please check your email to complete the verification process." 
+      }
+    } else {
+      return { error: result.error || "Failed to process enrollment. Please try again." }
     }
 
   } catch (error) {
