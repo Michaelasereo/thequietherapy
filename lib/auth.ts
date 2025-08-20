@@ -198,9 +198,16 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
         console.warn('⚠️ Failed to sync user to Supabase auth:', syncResult.error)
         // Don't fail the entire login process if sync fails
       }
-    } else if (!user) {
-      console.log('❌ User not found and not a signup')
-      return { success: false, error: 'User account not found' }
+    } else if (!user && magicLink.type === 'login') {
+      console.log('❌ User not found for login')
+      return { success: false, error: 'User account not found. Please sign up first.' }
+    } else if (user && magicLink.type === 'login') {
+      console.log('✅ Existing user found for login:', user.email)
+      // Verify user type matches
+      if (user.user_type !== authType) {
+        console.log('❌ User type mismatch:', user.user_type, 'vs', authType)
+        return { success: false, error: 'Invalid user type for this login' }
+      }
     }
 
     // Create session token and store in database

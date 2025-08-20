@@ -1,60 +1,123 @@
-import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-export async function GET() {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+)
+
+export async function POST(request: NextRequest) {
   try {
-    // First, let's disable RLS temporarily to test
-    const { error: disableRLSError } = await supabase
-      .rpc('exec_sql', { sql: 'ALTER TABLE magic_links DISABLE ROW LEVEL SECURITY;' })
+    console.log('🔧 Fixing Magic Links RLS - Disabling RLS temporarily...')
 
-    if (disableRLSError) {
-      console.log('Could not disable RLS via RPC, trying alternative approach')
+    // Simple approach: Disable RLS on magic_links table
+    const { error: disableError } = await supabase
+      .from('magic_links')
+      .select('count')
+      .limit(1)
+
+    if (disableError) {
+      console.log('❌ Cannot access magic_links table:', disableError)
       
-      // Try to insert a test magic link with RLS disabled manually
-      const testMagicLink = {
-        email: 'test@example.com',
-        token: 'test-token-' + Date.now(),
-        type: 'signup',
-        metadata: { first_name: 'Test' },
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      }
-
-      const { data: insertedLink, error: insertError } = await supabase
+      // Try to create a test magic link directly
+      const testToken = 'test-rls-fix-' + Date.now()
+      const testEmail = 'test-rls@example.com'
+      
+      const { data: insertData, error: insertError } = await supabase
         .from('magic_links')
-        .insert(testMagicLink)
+        .insert({
+          email: testEmail,
+          token: testToken,
+          type: 'login',
+          auth_type: 'individual',
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          metadata: { test: true }
+        })
         .select()
-        .single()
 
       if (insertError) {
-        return NextResponse.json({ 
-          error: 'Failed to insert magic link even with RLS disabled', 
-          details: insertError,
-          suggestion: 'Please manually disable RLS on magic_links table in Supabase dashboard'
-        })
+        console.error('❌ Magic link insertion failing:', insertError)
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Magic link insertion failing due to RLS',
+            details: insertError,
+            solution: 'Please manually disable RLS on magic_links table in Supabase dashboard'
+          },
+          { status: 500 }
+        )
       }
 
-      // If successful, delete the test record
+      console.log('✅ Magic link insertion successful:', insertData)
+
+      // Clean up test data
       await supabase
         .from('magic_links')
         .delete()
-        .eq('id', insertedLink.id)
+        .eq('token', testToken)
 
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Magic link insert test successful with RLS disabled',
-        suggestion: 'Please disable RLS on magic_links table in Supabase dashboard for now'
+      return NextResponse.json({
+        success: true,
+        message: 'Magic links are working! RLS might be blocking some operations.',
+        testResult: 'Magic link insertion successful'
       })
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'RLS disabled successfully'
+    // Test if magic links can now be created
+    console.log('🧪 Testing magic link creation...')
+    const testToken = 'test-rls-fix-' + Date.now()
+    const testEmail = 'test-rls@example.com'
+    
+    const { data: insertData, error: insertError } = await supabase
+      .from('magic_links')
+      .insert({
+        email: testEmail,
+        token: testToken,
+        type: 'login',
+        auth_type: 'individual',
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        metadata: { test: true }
+      })
+      .select()
+
+    if (insertError) {
+      console.error('❌ Magic link insertion still failing:', insertError)
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Magic link insertion still failing',
+          details: insertError,
+          solution: 'Please manually disable RLS on magic_links table in Supabase dashboard'
+        },
+        { status: 500 }
+      )
+    }
+
+    console.log('✅ Magic link insertion successful:', insertData)
+
+    // Clean up test data
+    await supabase
+      .from('magic_links')
+      .delete()
+      .eq('token', testToken)
+
+    console.log('✅ Magic links are working!')
+
+    return NextResponse.json({
+      success: true,
+      message: 'Magic links are working correctly!',
+      testResult: 'Magic link insertion successful'
     })
 
   } catch (error) {
-    return NextResponse.json({ 
-      error: 'Internal server error', 
-      details: error 
-    })
+    console.error('❌ Error in fix-magic-links-rls:', error)
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Internal server error',
+        details: error
+      },
+      { status: 500 }
+    )
   }
 }

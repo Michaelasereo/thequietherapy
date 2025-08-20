@@ -50,18 +50,16 @@ function VerifyContent() {
           setStatus('success')
           setMessage('Verification successful! Redirecting to your dashboard...')
           
-          // Redirect to appropriate dashboard after a short delay
-          setTimeout(() => {
-            if (userType === 'therapist') {
-              router.push('/therapist/dashboard')
-            } else if (userType === 'partner') {
-              router.push('/partner/dashboard')
-            } else if (userType === 'admin') {
-              router.push('/admin/dashboard')
-            } else {
-              router.push('/dashboard')
-            }
-          }, 2000)
+          // Redirect to appropriate dashboard immediately
+          if (userType === 'therapist') {
+            router.push('/therapist/dashboard')
+          } else if (userType === 'partner') {
+            router.push('/partner/dashboard')
+          } else if (userType === 'admin') {
+            router.push('/admin/dashboard')
+          } else {
+            router.push('/dashboard')
+          }
         } else {
           setStatus('error')
           setMessage(data.error || 'Verification failed. Please try again.')
