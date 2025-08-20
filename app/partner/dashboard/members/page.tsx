@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Upload, Download, Users, Calendar, Clock, CreditCard } from "lucide-react"
+import CSVUpload from "@/components/csv-upload"
 
 export default function PartnerMembersPage() {
   // Default data in case imports are not available during build
@@ -104,48 +105,7 @@ export default function PartnerMembersPage() {
       </div>
 
       {/* CSV Upload */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Bulk Add Members via CSV</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Download Template
-            </Button>
-          </div>
-          
-          <div className="space-y-2">
-            <Select value={selectedPackage ?? ""}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select package for all members" />
-              </SelectTrigger>
-              <SelectContent>
-                {partnerPackages.map((pkg) => (
-                  <SelectItem key={pkg.id} value={pkg.id}>
-                    {pkg.name} - {pkg.credits === -1 ? "Unlimited" : `${pkg.credits} credits`} (₦{pkg.price.toLocaleString()})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">CSV Data (Name, Email format)</Label>
-              <textarea
-                defaultValue={csvData}
-                placeholder="John Doe,john@example.com&#10;Jane Smith,jane@example.com"
-                className="w-full h-32 p-2 border rounded-md"
-              />
-            </div>
-            
-            <Button className="w-full">
-              <Upload className="mr-2 h-4 w-4" />
-              Process CSV & Send Verification Emails
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <CSVUpload />
 
       {/* Manual Add */}
       <Card>

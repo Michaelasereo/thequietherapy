@@ -8,6 +8,40 @@ export function middleware(request: NextRequest) {
   
   const { pathname } = request.nextUrl
   
+  // Security: Block suspicious user agents
+  const userAgent = request.headers.get('user-agent') || ''
+  const suspiciousPatterns = [
+    /bot/i,
+    /crawler/i,
+    /spider/i,
+    /scraper/i,
+    /curl/i,
+    /wget/i,
+    /python/i,
+    /java/i,
+    /perl/i
+  ]
+  
+  if (suspiciousPatterns.some(pattern => pattern.test(userAgent))) {
+    console.log('🚫 Blocked suspicious user agent:', userAgent)
+    return new NextResponse('Forbidden', { status: 403 })
+  }
+  
+  // Security: Rate limiting headers (basic implementation)
+  const response = NextResponse.next()
+  
+  // Add security headers to all responses
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
+  
+  // HTTPS enforcement
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  }
+  
   // Check if user is authenticated by looking for the auth cookie
   const userCookie = request.cookies.get('trpi_user')
   const individualCookie = request.cookies.get('trpi_individual_user')
@@ -129,7 +163,7 @@ export function middleware(request: NextRequest) {
   }
   
   console.log('✅ MIDDLEWARE COMPLETED - allowing request to continue')
-  return NextResponse.next()
+  return response
 }
 
 export const config = {

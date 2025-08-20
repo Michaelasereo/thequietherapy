@@ -11,6 +11,82 @@ const nextConfig = {
       bodySizeLimit: '10mb'
     },
   },
+  // Security Headers Configuration
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          // HTTPS Enforcement
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload'
+          },
+          // Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: https: blob:",
+              "connect-src 'self' https://*.supabase.co https://api.stripe.com https://checkout.stripe.com wss://*.supabase.co",
+              "frame-src 'self' https://js.stripe.com https://checkout.stripe.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "upgrade-insecure-requests"
+            ].join('; ')
+          },
+          // XSS Protection
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          // Content Type Sniffing Protection
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          // Referrer Policy
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          // Permissions Policy
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), payment=()'
+          },
+          // X-Frame-Options (for older browsers)
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          }
+        ]
+      },
+      // Additional headers for API routes
+      {
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate'
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache'
+          },
+          {
+            key: 'Expires',
+            value: '0'
+          }
+        ]
+      }
+    ]
+  },
   webpack: (config, { isServer }) => {
     // Ensure path resolution works correctly for Netlify
     config.resolve.alias = {

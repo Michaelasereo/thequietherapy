@@ -1,66 +1,27 @@
 'use client';
 
-import React, { useEffect } from "react"
-import { Suspense } from "react"
+import type React from "react"
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar"
 import DashboardSidebar from "@/components/dashboard-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
-import { Bell, Search } from "lucide-react"
+import { Bell, Search, Shield } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { DashboardProvider } from "@/context/dashboard-context"
 import { DebugToggle } from "@/components/ui/debug-panel"
 import { GlobalStateProvider } from '@/context/global-state-context';
 import { useCrossDashboardSync } from '@/hooks/useCrossDashboardSync';
-import { useAuth } from '@/context/auth-context'
-import { NotificationBell } from '@/components/notifications/notification-bell'
-import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/auth-context';
+import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 
-function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  // Connect to global state
-  useCrossDashboardSync('user');
-  
-  // Get user data from auth context
-  const { user, loading, isAuthenticated } = useAuth();
-  const router = useRouter();
-  
-  // Handle redirect in useEffect to avoid React errors
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
-    }
-  }, [loading, isAuthenticated, router]);
-  
-  // Get user's first name for display
-  const userName = user?.full_name ? user.full_name.split(' ')[0] : "User";
-  
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  // Show loading while redirecting
-  if (!isAuthenticated) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Redirecting...</p>
-        </div>
-      </div>
-    );
-  }
-  
+async function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
+  // Simulate user data for the header
+  const cookieStore = await cookies()
+  const userCookie = cookieStore.get("trpi_user")?.value
+  const user = userCookie ? JSON.parse(userCookie) : { name: "Michael", email: "michael@example.com" }
+
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex h-screen bg-white w-full">
@@ -71,58 +32,51 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Search Bar */}
             <div className="flex-1 max-w-sm">
               <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search everything..."
-                  className="w-full pl-8 pr-10 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 placeholder-gray-500"
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search..."
+                  className="pl-10 bg-gray-50 border-gray-200 focus:bg-white"
                 />
-                <svg
-                  className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <span className="absolute right-2 top-1.5 text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">⌘K</span>
               </div>
             </div>
-            
-            {/* User Info */}
-            <div className="flex items-center gap-3">
-              <NotificationBell userId={user?.id || ''} userType={user?.user_type as any || "individual"} />
-              <span className="text-gray-700 text-sm font-medium">Welcome, {userName}!</span>
-              <button className="p-1.5 text-gray-400 hover:text-gray-600">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5z" />
-                </svg>
-              </button>
+
+            {/* Right side - Notifications and User */}
+            <div className="flex items-center gap-4">
+              {/* Notifications */}
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                  3
+                </span>
+              </Button>
+
+              {/* User Menu */}
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
+                </div>
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/placeholder-avatar.jpg" alt={user.name} />
+                  <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+              </div>
             </div>
           </header>
-          
-          {/* Main Content */}
-          <main className="flex-1 overflow-y-auto bg-gray-50">
-            <div className="p-6 w-full">
+
+          {/* Main Content Area */}
+          <main className="flex-1 overflow-auto bg-gray-50">
+            <div className="container mx-auto p-6">
               {children}
             </div>
           </main>
         </SidebarInset>
       </div>
-      <DebugToggle dashboardType="user" />
     </SidebarProvider>
-  );
+  )
 }
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <GlobalStateProvider>
       <DashboardProvider>
@@ -131,5 +85,5 @@ export default function DashboardLayout({
         </DashboardLayoutContent>
       </DashboardProvider>
     </GlobalStateProvider>
-  );
+  )
 }

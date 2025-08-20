@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyPayment } from "@/lib/paystack";
-import { createClient } from '@supabase/supabase-js';
+import { verifyPayment } from "@/lib/paystack-enhanced";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,107 +11,119 @@ export async function GET(request: NextRequest) {
     const paymentReference = reference || trxref;
 
     if (!paymentReference) {
+      console.error('Payment reference not found in verification request');
       return NextResponse.json(
         { error: "Payment reference not found" },
         { status: 400 }
       );
     }
 
-    const result = await verifyPayment(paymentReference);
+    console.log(`Verifying payment: ${paymentReference}`);
+
+    // Verify payment with retry logic
+    let result;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    do {
+      result = await verifyPayment(paymentReference, retryCount);
+      
+      if (result.success || !result.shouldRetry) {
+        break;
+      }
+      
+      retryCount++;
+      if (retryCount < maxRetries) {
+        console.log(`Retrying payment verification for ${paymentReference} (attempt ${retryCount + 1})`);
+        await new Promise(resolve => setTimeout(resolve, 2000 * retryCount)); // Exponential backoff
+      }
+    } while (retryCount < maxRetries);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      );
+      console.error(`Payment verification failed after ${retryCount} attempts:`, result.error);
+      
+      // Redirect to failure page
+      const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?payment=failed&reference=${paymentReference}&error=${encodeURIComponent(result.error || 'Verification failed')}`;
+      return NextResponse.redirect(redirectUrl);
     }
 
     const paymentData = result.data;
 
-    // Check if payment was successful
+    // Determine redirect URL based on payment type
+    let redirectUrl;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
     if (paymentData.status === 'success') {
-      // Update user credits or session booking based on metadata
-      const metadata = paymentData.metadata;
+      const metadata = paymentData.metadata || {};
       
-      if (metadata?.type === 'credits') {
-        // Handle credit purchase
-        await handleCreditPurchase(paymentData);
-      } else if (metadata?.type === 'session') {
-        // Handle session booking
-        await handleSessionBooking(paymentData);
+      if (metadata.type === 'credits') {
+        // Credit purchase success
+        redirectUrl = `${baseUrl}/dashboard?payment=success&type=credits&credits=${metadata.credits}&reference=${paymentReference}`;
+      } else if (metadata.type === 'session') {
+        // Session booking success
+        redirectUrl = `${baseUrl}/dashboard?payment=success&type=session&session_id=${metadata.session_id}&reference=${paymentReference}`;
+      } else {
+        // Generic success
+        redirectUrl = `${baseUrl}/dashboard?payment=success&reference=${paymentReference}`;
       }
+    } else {
+      // Payment failed
+      redirectUrl = `${baseUrl}/dashboard?payment=failed&reference=${paymentReference}&status=${paymentData.status}`;
     }
 
-    // Redirect to success page or dashboard
-    const redirectUrl = paymentData.status === 'success' 
-      ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?payment=success`
-      : `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?payment=failed`;
-
+    console.log(`Payment verification completed for ${paymentReference}, redirecting to: ${redirectUrl}`);
     return NextResponse.redirect(redirectUrl);
 
   } catch (error) {
     console.error('Payment verification error:', error);
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?payment=error`
-    );
+    
+    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?payment=error&error=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`;
+    return NextResponse.redirect(redirectUrl);
   }
 }
 
-async function handleCreditPurchase(paymentData: any) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+// Handle POST requests for manual verification
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { reference } = body;
 
-  const { credits, userId } = paymentData.metadata;
-
-  // Update user credits
-  const { error } = await supabase
-    .from('users')
-    .update({ 
-      credits: supabase.rpc('increment', { credits }),
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', userId);
-
-  if (error) {
-    console.error('Error updating user credits:', error);
-  }
-}
-
-async function handleSessionBooking(paymentData: any) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const { therapistId, createSession } = paymentData.metadata;
-
-  if (createSession) {
-    // Create a new session after successful payment
-    const sessionData = {
-      user_id: 'cde3ab4a-7bdf-46df-a704-b4df29adba7a', // Mock user ID - replace with actual user
-      therapist_id: therapistId,
-      title: `Therapy Session with Therapist`,
-      description: 'Therapy session booked via Paystack',
-      scheduled_date: new Date().toISOString().split('T')[0], // Today's date
-      scheduled_time: '10:00:00',
-      duration_minutes: 60,
-      status: 'confirmed',
-      daily_room_name: `trpi-session-${Date.now()}`,
-      daily_room_url: `https://thequietherapy.daily.co/trpi-session-${Date.now()}`
-    };
-
-    const { data: session, error } = await supabase
-      .from('sessions')
-      .insert(sessionData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating session:', error);
-    } else {
-      console.log('Session created successfully:', session);
+    if (!reference) {
+      return NextResponse.json(
+        { error: "Payment reference is required" },
+        { status: 400 }
+      );
     }
+
+    console.log(`Manual payment verification: ${reference}`);
+
+    const result = await verifyPayment(reference);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: result.error,
+          shouldRetry: result.shouldRetry
+        },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result.data
+    });
+
+  } catch (error) {
+    console.error('Manual payment verification error:', error);
+    
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Internal server error'
+      },
+      { status: 500 }
+    );
   }
 }

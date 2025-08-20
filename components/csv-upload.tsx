@@ -1,0 +1,419 @@
+'use client'
+
+import { useState, useRef } from 'react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
+import { 
+  Upload, 
+  FileText, 
+  Users, 
+  CheckCircle, 
+  AlertCircle, 
+  X,
+  Download,
+  Eye,
+  Loader2
+} from "lucide-react"
+import { toast } from "sonner"
+import * as XLSX from 'xlsx'
+
+interface CSVRow {
+  name: string
+  email: string
+  phone?: string
+  department?: string
+  position?: string
+  credits?: number
+  package?: string
+}
+
+interface ValidationError {
+  row: number
+  field: string
+  message: string
+}
+
+interface UploadResult {
+  success: number
+  failed: number
+  errors: ValidationError[]
+}
+
+export default function CSVUpload() {
+  const [file, setFile] = useState<File | null>(null)
+  const [data, setData] = useState<CSVRow[]>([])
+  const [preview, setPreview] = useState<CSVRow[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null)
+  const [errors, setErrors] = useState<ValidationError[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0]
+    if (!selectedFile) return
+
+    // Validate file type
+    const validTypes = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ]
+    
+    if (!validTypes.includes(selectedFile.type)) {
+      toast.error('Please select a valid CSV or Excel file')
+      return
+    }
+
+    setFile(selectedFile)
+    await processFile(selectedFile)
+  }
+
+  const processFile = async (file: File) => {
+    try {
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' })
+      const sheetName = workbook.SheetNames[0]
+      const worksheet = workbook.Sheets[sheetName]
+      const jsonData = XLSX.utils.sheet_to_json(worksheet) as CSVRow[]
+
+      setData(jsonData)
+      setPreview(jsonData.slice(0, 5)) // Show first 5 rows for preview
+      
+      // Validate data
+      const validationErrors = validateData(jsonData)
+      setErrors(validationErrors)
+      
+      if (validationErrors.length > 0) {
+        toast.error(`${validationErrors.length} validation errors found`)
+      } else {
+        toast.success(`File loaded successfully! ${jsonData.length} members found`)
+      }
+    } catch (error) {
+      console.error('Error processing file:', error)
+      toast.error('Failed to process file. Please check the format.')
+    }
+  }
+
+  const validateData = (rows: CSVRow[]): ValidationError[] => {
+    const errors: ValidationError[] = []
+    
+    rows.forEach((row, index) => {
+      const rowNumber = index + 2 // +2 because Excel is 1-indexed and has header
+
+      // Required fields
+      if (!row.name || row.name.trim() === '') {
+        errors.push({
+          row: rowNumber,
+          field: 'name',
+          message: 'Name is required'
+        })
+      }
+
+      if (!row.email || row.email.trim() === '') {
+        errors.push({
+          row: rowNumber,
+          field: 'email',
+          message: 'Email is required'
+        })
+      } else if (!isValidEmail(row.email)) {
+        errors.push({
+          row: rowNumber,
+          field: 'email',
+          message: 'Invalid email format'
+        })
+      }
+
+      // Optional phone validation
+      if (row.phone && !isValidPhone(row.phone)) {
+        errors.push({
+          row: rowNumber,
+          field: 'phone',
+          message: 'Invalid phone format'
+        })
+      }
+
+      // Credits validation
+      if (row.credits && (isNaN(Number(row.credits)) || Number(row.credits) < 0)) {
+        errors.push({
+          row: rowNumber,
+          field: 'credits',
+          message: 'Credits must be a positive number'
+        })
+      }
+    })
+
+    return errors
+  }
+
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const isValidPhone = (phone: string): boolean => {
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+    return phoneRegex.test(phone.replace(/\s/g, ''))
+  }
+
+  const handleUpload = async () => {
+    if (!data.length || errors.length > 0) {
+      toast.error('Please fix validation errors before uploading')
+      return
+    }
+
+    setUploading(true)
+    setUploadProgress(0)
+
+    try {
+      const response = await fetch('/api/partner/bulk-upload-members', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          members: data
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setUploadResult(result)
+        toast.success(`Upload completed! ${result.success} members added, ${result.failed} failed`)
+        
+        // Reset form
+        setFile(null)
+        setData([])
+        setPreview([])
+        setErrors([])
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+      } else {
+        toast.error(result.error || 'Upload failed')
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error('Upload failed. Please try again.')
+    } finally {
+      setUploading(false)
+      setUploadProgress(0)
+    }
+  }
+
+  const downloadTemplate = () => {
+    const template = [
+      {
+        name: 'John Doe',
+        email: 'john.doe@company.com',
+        phone: '+2348012345678',
+        department: 'Engineering',
+        position: 'Software Engineer',
+        credits: 50,
+        package: 'Standard'
+      },
+      {
+        name: 'Jane Smith',
+        email: 'jane.smith@company.com',
+        phone: '+2348098765432',
+        department: 'Marketing',
+        position: 'Marketing Manager',
+        credits: 100,
+        package: 'Professional'
+      }
+    ]
+
+    const ws = XLSX.utils.json_to_sheet(template)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Template')
+    XLSX.writeFile(wb, 'member-upload-template.xlsx')
+  }
+
+  const clearFile = () => {
+    setFile(null)
+    setData([])
+    setPreview([])
+    setErrors([])
+    setUploadResult(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Bulk Member Upload
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* File Upload Area */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            {!file ? (
+              <div className="space-y-4">
+                <Upload className="h-12 w-12 mx-auto text-gray-400" />
+                <div>
+                  <p className="text-lg font-medium">Upload CSV or Excel file</p>
+                  <p className="text-sm text-gray-500">
+                    Drag and drop your file here, or click to browse
+                  </p>
+                </div>
+                <Button onClick={() => fileInputRef.current?.click()}>
+                  Choose File
+                </Button>
+                <Button variant="outline" onClick={downloadTemplate}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Template
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-green-600" />
+                    <span className="font-medium">{file.name}</span>
+                    <Badge variant="secondary">{data.length} members</Badge>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={clearFile}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {errors.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {errors.length} validation errors found. Please fix them before uploading.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleUpload} 
+                    disabled={uploading || errors.length > 0}
+                    className="flex-1"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload {data.length} Members
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {uploading && (
+                  <div className="space-y-2">
+                    <Progress value={uploadProgress} />
+                    <p className="text-sm text-gray-500">Uploading members...</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Preview Table */}
+          {preview.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Preview (First 5 rows)</h3>
+                <Badge variant="outline">{data.length} total rows</Badge>
+              </div>
+              
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Credits</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {preview.map((row, index) => {
+                      const rowErrors = errors.filter(e => e.row === index + 2)
+                      return (
+                        <TableRow key={index}>
+                          <TableCell className={rowErrors.some(e => e.field === 'name') ? 'text-red-600' : ''}>
+                            {row.name}
+                          </TableCell>
+                          <TableCell className={rowErrors.some(e => e.field === 'email') ? 'text-red-600' : ''}>
+                            {row.email}
+                          </TableCell>
+                          <TableCell className={rowErrors.some(e => e.field === 'phone') ? 'text-red-600' : ''}>
+                            {row.phone || '-'}
+                          </TableCell>
+                          <TableCell>{row.department || '-'}</TableCell>
+                          <TableCell className={rowErrors.some(e => e.field === 'credits') ? 'text-red-600' : ''}>
+                            {row.credits || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {rowErrors.length > 0 ? (
+                              <Badge variant="destructive">Error</Badge>
+                            ) : (
+                              <Badge variant="default">Valid</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
+          {/* Upload Results */}
+          {uploadResult && (
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                Upload completed! {uploadResult.success} members added successfully, 
+                {uploadResult.failed} failed. 
+                {uploadResult.errors.length > 0 && (
+                  <span className="block mt-2">
+                    <strong>Errors:</strong>
+                    <ul className="list-disc list-inside mt-1">
+                      {uploadResult.errors.slice(0, 5).map((error, index) => (
+                        <li key={index}>
+                          Row {error.row}: {error.message}
+                        </li>
+                      ))}
+                      {uploadResult.errors.length > 5 && (
+                        <li>... and {uploadResult.errors.length - 5} more errors</li>
+                      )}
+                    </ul>
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

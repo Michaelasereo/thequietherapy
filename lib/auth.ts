@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import { sendMagicLinkEmail } from './email';
+import { syncUserToSupabaseAuth } from './supabase-auth-sync';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -177,6 +178,26 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
 
       finalUser = newUser
       console.log('✅ New user created:', finalUser.id)
+
+      // Sync user to Supabase auth for dashboard visibility
+      console.log('🔄 Syncing new user to Supabase auth...')
+      const syncResult = await syncUserToSupabaseAuth({
+        email: finalUser.email,
+        full_name: finalUser.full_name,
+        user_type: finalUser.user_type,
+        phone: finalUser.phone,
+        metadata: {
+          custom_user_id: finalUser.id,
+          created_at: finalUser.created_at
+        }
+      })
+
+      if (syncResult.success) {
+        console.log('✅ User synced to Supabase auth:', syncResult.auth_user_id)
+      } else {
+        console.warn('⚠️ Failed to sync user to Supabase auth:', syncResult.error)
+        // Don't fail the entire login process if sync fails
+      }
     } else if (!user) {
       console.log('❌ User not found and not a signup')
       return { success: false, error: 'User account not found' }

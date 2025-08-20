@@ -6,9 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Brain, Video, Users, Clock, ArrowLeft } from "lucide-react"
+import { Brain, Video, Users, Clock, ArrowLeft, Mic, MicOff } from "lucide-react"
 import Link from "next/link"
 import SessionNotesPanel from "@/components/session-notes-panel"
+import DailyAudioRecorder from "@/components/daily-audio-recorder"
+
+// Extend Window interface for Daily.co call object
+declare global {
+  interface Window {
+    dailyCallObject?: any;
+  }
+}
 
 function VideoCallContent() {
   const router = useRouter()
@@ -23,9 +31,10 @@ function VideoCallContent() {
   const [isTherapist, setIsTherapist] = useState(false)
   const [callDuration, setCallDuration] = useState(0)
   const [showSessionNotes, setShowSessionNotes] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
-  const [recordingId, setRecordingId] = useState('')
-  const [aiProcessingStatus, setAiProcessingStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle')
+  const [showRecorder, setShowRecorder] = useState(false)
+  const [transcript, setTranscript] = useState<string | null>(null)
+  const [dailyInitialized, setDailyInitialized] = useState(false)
+  const [callObject, setCallObject] = useState<any>(null)
 
   // Check if we have room parameters from URL
   useEffect(() => {
@@ -39,6 +48,55 @@ function VideoCallContent() {
     if (urlSessionId) setSessionId(urlSessionId)
     if (urlIsTherapist) setIsTherapist(urlIsTherapist === 'true')
   }, [searchParams])
+
+  // Initialize Daily.co call object
+  useEffect(() => {
+    const initCall = async () => {
+      if (dailyInitialized || !isInCall) return;
+      
+      try {
+        // Dynamically import Daily.co
+        const DailyIframe = (await import('@daily-co/daily-js')).default;
+        
+        // Check if a call object already exists
+        if (window.dailyCallObject) {
+          setCallObject(window.dailyCallObject);
+          setDailyInitialized(true);
+          return;
+        }
+        
+        const call = DailyIframe.createCallObject({
+          audioSource: true,
+          videoSource: true,
+        });
+
+        // Store globally to prevent duplicates
+        window.dailyCallObject = call;
+        setCallObject(call);
+        setDailyInitialized(true);
+        console.log('Daily.co call object created for video call');
+      } catch (err) {
+        console.error('Error initializing Daily.co:', err);
+        setError('Failed to initialize video call');
+      }
+    };
+
+    if (isInCall) {
+      initCall();
+    }
+
+    // Cleanup function
+    return () => {
+      if (window.dailyCallObject && !isInCall) {
+        try {
+          window.dailyCallObject.destroy();
+          delete window.dailyCallObject;
+        } catch (err) {
+          console.error('Error destroying Daily.co call object:', err);
+        }
+      }
+    };
+  }, [isInCall, dailyInitialized]);
 
   // Timer for call duration
   useEffect(() => {
@@ -75,7 +133,7 @@ function VideoCallContent() {
             exp: Math.round(Date.now() / 1000) + (60 * 60 * 2), // 2 hours
             eject_at_room_exp: true,
             enable_chat: true,
-            enable_recording: true, // Enable recording for AI processing
+            enable_recording: false, // Disabled for Nigerian compliance
             start_video_off: false,
             start_audio_off: false
           }
@@ -88,9 +146,9 @@ function VideoCallContent() {
         setRoomUrl(data.room.url)
         setIsInCall(true)
         
-        // Start recording if this is a therapy session
-        if (sessionId && isTherapist) {
-          await startSessionRecording(finalRoomName)
+        // Show recorder for therapists
+        if (isTherapist) {
+          setShowRecorder(true)
         }
       } else {
         setError(data.error || 'Failed to create room')
@@ -100,35 +158,6 @@ function VideoCallContent() {
       setError('Failed to create room')
     } finally {
       setIsCreating(false)
-    }
-  }
-
-  const startSessionRecording = async (roomName: string) => {
-    try {
-      const response = await fetch('/api/daily/start-recording', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          roomName,
-          sessionId,
-          layout: 'single',
-          audioOnly: false
-        })
-      })
-
-      const data = await response.json()
-      
-      if (response.ok) {
-        setIsRecording(true)
-        setRecordingId(data.recording.id)
-        console.log('Recording started:', data.recording.id)
-      } else {
-        console.error('Failed to start recording:', data.error)
-      }
-    } catch (error) {
-      console.error('Error starting recording:', error)
     }
   }
 
@@ -146,6 +175,11 @@ function VideoCallContent() {
       const roomUrl = `https://thequietherapy.daily.co/trpi-${roomName}`
       setRoomUrl(roomUrl)
       setIsInCall(true)
+      
+      // Show recorder for therapists
+      if (isTherapist) {
+        setShowRecorder(true)
+      }
     } catch (err) {
       console.error('Join room error:', err)
       setError('Failed to join room')
@@ -157,11 +191,7 @@ function VideoCallContent() {
   const leaveCall = async () => {
     setIsInCall(false)
     setRoomUrl('')
-    
-    // Stop recording if active
-    if (isRecording && recordingId) {
-      await stopSessionRecording()
-    }
+    setShowRecorder(false)
     
     // If this is a session, end it properly
     if (sessionId) {
@@ -179,12 +209,6 @@ function VideoCallContent() {
 
         if (response.ok) {
           console.log('Session ended successfully')
-          
-          // Start AI processing if we have a recording
-          if (recordingId && isTherapist) {
-            setAiProcessingStatus('processing')
-            await startAIProcessing()
-          }
         }
       } catch (error) {
         console.error('Error ending session:', error)
@@ -194,53 +218,9 @@ function VideoCallContent() {
     router.push('/dashboard')
   }
 
-  const stopSessionRecording = async () => {
-    try {
-      const response = await fetch('/api/daily/stop-recording', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          recordingId
-        })
-      })
-
-      if (response.ok) {
-        setIsRecording(false)
-        console.log('Recording stopped successfully')
-      } else {
-        console.error('Failed to stop recording')
-      }
-    } catch (error) {
-      console.error('Error stopping recording:', error)
-    }
-  }
-
-  const startAIProcessing = async () => {
-    try {
-      const response = await fetch(`/api/sessions/${sessionId}/ai-process`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'start',
-          recordingId
-        })
-      })
-
-      if (response.ok) {
-        setAiProcessingStatus('processing')
-        console.log('AI processing started')
-      } else {
-        setAiProcessingStatus('error')
-        console.error('Failed to start AI processing')
-      }
-    } catch (error) {
-      setAiProcessingStatus('error')
-      console.error('Error starting AI processing:', error)
-    }
+  const handleTranscriptionComplete = (transcriptText: string) => {
+    setTranscript(transcriptText)
+    console.log('Transcription completed:', transcriptText)
   }
 
   const formatTime = (seconds: number) => {
@@ -272,14 +252,25 @@ function VideoCallContent() {
           
           <div className="flex items-center gap-2">
             {isTherapist && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowSessionNotes(!showSessionNotes)}
-                className="text-white hover:bg-gray-700"
-              >
-                Session Notes
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowRecorder(!showRecorder)}
+                  className="text-white hover:bg-gray-700"
+                >
+                  {showRecorder ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  {showRecorder ? "Hide Recorder" : "Show Recorder"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSessionNotes(!showSessionNotes)}
+                  className="text-white hover:bg-gray-700"
+                >
+                  Session Notes
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -292,6 +283,17 @@ function VideoCallContent() {
               className="w-full h-full border-0"
               allow="camera; microphone; fullscreen; speaker; display-capture"
             />
+            
+            {/* Browser Recorder Overlay */}
+            {showRecorder && callObject && sessionId && (
+              <div className="absolute top-4 right-4 z-10">
+                <DailyAudioRecorder
+                  callObject={callObject}
+                  sessionId={sessionId}
+                  onTranscriptionComplete={handleTranscriptionComplete}
+                />
+              </div>
+            )}
           </div>
 
           {/* Session Notes Sidebar (Therapist Only) */}
@@ -368,6 +370,7 @@ function VideoCallContent() {
               <p>• Rooms expire after 2 hours</p>
               <p>• Share the room name with your therapist</p>
               <p>• Ensure your camera and microphone are enabled</p>
+              <p>• Browser-based recording available for therapists</p>
             </div>
           </CardContent>
         </Card>

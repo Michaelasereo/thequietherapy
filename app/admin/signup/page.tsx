@@ -5,58 +5,75 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight, Shield, Users, Settings, BarChart3, ArrowLeft } from "lucide-react"
+import { ArrowRight, Shield, Users, Settings, BarChart3, ArrowLeft, AlertCircle } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { useToast } from "@/components/ui/use-toast"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
+  fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
 })
 
-type LoginFormValues = z.infer<typeof formSchema>
+type SignupFormValues = z.infer<typeof formSchema>
 
-export default function AdminLoginPage() {
+const ALLOWED_ADMIN_EMAIL = "asereopeyemimichael@gmail.com"
+
+export default function AdminSignupPage() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
-  const form = useForm<LoginFormValues>({
+  const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
+      fullName: "",
     },
   })
 
-  const handleSubmit = async (values: LoginFormValues) => {
+  const handleSubmit = async (values: SignupFormValues) => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/auth/login', {
+      // Check if email is allowed
+      if (values.email !== ALLOWED_ADMIN_EMAIL) {
+        toast({
+          title: "Access Denied",
+          description: "Only authorized administrators can register for admin access.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const response = await fetch('/api/admin/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: values.email, userType: 'admin' }),
+        body: JSON.stringify(values),
       })
       
       const data = await response.json()
       
       if (response.ok && data.success) {
         toast({
-          title: "Magic Link Sent!",
-          description: "Please check your email for the login link.",
+          title: "Admin Registration Successful!",
+          description: "Please check your email for the verification link.",
         })
+        // Redirect to admin login after successful signup
+        window.location.href = '/admin/login'
       } else {
         toast({
-          title: "Login Failed",
+          title: "Registration Failed",
           description: data.error || "Something went wrong. Please try again.",
           variant: "destructive",
         })
       }
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('Signup error:', error)
       toast({
-        title: "Login Failed",
+        title: "Registration Failed",
         description: "Network error. Please check your connection and try again.",
         variant: "destructive",
       })
@@ -88,57 +105,46 @@ export default function AdminLoginPage() {
             </Link>
           </div>
 
-          {/* Admin Dashboard Demo */}
+          {/* Admin Features Demo */}
           <div className="flex-1 flex items-center justify-center">
             <div className="space-y-4 w-full max-w-sm">
-              {/* Platform Stats Card */}
+              {/* Admin Access Card */}
               <Card className="bg-white/10 backdrop-blur-sm border-white/20">
                 <CardContent className="p-4">
                   <div className="text-white">
                     <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm font-medium">Platform Overview</span>
+                      <span className="text-sm font-medium">Admin Access</span>
                       <Shield className="h-4 w-4 text-blue-300" />
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-green-300" />
-                        <span className="text-sm">Total Users: 2,847</span>
+                        <span className="text-sm">User Management</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <BarChart3 className="h-4 w-4 text-green-300" />
-                        <span className="text-sm">Active Sessions: 156</span>
+                        <span className="text-sm">Platform Analytics</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Settings className="h-4 w-4 text-blue-300" />
-                        <span className="text-sm">Pending Approvals: 12</span>
+                        <span className="text-sm">System Configuration</span>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* System Health Card */}
+              {/* Security Notice */}
               <Card className="bg-white/10 backdrop-blur-sm border-white/20">
                 <CardContent className="p-4">
                   <div className="text-white">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm font-medium">System Health</span>
-                      <span className="text-xs opacity-75">All Systems Operational</span>
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="h-4 w-4 text-yellow-300" />
+                      <span className="text-sm font-medium">Restricted Access</span>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                        <span className="text-sm">Database: Online</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                        <span className="text-sm">Email Service: Active</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                        <span className="text-sm">Payment Gateway: Connected</span>
-                      </div>
-                    </div>
+                    <p className="text-xs text-white/70">
+                      Admin registration is restricted to authorized personnel only.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -152,23 +158,49 @@ export default function AdminLoginPage() {
         </div>
       </div>
 
-      {/* Right Section - Login Form */}
+      {/* Right Section - Signup Form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-8">
           {/* Header */}
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Shield className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold">Admin Login</h1>
+              <h1 className="text-3xl font-bold">Admin Registration</h1>
             </div>
             <p className="text-muted-foreground">
-              Access the Trpi platform administration dashboard
+              Register for administrative access to the Trpi platform
             </p>
           </div>
 
-          {/* Login Form */}
+          {/* Security Alert */}
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Admin registration is restricted. Only authorized personnel with the correct email address can register.
+            </AlertDescription>
+          </Alert>
+
+          {/* Signup Form */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter your full name"
+                        className="h-12"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="email"
@@ -179,7 +211,7 @@ export default function AdminLoginPage() {
                       <Input
                         {...field}
                         type="email"
-                        placeholder="Enter your admin email"
+                        placeholder="Enter authorized admin email"
                         className="h-12"
                       />
                     </FormControl>
@@ -194,10 +226,10 @@ export default function AdminLoginPage() {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  "Sending Magic Link..."
+                  "Creating Admin Account..."
                 ) : (
                   <>
-                    Send Magic Link
+                    Create Admin Account
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
@@ -208,21 +240,18 @@ export default function AdminLoginPage() {
           {/* Footer Links */}
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
-              Need admin access?
+              Already have admin access?
             </p>
             
             <div className="flex justify-center space-x-4 text-sm">
-              <Link href="/admin/signup" className="text-primary hover:underline">
-                Admin Registration
+              <Link href="/admin/login" className="text-primary hover:underline">
+                Admin Login
               </Link>
               <Link href="/login" className="text-muted-foreground hover:text-foreground">
                 Individual Login
               </Link>
               <Link href="/therapist/login" className="text-muted-foreground hover:text-foreground">
                 Therapist Login
-              </Link>
-              <Link href="/partner/auth" className="text-muted-foreground hover:text-foreground">
-                Partner Login
               </Link>
             </div>
           </div>
