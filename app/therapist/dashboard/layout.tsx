@@ -1,8 +1,5 @@
-'use client';
-
 import type React from "react"
 import { Suspense } from "react"
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar"
 import TherapistDashboardSidebar from "@/components/therapist-dashboard-sidebar"
@@ -17,15 +14,28 @@ import { GlobalStateProvider } from '@/context/global-state-context';
 import { useCrossDashboardSync } from '@/hooks/useCrossDashboardSync';
 import { DebugToggle } from "@/components/ui/debug-panel"
 import { NotificationBell } from '@/components/notifications/notification-bell'
-import { useAuth } from '@/context/auth-context'
+import { getSession } from '@/lib/auth/session'
 
-function TherapistDashboardLayoutContent({ children }: { children: React.ReactNode }) {
+async function TherapistDashboardLayoutContent({ children }: { children: React.ReactNode }) {
   console.log('🔍 TherapistDashboardLayout: Rendering layout content')
-  // Connect to global state
-  useCrossDashboardSync('therapist');
   
-  // Get user data from auth context
-  const { user } = useAuth();
+  // Get session and validate authentication
+  const session = await getSession();
+  if (!session) {
+    redirect('/therapist/login');
+  }
+  
+  // Ensure user is a therapist
+  if (session.userType !== 'therapist') {
+    redirect('/login?error=invalid_user_type');
+  }
+  
+  const user = { 
+    id: session.userId,
+    name: session.email.split('@')[0], 
+    email: session.email,
+    user_type: session.userType
+  }
   
   return (
     <SidebarProvider defaultOpen={true}>

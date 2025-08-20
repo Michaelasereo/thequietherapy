@@ -11,13 +11,53 @@ export interface TherapistClient {
   avatar_url?: string
 }
 
-// Get therapist's clients
+export interface TherapistSession {
+  id: string
+  session_date: string
+  session_time: string
+  client_name: string
+  session_type: string
+  status: 'scheduled' | 'completed' | 'cancelled' | 'in_progress'
+  session_link?: string
+  summary?: string
+  amount_earned?: number
+}
+
+export interface TherapistDashboardData {
+  therapist: {
+    id: string
+    full_name: string
+    email: string
+    totalClients: number
+    completedSessions: number
+    totalEarnings: number
+    verificationStatus: string
+  }
+  upcomingSessions: TherapistSession[]
+  pastSessions: TherapistSession[]
+  clients: TherapistClient[]
+  earnings: {
+    thisMonth: number
+    lastMonth: number
+    total: number
+    transactions: Array<{
+      id: string
+      amount: number
+      date: string
+      description: string
+      type: 'session' | 'bonus' | 'refund'
+    }>
+  }
+}
+
+// Get therapist's clients with real data
 export async function getTherapistClients(therapistId: string): Promise<TherapistClient[]> {
   try {
     const { data, error } = await supabase
       .from('global_sessions')
       .select(`
         user_id,
+        start_time,
         users:user_id (
           id,
           full_name,
@@ -27,13 +67,14 @@ export async function getTherapistClients(therapistId: string): Promise<Therapis
       `)
       .eq('therapist_id', therapistId)
       .not('user_id', 'is', null)
+      .order('start_time', { ascending: false })
 
     if (error) {
       console.error('Error fetching therapist clients:', error)
       return []
     }
 
-    // Group by user_id and get unique clients
+    // Group by user_id and get unique clients with latest session
     const clientMap = new Map<string, TherapistClient>()
     
     data?.forEach((session: any) => {
@@ -46,11 +87,18 @@ export async function getTherapistClients(therapistId: string): Promise<Therapis
           full_name: user?.full_name || 'Unknown Client',
           email: user?.email || '',
           avatar_url: user?.avatar_url,
+          last_session_date: session.start_time,
           total_sessions: 1
         })
       } else {
         const existing = clientMap.get(userId)!
         existing.total_sessions += 1
+        // Update last session date if this is more recent
+        if (existing.last_session_date && session.start_time > existing.last_session_date) {
+          existing.last_session_date = session.start_time
+        } else if (!existing.last_session_date) {
+          existing.last_session_date = session.start_time
+        }
       }
     })
 
@@ -58,6 +106,150 @@ export async function getTherapistClients(therapistId: string): Promise<Therapis
   } catch (error) {
     console.error('Error fetching therapist clients:', error)
     return []
+  }
+}
+
+// Get therapist's sessions with real data
+export async function getTherapistSessions(therapistId: string): Promise<{
+  upcoming: TherapistSession[]
+  past: TherapistSession[]
+}> {
+  try {
+    const now = new Date().toISOString()
+    
+    // Get upcoming sessions
+    const { data: upcomingData, error: upcomingError } = await supabase
+      .from('global_sessions')
+      .select(`
+        id,
+        start_time,
+        end_time,
+        session_type,
+        status,
+        session_link,
+        users:user_id (
+          full_name,
+          email
+        )
+      `)
+      .eq('therapist_id', therapistId)
+      .gte('start_time', now)
+      .order('start_time', { ascending: true })
+
+    // Get past sessions
+    const { data: pastData, error: pastError } = await supabase
+      .from('global_sessions')
+      .select(`
+        id,
+        start_time,
+        end_time,
+        session_type,
+        status,
+        session_summary,
+        amount_earned,
+        users:user_id (
+          full_name,
+          email
+        )
+      `)
+      .eq('therapist_id', therapistId)
+      .lt('start_time', now)
+      .order('start_time', { ascending: false })
+      .limit(20)
+
+    if (upcomingError || pastError) {
+      console.error('Error fetching therapist sessions:', { upcomingError, pastError })
+      return { upcoming: [], past: [] }
+    }
+
+    const formatSession = (session: any, isUpcoming: boolean): TherapistSession => ({
+      id: session.id,
+      session_date: new Date(session.start_time).toLocaleDateString(),
+      session_time: new Date(session.start_time).toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      client_name: session.users?.full_name || 'Unknown Client',
+      session_type: session.session_type || 'Therapy Session',
+      status: session.status || 'scheduled',
+      session_link: isUpcoming ? session.session_link : undefined,
+      summary: !isUpcoming ? session.session_summary : undefined,
+      amount_earned: !isUpcoming ? session.amount_earned : undefined
+    })
+
+    return {
+      upcoming: upcomingData?.map(s => formatSession(s, true)) || [],
+      past: pastData?.map(s => formatSession(s, false)) || []
+    }
+  } catch (error) {
+    console.error('Error fetching therapist sessions:', error)
+    return { upcoming: [], past: [] }
+  }
+}
+
+// Get therapist dashboard summary data
+export async function getTherapistDashboardData(therapistId: string): Promise<TherapistDashboardData | null> {
+  try {
+    // Get therapist profile
+    const { data: therapistData, error: therapistError } = await supabase
+      .from('users')
+      .select('id, full_name, email, verification_status')
+      .eq('id', therapistId)
+      .eq('user_type', 'therapist')
+      .single()
+
+    if (therapistError || !therapistData) {
+      console.error('Error fetching therapist profile:', therapistError)
+      return null
+    }
+
+    // Get sessions and clients in parallel
+    const [sessions, clients] = await Promise.all([
+      getTherapistSessions(therapistId),
+      getTherapistClients(therapistId)
+    ])
+
+    // Calculate earnings
+    const completedSessions = sessions.past.filter(s => s.status === 'completed')
+    const totalEarnings = completedSessions.reduce((sum, session) => sum + (session.amount_earned || 5000), 0)
+    
+    // Calculate this month's earnings
+    const thisMonth = new Date().getMonth()
+    const thisMonthSessions = completedSessions.filter(s => {
+      const sessionDate = new Date(s.session_date)
+      return sessionDate.getMonth() === thisMonth
+    })
+    const thisMonthEarnings = thisMonthSessions.reduce((sum, session) => sum + (session.amount_earned || 5000), 0)
+
+    return {
+      therapist: {
+        id: therapistData.id,
+        full_name: therapistData.full_name,
+        email: therapistData.email,
+        totalClients: clients.length,
+        completedSessions: completedSessions.length,
+        totalEarnings,
+        verificationStatus: therapistData.verification_status || 'pending'
+      },
+      upcomingSessions: sessions.upcoming,
+      pastSessions: sessions.past,
+      clients,
+      earnings: {
+        thisMonth: thisMonthEarnings,
+        lastMonth: totalEarnings - thisMonthEarnings, // Simplified calculation
+        total: totalEarnings,
+        transactions: completedSessions.map(s => ({
+          id: s.id,
+          amount: s.amount_earned || 5000,
+          date: s.session_date,
+          description: `Session with ${s.client_name}`,
+          type: 'session' as const
+        }))
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching therapist dashboard data:', error)
+    return null
   }
 }
 
@@ -147,20 +339,10 @@ export const therapistDashboardBottomNavItems = [
   { name: "Settings", href: "/therapist/dashboard/settings", icon: Settings },
 ]
 
-// Therapist Dashboard Summary Cards - Will be populated with real data
+// Legacy exports for backward compatibility - these will be populated with real data
 export const therapistSummaryCards = []
-
-// Real data for therapist's upcoming sessions - Will be populated from database
 export const therapistUpcomingSessions = []
-
-// Real data for therapist's past sessions - Will be populated from database
 export const therapistPastSessions = []
-
-// Real data for earnings transactions - Will be populated from database
 export const earningsTransactions = []
-
-// Real data for therapist profile - Will be populated from database
 export const therapistProfile = null
-
-// Real data for therapist's clients - Will be populated from database
 export const therapistClients = []

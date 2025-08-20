@@ -104,9 +104,14 @@ export async function signupAction(formData: FormData) {
   }
 }
 
+import { clearSessionCookie, readSessionCookie } from '@/lib/auth/cookies';
+import { deleteSession } from '@/lib/auth/session';
+
 export async function logoutAction() {
-  const cookieStore = await cookies()
-  cookieStore.delete("trpi_individual_user")
-  cookieStore.delete("trpi_user") // Also delete the old cookie name
+  const token = await readSessionCookie();
+  if (token) {
+    await deleteSession(token);
+  }
+  await clearSessionCookie();
   redirect("/login")
 }

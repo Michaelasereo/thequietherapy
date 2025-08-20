@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createMagicLinkForAuthType } from '@/lib/auth'
+import { createMagicLink } from '@/lib/auth/magic-link'
+import { sendMagicLinkEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,18 +24,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Create magic link for the specific user type
-    const result = await createMagicLinkForAuthType(email, userType, 'login')
-
-    if (result.success) {
-      console.log('✅ Magic link created for login:', { email, userType })
+    const magicLinkUrl = await createMagicLink(email, userType as any)
+    
+    // Send the magic link email
+    const emailResult = await sendMagicLinkEmail(email, magicLinkUrl, 'login', { user_type: userType })
+    
+    if (emailResult.success) {
+      console.log('✅ Magic link created and sent for login:', { email, userType })
       return NextResponse.json({
         success: true,
         message: `Magic link sent to ${email}. Please check your email to log in.`
       })
     } else {
-      console.error('❌ Failed to create magic link:', result.error)
+      console.error('❌ Failed to send magic link email:', emailResult.error)
       return NextResponse.json(
-        { success: false, error: result.error || 'Failed to send magic link' },
+        { success: false, error: 'Failed to send magic link email' },
         { status: 500 }
       )
     }

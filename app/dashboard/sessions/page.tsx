@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, User, Video, Loader2 } from "lucide-react"
+import { Calendar, Clock, User, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
 import { 
@@ -15,6 +15,7 @@ import {
   SessionData 
 } from "@/lib/session-management"
 import { useAuth } from '@/context/auth-context'
+import SessionActionsMenu from '@/components/session-actions-menu'
 
 export default function SessionsPage() {
   const router = useRouter()
@@ -55,8 +56,8 @@ export default function SessionsPage() {
 
   const handleJoinSession = async (sessionId: string) => {
     try {
-      const success = await joinSession(sessionId)
-      if (success) {
+      const result = await joinSession(sessionId, user?.id || '')
+      if (result.success) {
         toast({
           title: "Joining Session",
           description: "Redirecting to video call...",
@@ -66,7 +67,7 @@ export default function SessionsPage() {
       } else {
         toast({
           title: "Error",
-          description: "Failed to join session.",
+          description: result.error || "Failed to join session.",
           variant: "destructive",
         })
       }
@@ -80,27 +81,27 @@ export default function SessionsPage() {
     }
   }
 
+  const handleSessionUpdate = () => {
+    if (user?.id) {
+      getUserSessions(user.id).then(setSessions)
+      getUpcomingSessions(user.id).then(setUpcomingSessions)
+    }
+  }
+
   const handleCompleteSession = async (sessionId: string) => {
     try {
-      const success = await completeSession(sessionId)
-      if (success) {
+      const result = await completeSession(sessionId)
+      if (result.success) {
         toast({
           title: "Session Completed",
           description: "Session has been marked as completed.",
         })
         // Refresh sessions
-        if (user?.id) {
-          const [allSessions, upcoming] = await Promise.all([
-            getUserSessions(user.id),
-            getUpcomingSessions(user.id)
-          ])
-          setSessions(allSessions)
-          setUpcomingSessions(upcoming)
-        }
+        handleSessionUpdate()
       } else {
         toast({
           title: "Error",
-          description: "Failed to complete session.",
+          description: result.error || "Failed to complete session.",
           variant: "destructive",
         })
       }
@@ -223,7 +224,6 @@ export default function SessionsPage() {
                           onClick={() => handleJoinSession(session.id!)}
                           className="flex-1"
                         >
-                          <Video className="mr-2 h-4 w-4" />
                           Join Session
                         </Button>
                       )}
@@ -236,6 +236,11 @@ export default function SessionsPage() {
                           Complete Session
                         </Button>
                       )}
+                      <SessionActionsMenu 
+                        session={session} 
+                        onSessionUpdate={handleSessionUpdate}
+                        userType={(user?.user_type as 'individual' | 'therapist' | 'admin') || 'individual'}
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -282,7 +287,14 @@ export default function SessionsPage() {
                           </p>
                         </div>
                       </div>
-                      {getStatusBadge(session.status)}
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(session.status)}
+                        <SessionActionsMenu 
+                          session={session} 
+                          onSessionUpdate={handleSessionUpdate}
+                          userType={(user?.user_type as 'individual' | 'therapist' | 'admin') || 'individual'}
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

@@ -6,16 +6,21 @@ import { DashboardProvider } from "@/context/dashboard-context"
 import { DebugToggle } from "@/components/ui/debug-panel"
 import { GlobalStateProvider } from '@/context/global-state-context';
 import { useCrossDashboardSync } from '@/hooks/useCrossDashboardSync';
-import { useAuth } from '@/context/auth-context';
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
+import { getSession } from '@/lib/auth/session'
 import DashboardHeader from "@/components/dashboard-header"
 
 async function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  // Simulate user data for the header
-  const cookieStore = await cookies()
-  const userCookie = cookieStore.get("trpi_user")?.value
-  const user = userCookie ? JSON.parse(userCookie) : { name: "Michael", email: "michael@example.com" }
+  // Get session and validate authentication
+  const session = await getSession();
+  if (!session) {
+    redirect('/login');
+  }
+  
+  const user = { 
+    name: session.email.split('@')[0], 
+    email: session.email 
+  }
 
   return (
     <SidebarProvider defaultOpen={true}>
