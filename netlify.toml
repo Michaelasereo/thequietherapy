@@ -8,6 +8,7 @@
 [build.environment]
   NODE_VERSION = "18"
   NPM_VERSION = "9"
+  NEXT_PUBLIC_APP_URL = "https://thequietherapy.live"
 
 # Security headers
 [[headers]]
@@ -49,7 +50,7 @@
 # Add these in Netlify dashboard:
 # NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 # SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-# NEXT_PUBLIC_APP_URL=your_netlify_domain
+# NEXT_PUBLIC_APP_URL=https://thequietherapy.live
 # PAYSTACK_SECRET_KEY=your_paystack_secret
 # OPENAI_API_KEY=your_openai_key
 # DAILY_API_KEY=your_daily_api_key
