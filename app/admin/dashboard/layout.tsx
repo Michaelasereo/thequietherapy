@@ -1,7 +1,7 @@
 'use client';
 
 import type React from "react"
-import { Suspense } from "react"
+import { Suspense, useEffect } from "react"
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar"
 import AdminDashboardSidebar from "@/components/admin-dashboard-sidebar"
 import { Separator } from "@/components/ui/separator"
@@ -12,12 +12,42 @@ import { Button } from "@/components/ui/button"
 import { AdminDashboardProvider } from '@/context/admin-dashboard-context';
 import { GlobalStateProvider } from '@/context/global-state-context';
 import { useCrossDashboardSync } from '@/hooks/useCrossDashboardSync';
-
+import { AdminProvider, useAdmin } from '@/context/admin-context';
 import { NotificationBell } from '@/components/notifications/notification-bell'
+import { useRouter } from 'next/navigation'
 
 function AdminDashboardLayoutContent({ children }: { children: React.ReactNode }) {
   // Connect to global state
   useCrossDashboardSync('admin');
+  
+  // Get admin authentication data
+  const { adminUser, loading, isAuthenticated } = useAdmin();
+  const router = useRouter();
+  
+  // Handle redirect in useEffect to avoid React errors
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      console.log('🔍 AdminDashboardLayout: User not authenticated, redirecting to login')
+      router.push('/admin/login')
+    }
+  }, [loading, isAuthenticated, router])
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading admin dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!isAuthenticated) {
+    return null
+  }
   
   return (
     <>
@@ -43,10 +73,10 @@ function AdminDashboardLayoutContent({ children }: { children: React.ReactNode }
                     />
                   </div>
                 </form>
-                <NotificationBell userId="fac0056c-2f16-4417-a1ae-9c63345937c8" userType="admin" />
+                <NotificationBell userId={adminUser?.id || ""} userType="admin" />
                 <Avatar>
                   <AvatarImage src="/placeholder-user.jpg" />
-                  <AvatarFallback>A</AvatarFallback>
+                  <AvatarFallback>{adminUser?.name?.charAt(0) || "A"}</AvatarFallback>
                 </Avatar>
               </div>
             </header>
@@ -69,11 +99,13 @@ export default function AdminDashboardLayout({
 }) {
   return (
     <GlobalStateProvider>
-      <AdminDashboardProvider>
-        <AdminDashboardLayoutContent>
-          {children}
-        </AdminDashboardLayoutContent>
-      </AdminDashboardProvider>
+      <AdminProvider>
+        <AdminDashboardProvider>
+          <AdminDashboardLayoutContent>
+            {children}
+          </AdminDashboardLayoutContent>
+        </AdminDashboardProvider>
+      </AdminProvider>
     </GlobalStateProvider>
   );
 }
