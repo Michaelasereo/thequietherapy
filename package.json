@@ -11,7 +11,9 @@
     "build:fullcheck": "tsc --noEmit --pretty || true && next lint || true && next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "test:db": "node scripts/test-database-setup.js",
+    "test:video": "echo 'Visit http://localhost:3000/test-video-complete-flow to test video features'"
   },
   "dependencies": {
     "@daily-co/react-native-daily-js": "^0.79.0",

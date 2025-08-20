@@ -112,19 +112,19 @@ export async function generateMeetingToken(roomName: string, participantName: st
       'Authorization': `Bearer ${DAILY_CONFIG.DAILY_API_KEY}`
     },
     body: JSON.stringify({
-      room: roomName,
       properties: {
         room_name: roomName,
         user_name: participantName,
-        is_owner: isOwner,
-        permissions: isOwner ? ['can_send', 'can_admin'] : ['can_send']
+        is_owner: isOwner
       }
     })
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to generate meeting token: ${response.statusText}`)
+    const errorText = await response.text()
+    throw new Error(`Failed to generate meeting token: ${response.statusText} - ${errorText}`)
   }
 
-  return response.json()
+  const data = await response.json()
+  return data.token || data
 }

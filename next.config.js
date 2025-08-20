@@ -6,6 +6,15 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false, // Keep this false to catch actual errors
   },
+  // Configure for Netlify deployment
+  output: 'standalone',
+  // Ensure proper file tracing for Netlify
+  outputFileTracingRoot: __dirname,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb'
+    },
+  },
   webpack: (config, { isServer }) => {
     // Ensure path resolution works correctly for Netlify
     config.resolve.alias = {
@@ -39,14 +48,18 @@ const nextConfig = {
     
     return config;
   },
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb'
-    }
-  },
   images: {
     domains: ['localhost'],
     unoptimized: true
+  },
+  // Skip pre-rendering for API routes to prevent build errors
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+      },
+    ]
   },
 }
 

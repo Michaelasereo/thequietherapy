@@ -1,9 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { transcribeAudio as realTranscribeAudio, generateTherapySOAPNotes as realGenerateSOAPNotes, extractTherapeuticInsights as realExtractInsights, SOAPNotes } from './ai-services'
 import { transcribeAudio as mockTranscribeAudio, generateTherapySOAPNotes as mockGenerateSOAPNotes, extractTherapeuticInsights as mockExtractInsights } from './ai-services-mock'
-import { processRecording, getRecording, Recording } from './daily-recording'
-import path from 'path'
-import fs from 'fs'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,6 +29,9 @@ export async function processSessionRecording(
   try {
     console.log(`Starting AI processing for session ${sessionId}, recording ${recordingId}`)
 
+    // Dynamically import the daily-recording module to avoid build issues
+    const { getRecording, processRecording } = await import('./daily-recording')
+
     // Step 1: Get recording details
     const recording = await getRecording(recordingId)
     if (recording.status !== 'finished') {
@@ -39,7 +39,7 @@ export async function processSessionRecording(
     }
 
     // Step 2: Process recording (download and extract audio)
-    const outputDir = path.join(process.cwd(), 'temp', 'recordings')
+    const outputDir = '/tmp/recordings' // Use /tmp for serverless environments
     const { audioPath } = await processRecording(recording, outputDir)
 
     // Step 3: Transcribe audio (with fallback to mock)
@@ -195,6 +195,9 @@ async function storeProcessingError(sessionId: string, recordingId: string, erro
  */
 async function cleanupTempFiles(audioPath: string): Promise<void> {
   try {
+    // Dynamically import fs to avoid build issues
+    const fs = await import('fs')
+    
     if (fs.existsSync(audioPath)) {
       fs.unlinkSync(audioPath)
       console.log('Cleaned up audio file:', audioPath)

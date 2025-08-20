@@ -9,31 +9,38 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sessionId, user_id, therapist_id, status, title, description, scheduled_date, scheduled_time, duration_minutes } = body;
+    const { 
+      session_id, 
+      transcript, 
+      ai_generated, 
+      mood_rating, 
+      progress_notes, 
+      homework_assigned,
+      therapist_id,
+      user_id 
+    } = body;
 
-    if (!sessionId) {
+    if (!session_id) {
       return NextResponse.json(
-        { error: 'Missing required field: sessionId' },
+        { error: 'Missing required field: session_id' },
         { status: 400 }
       );
     }
 
-    console.log(`Creating session: ${sessionId}`);
+    console.log(`Creating session note for session: ${session_id}`);
 
-    // Create session in database with correct schema from actual table
+    // Create session note in database
     const { data, error } = await supabase
-      .from('sessions')
+      .from('session_notes')
       .insert({
-        id: sessionId,
-        user_id: user_id || null,
-        therapist_id: therapist_id || null,
-        title: title || 'Test Session',
-        description: description || 'Test session description',
-        scheduled_date: scheduled_date || new Date().toISOString().split('T')[0],
-        scheduled_time: scheduled_time || '10:00:00',
-        duration_minutes: duration_minutes || 60,
-        status: status || 'scheduled',
-        recording_status: 'pending',
+        session_id,
+        transcript: transcript || null,
+        ai_generated: ai_generated || false,
+        mood_rating: mood_rating || null,
+        progress_notes: progress_notes || null,
+        homework_assigned: homework_assigned || null,
+        therapist_id: therapist_id || '550e8400-e29b-41d4-a716-446655440002', // Default therapist ID
+        user_id: user_id || '550e8400-e29b-41d4-a716-446655440001', // Default user ID
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -41,24 +48,24 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error creating session:', error);
+      console.error('Error creating session note:', error);
       return NextResponse.json(
-        { error: 'Failed to create session', details: error.message },
+        { error: 'Failed to create session note', details: error.message },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Session created successfully',
-      session: data
+      message: 'Session note created successfully',
+      session_note: data
     });
 
   } catch (error) {
-    console.error('Error in sessions API:', error);
+    console.error('Error in session notes API:', error);
     return NextResponse.json(
       { 
-        error: 'Session creation failed',
+        error: 'Session note creation failed',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
@@ -73,10 +80,10 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const therapistId = searchParams.get('therapistId');
 
-    let query = supabase.from('sessions').select('*');
+    let query = supabase.from('session_notes').select('*');
 
     if (sessionId) {
-      query = query.eq('id', sessionId);
+      query = query.eq('session_id', sessionId);
     } else if (userId) {
       query = query.eq('user_id', userId);
     } else if (therapistId) {
@@ -86,24 +93,24 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching sessions:', error);
+      console.error('Error fetching session notes:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch sessions', details: error.message },
+        { error: 'Failed to fetch session notes', details: error.message },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      sessions: data,
+      session_notes: data,
       count: data?.length || 0
     });
 
   } catch (error) {
-    console.error('Error in sessions API:', error);
+    console.error('Error in session notes API:', error);
     return NextResponse.json(
       { 
-        error: 'Failed to fetch sessions',
+        error: 'Failed to fetch session notes',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

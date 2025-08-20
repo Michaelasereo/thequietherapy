@@ -12,7 +12,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('Generating token for:', { roomName, participantName, isOwner })
+
     const token = await generateMeetingToken(roomName, participantName, isOwner || false)
+
+    console.log('Token generated successfully')
 
     return NextResponse.json({
       success: true,
@@ -22,7 +26,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Generate token error:', error)
     return NextResponse.json(
-      { error: 'Failed to generate token' },
+      { 
+        error: 'Failed to generate token',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
