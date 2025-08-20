@@ -11,6 +11,8 @@ const nextConfig = {
       bodySizeLimit: '10mb'
     },
   },
+  // Output configuration for Netlify
+  output: 'standalone',
   // Security Headers Configuration
   async headers() {
     return [

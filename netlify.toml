@@ -45,13 +45,6 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Redirects for SPA routing
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = {Role = ["admin"]}
-
 # Environment variables documentation
 # Add these in Netlify dashboard:
 # NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
