@@ -1,9 +1,11 @@
 // Daily.co configuration and utilities
-export const DAILY_CONFIG = {
-  // You'll need to get these from your Daily.co dashboard
-  DAILY_API_KEY: process.env.DAILY_API_KEY || '',
-  DAILY_URL: 'https://api.daily.co/v1',
-  DAILY_DOMAIN: process.env.DAILY_DOMAIN || 'thequietherapy.daily.co'
+export function getDailyConfig() {
+  return {
+    // You'll need to get these from your Daily.co dashboard
+    DAILY_API_KEY: process.env.DAILY_API_KEY || '',
+    DAILY_URL: 'https://api.daily.co/v1',
+    DAILY_DOMAIN: process.env.DAILY_DOMAIN || 'thequietherapy.daily.co'
+  }
 }
 
 export interface DailyRoom {
@@ -30,6 +32,8 @@ export interface DailyParticipant {
 
 // Create a new room
 export async function createDailyRoom(roomName: string, properties?: any): Promise<DailyRoom> {
+  const DAILY_CONFIG = getDailyConfig()
+  
   if (!DAILY_CONFIG.DAILY_API_KEY) {
     throw new Error('Daily.co API key not configured')
   }
@@ -64,6 +68,8 @@ export async function createDailyRoom(roomName: string, properties?: any): Promi
 
 // Get room information
 export async function getDailyRoom(roomName: string): Promise<DailyRoom> {
+  const DAILY_CONFIG = getDailyConfig()
+  
   if (!DAILY_CONFIG.DAILY_API_KEY) {
     throw new Error('Daily.co API key not configured')
   }
@@ -83,6 +89,8 @@ export async function getDailyRoom(roomName: string): Promise<DailyRoom> {
 
 // Delete a room
 export async function deleteDailyRoom(roomName: string): Promise<void> {
+  const DAILY_CONFIG = getDailyConfig()
+  
   if (!DAILY_CONFIG.DAILY_API_KEY) {
     throw new Error('Daily.co API key not configured')
   }
@@ -101,6 +109,8 @@ export async function deleteDailyRoom(roomName: string): Promise<void> {
 
 // Generate a meeting token for a participant
 export async function generateMeetingToken(roomName: string, participantName: string, isOwner: boolean = false): Promise<string> {
+  const DAILY_CONFIG = getDailyConfig()
+  
   if (!DAILY_CONFIG.DAILY_API_KEY) {
     throw new Error('Daily.co API key not configured')
   }

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { DAILY_CONFIG } from '@/lib/daily'
+import { getDailyConfig } from '@/lib/daily'
 
 export async function GET() {
   try {
+    const DAILY_CONFIG = getDailyConfig()
+    
     // Check if API key is configured
     const hasApiKey = !!DAILY_CONFIG.DAILY_API_KEY
     const apiKeyLength = DAILY_CONFIG.DAILY_API_KEY?.length || 0
