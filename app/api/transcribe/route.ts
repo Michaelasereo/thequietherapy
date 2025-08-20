@@ -16,8 +16,9 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const formData = await request.formData() as any;
+    const fileEntry = formData.get('file');
+    const file = fileEntry instanceof File ? fileEntry : null;
     const sessionId = formData.get('sessionId') as string;
 
     if (!file) {

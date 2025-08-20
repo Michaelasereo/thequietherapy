@@ -19,14 +19,14 @@ export default function TestVideoCompleteFlow() {
     try {
       console.log(`🧪 Running test: ${testName}`)
       const result = await testFunction()
-      setTestResults(prev => ({
+      setTestResults((prev: any) => ({
         ...prev,
         [testName]: { success: true, result, timestamp: new Date().toISOString() }
       }))
       console.log(`✅ Test ${testName} passed:`, result)
     } catch (error) {
       console.error(`❌ Test ${testName} failed:`, error)
-      setTestResults(prev => ({
+      setTestResults((prev: any) => ({
         ...prev,
         [testName]: { success: false, error: error instanceof Error ? error.message : 'Unknown error', timestamp: new Date().toISOString() }
       }))

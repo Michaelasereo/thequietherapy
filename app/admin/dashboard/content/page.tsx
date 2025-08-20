@@ -235,13 +235,14 @@ export default function AdminContentPage() {
   }
 
   const handleSaveBlog = (formData: FormData) => {
-    const title = formData.get('title') as string
-    const author = formData.get('author') as string
-    const category = formData.get('category') as string
-    const status = formData.get('status') as string
-    const excerpt = formData.get('excerpt') as string
-    const content = formData.get('content') as string
-    const tags = (formData.get('tags') as string).split(',').map(tag => tag.trim()).filter(tag => tag)
+    const formDataAny = formData as any
+    const title = formDataAny.get('title') as string
+    const author = formDataAny.get('author') as string
+    const category = formDataAny.get('category') as string
+    const status = formDataAny.get('status') as string
+    const excerpt = formDataAny.get('excerpt') as string
+    const content = formDataAny.get('content') as string
+    const tags = (formDataAny.get('tags') as string).split(',').map(tag => tag.trim()).filter(tag => tag)
 
     if (editingBlog) {
       // Update existing blog post
@@ -286,11 +287,12 @@ export default function AdminContentPage() {
   }
 
   const handleSaveFAQ = (formData: FormData) => {
-    const question = formData.get('question') as string
-    const answer = formData.get('answer') as string
-    const category = formData.get('category') as string
-    const status = formData.get('status') as string
-    const tags = (formData.get('tags') as string).split(',').map(tag => tag.trim()).filter(tag => tag)
+    const formDataAny = formData as any
+    const question = formDataAny.get('question') as string
+    const answer = formDataAny.get('answer') as string
+    const category = formDataAny.get('category') as string
+    const status = formDataAny.get('status') as string
+    const tags = (formDataAny.get('tags') as string).split(',').map(tag => tag.trim()).filter(tag => tag)
 
     if (editingFAQ) {
       // Update existing FAQ

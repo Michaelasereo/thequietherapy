@@ -33,7 +33,7 @@ export default function TestVideoSessionFlow() {
 
   // Timer for call duration
   useEffect(() => {
-    let interval: NodeJS.Timeout
+    let interval: ReturnType<typeof setInterval>
     if (isInCall) {
       interval = setInterval(() => {
         setCallDuration(prev => prev + 1)

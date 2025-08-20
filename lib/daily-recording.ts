@@ -13,7 +13,7 @@ export interface RecordingConfig {
 export async function startDailyRecording(
   callObject: DailyCall,
   config: RecordingConfig
-): Promise<{ success: boolean; message: string; recording?: any }> {
+): Promise<{ success: boolean; message: string; recording?: any; note?: string }> {
   try {
     console.log('Daily.co recording is DISABLED for compliance');
     console.log('Using browser-based MediaRecorder instead');
@@ -34,7 +34,7 @@ export async function startDailyRecording(
 
 export async function stopDailyRecording(
   recordingId: string
-): Promise<{ success: boolean; message: string; recording?: any }> {
+): Promise<{ success: boolean; message: string; recording?: any; note?: string }> {
   try {
     console.log('Daily.co recording stop requested (disabled for compliance)');
     
@@ -50,6 +50,23 @@ export async function stopDailyRecording(
       message: 'Daily.co recording is disabled for compliance reasons'
     };
   }
+}
+
+export async function getRecording(recordingId: string): Promise<any> {
+  // DISABLED for compliance - return mock data
+  console.log('Daily.co getRecording is disabled for compliance');
+  return {
+    status: 'disabled',
+    message: 'Recording retrieval disabled for compliance - use browser MediaRecorder instead'
+  };
+}
+
+export async function processRecording(recording: any, outputDir: string): Promise<{ audioPath: string }> {
+  // DISABLED for compliance - return mock data
+  console.log('Daily.co processRecording is disabled for compliance');
+  return {
+    audioPath: '/tmp/mock-audio.wav'
+  };
 }
 
 // Compliance note: This ensures no raw audio is stored on Daily.co servers
