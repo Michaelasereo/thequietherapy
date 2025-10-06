@@ -28,6 +28,7 @@ interface Therapist {
   status: string
   rating?: number
   totalSessions: number
+  session_rate?: number
   created_at: string
   lastActivity?: string
 }
@@ -42,6 +43,15 @@ function TherapistsContent() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [verificationFilter, setVerificationFilter] = useState("all")
   const [selectedTherapist, setSelectedTherapist] = useState<Therapist | null>(null)
+  const [editingRate, setEditingRate] = useState<string | null>(null)
+  const [newRate, setNewRate] = useState<string>('')
+
+  // Helper function to trigger therapist data refresh
+  const triggerTherapistDataRefresh = () => {
+    console.log('🔄 Admin: Dispatching global therapist data refresh event')
+    // Dispatch a custom event that the therapist context will listen for
+    window.dispatchEvent(new CustomEvent('therapist-data-refresh'))
+  }
 
   // Fetch therapists on component mount
   useEffect(() => {
@@ -126,9 +136,9 @@ function TherapistsContent() {
 
   const getVerificationBadge = (isVerified: boolean) => {
     return isVerified ? (
-      <Badge variant="default" className="bg-green-600">Verified</Badge>
+      <Badge variant="default" className="bg-green-600">Approved</Badge>
     ) : (
-      <Badge variant="secondary">Unverified</Badge>
+      <Badge variant="secondary">Pending</Badge>
     )
   }
 
@@ -181,14 +191,70 @@ function TherapistsContent() {
     try {
       setProcessingId(therapistId)
       
-      // This would be replaced with actual API call
-      setTherapists(prev => prev.map(therapist => 
-        therapist.id === therapistId ? { ...therapist, status: 'active', is_verified: true } : therapist
-      ))
-      toast.success('Therapist approved successfully')
+      const response = await fetch('/api/admin/approve-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: therapistId,
+          type: 'therapist',
+          action: 'approve'
+        }),
+      })
+
+      if (response.ok) {
+        setTherapists(prev => prev.map(therapist => 
+          therapist.id === therapistId ? { ...therapist, status: 'approved', is_verified: true } : therapist
+        ))
+        toast.success('Availability update approved successfully')
+        fetchTherapists() // Refresh the list
+      } else {
+        toast.error('Failed to approve therapist')
+      }
     } catch (error) {
       console.error('Error approving therapist:', error)
       toast.error('Failed to approve therapist')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleAvailabilityApprove = async (therapistId: string) => {
+    try {
+      setProcessingId(therapistId)
+      
+      const response = await fetch('/api/admin/approve-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: therapistId,
+          type: 'therapist',
+          action: 'approve',
+          approvalType: 'availability'
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast.success(result.message || 'Availability update approved successfully')
+        
+        // 🔥 CRITICAL: Check for the invalidates flag and trigger a refetch
+        if (result.invalidates && result.invalidates.includes('therapist-profile')) {
+          console.log('🔄 Admin: Triggering therapist data refetch after approval')
+          triggerTherapistDataRefresh()
+        }
+        
+        fetchTherapists() // Refresh the admin list
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Failed to approve availability')
+      }
+    } catch (error) {
+      console.error('Error approving availability:', error)
+      toast.error('Failed to approve availability')
     } finally {
       setProcessingId(null)
     }
@@ -198,18 +264,129 @@ function TherapistsContent() {
     try {
       setProcessingId(therapistId)
       
-      // This would be replaced with actual API call
-      setTherapists(prev => prev.map(therapist => 
-        therapist.id === therapistId ? { ...therapist, status: 'rejected' } : therapist
-      ))
-      toast.success('Therapist application rejected')
-      setRejectionReason("")
+      const response = await fetch('/api/admin/approve-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: therapistId,
+          type: 'therapist',
+          action: 'reject'
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setTherapists(prev => prev.map(therapist => 
+          therapist.id === therapistId ? { ...therapist, status: 'rejected' } : therapist
+        ))
+        toast.success(result.message || 'Availability update rejected')
+        setRejectionReason("")
+        
+        // 🔥 CRITICAL: Check for the invalidates flag and trigger a refetch
+        if (result.invalidates && result.invalidates.includes('therapist-profile')) {
+          console.log('🔄 Admin: Triggering therapist data refetch after rejection')
+          triggerTherapistDataRefresh()
+        }
+        
+        fetchTherapists() // Refresh the admin list
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Failed to reject therapist')
+      }
     } catch (error) {
       console.error('Error rejecting therapist:', error)
       toast.error('Failed to reject therapist')
     } finally {
       setProcessingId(null)
     }
+  }
+
+  const handleUnapprove = async (therapistId: string, reason: string) => {
+    try {
+      setProcessingId(therapistId)
+      
+      const response = await fetch('/api/admin/unapprove-therapist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          therapistId,
+          reason
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        toast.success('Therapist unapproved successfully')
+        // Refresh the therapist list
+        fetchTherapists()
+      } else {
+        throw new Error(data.error || 'Failed to unapprove therapist')
+      }
+    } catch (error) {
+      console.error('Error unapproving therapist:', error)
+      toast.error('Failed to unapprove therapist')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleRateUpdate = async (therapistId: string) => {
+    try {
+      setProcessingId(therapistId)
+      
+      const rate = parseFloat(newRate)
+      if (isNaN(rate) || rate < 0) {
+        toast.error('Please enter a valid rate')
+        return
+      }
+
+      const response = await fetch('/api/admin/therapist-rate', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          therapistId,
+          sessionRate: rate
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        toast.success('Therapist rate updated successfully')
+        // Update local state
+        setTherapists(prev => prev.map(therapist => 
+          therapist.id === therapistId ? { ...therapist, session_rate: rate } : therapist
+        ))
+        setEditingRate(null)
+        setNewRate('')
+        // Refresh the therapist list
+        fetchTherapists()
+      } else {
+        throw new Error(data.error || 'Failed to update therapist rate')
+      }
+    } catch (error) {
+      console.error('Error updating therapist rate:', error)
+      toast.error('Failed to update therapist rate')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const startRateEdit = (therapistId: string, currentRate: number) => {
+    setEditingRate(therapistId)
+    setNewRate(currentRate.toString())
+  }
+
+  const cancelRateEdit = () => {
+    setEditingRate(null)
+    setNewRate('')
   }
 
   if (loading) {
@@ -248,8 +425,8 @@ function TherapistsContent() {
       <Alert className="border-blue-200 bg-blue-50">
         <Info className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-800">
-          <strong>Manual Verification Process:</strong> All therapist ID and license verifications are reviewed manually by the admin team. 
-          Please carefully review uploaded documents before approving or rejecting applications.
+          <strong>Availability Update Process:</strong> Therapists can request availability updates which require admin approval. 
+          Please review the requested changes before approving or rejecting availability updates.
         </AlertDescription>
       </Alert>
 
@@ -277,12 +454,12 @@ function TherapistsContent() {
         </Card>
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Verified Therapists</CardTitle>
+            <CardTitle className="text-sm font-medium">Availability Approved</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{therapistStats.verified}</div>
-            <p className="text-xs text-muted-foreground">MDCN verified</p>
+            <p className="text-xs text-muted-foreground">Availability approved</p>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -297,176 +474,202 @@ function TherapistsContent() {
         </Card>
       </div>
 
-      {/* Pending Verifications */}
-      {pendingVerifications.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="h-5 w-5 text-yellow-600" />
-            <h2 className="text-lg font-medium">Pending Verifications ({pendingVerifications.length})</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Pending Availability Updates */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle className="h-5 w-5 text-yellow-600" />
+          <h2 className="text-lg font-medium">Pending Availability Updates ({pendingVerifications.length})</h2>
+        </div>
+        
+        {pendingVerifications.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {pendingVerifications.map((therapist) => (
-              <Card key={therapist.id} className="shadow-sm">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{therapist.full_name}</CardTitle>
+              <Card key={therapist.id} className="shadow-sm border-l-4 border-l-yellow-500">
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg font-semibold">{therapist.full_name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{therapist.email}</p>
+                    </div>
                     {getStatusBadge(therapist.status)}
                   </div>
-                  <p className="text-sm text-muted-foreground">{therapist.email}</p>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">MDCN Code:</span>
-                      <span className="text-sm">{therapist.mdcn_code}</span>
+                <CardContent className="space-y-5">
+                  {/* Therapist Info */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium">MDCN Code:</span>
+                      <span className="text-muted-foreground">{therapist.mdcn_code}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Specializations:</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {therapist.specialization.map((spec, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {spec}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        Applied: {formatDate(therapist.created_at)}
-                      </span>
+                    
+                    {therapist.specialization && therapist.specialization.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <UserCheck className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="font-medium">Specializations:</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 ml-6">
+                          {therapist.specialization.map((spec, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {spec}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4 flex-shrink-0" />
+                      <span>Requested: {formatDate(therapist.created_at)}</span>
                     </div>
                   </div>
                   
-                  <div className="flex gap-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Eye className="h-4 w-4 mr-1" />
-                          View Details
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>Therapist Application Details</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
+                  {/* Action Buttons */}
+                  <div className="pt-4 border-t">
+                    <div className="grid grid-cols-3 gap-3">
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => handleAvailabilityApprove(therapist.id)}
+                        disabled={processingId === therapist.id}
+                      >
+                        {processingId === therapist.id ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                            <span className="text-sm">Processing</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="text-sm">Approve</span>
+                          </div>
+                        )}
+                      </Button>
+                      
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            disabled={processingId === therapist.id}
+                            className="text-sm"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Reject
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Reject Availability Update</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
                             <div>
-                              <Label>Full Name</Label>
-                              <p className="text-sm">{therapist.full_name}</p>
+                              <Label htmlFor="rejectionReason">Reason for Rejection</Label>
+                              <Textarea
+                                id="rejectionReason"
+                                placeholder="Please provide a reason for rejecting this availability update..."
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                rows={4}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => setRejectionReason("")}
+                              >
+                                Cancel
+                              </Button>
+                              <Button 
+                                variant="destructive"
+                                onClick={() => handleReject(therapist.id, rejectionReason)}
+                                disabled={!rejectionReason.trim() || processingId === therapist.id}
+                              >
+                                {processingId === therapist.id ? "Processing..." : "Reject Update"}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-sm">
+                            <Eye className="h-4 w-4 mr-2" />
+                            Details
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Therapist Availability Update Details</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label>Full Name</Label>
+                                <p className="text-sm">{therapist.full_name}</p>
+                              </div>
+                              <div>
+                                <Label>Email</Label>
+                                <p className="text-sm">{therapist.email}</p>
+                              </div>
+                              <div>
+                                <Label>Phone</Label>
+                                <p className="text-sm">{therapist.phone || "Not provided"}</p>
+                              </div>
+                              <div>
+                                <Label>MDCN Code</Label>
+                                <p className="text-sm">{therapist.mdcn_code}</p>
+                              </div>
                             </div>
                             <div>
-                              <Label>Email</Label>
-                              <p className="text-sm">{therapist.email}</p>
+                              <Label>Specializations</Label>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {therapist.specialization.map((spec, index) => (
+                                  <Badge key={index} variant="secondary">
+                                    {spec}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
                             <div>
-                              <Label>Phone</Label>
-                              <p className="text-sm">{therapist.phone || "Not provided"}</p>
+                              <Label>Languages</Label>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {therapist.languages.map((lang, index) => (
+                                  <Badge key={index} variant="outline">
+                                    {lang}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
                             <div>
-                              <Label>MDCN Code</Label>
-                              <p className="text-sm">{therapist.mdcn_code}</p>
+                              <Label>Update Requested</Label>
+                              <p className="text-sm">{formatDateTime(therapist.created_at)}</p>
                             </div>
                           </div>
-                          <div>
-                            <Label>Specializations</Label>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {therapist.specialization.map((spec, index) => (
-                                <Badge key={index} variant="secondary">
-                                  {spec}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <Label>Languages</Label>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {therapist.languages.map((lang, index) => (
-                                <Badge key={index} variant="outline">
-                                  {lang}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <Label>Applied</Label>
-                            <p className="text-sm">{formatDateTime(therapist.created_at)}</p>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                    
-                    <Button 
-                      size="sm" 
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                      onClick={() => handleApprove(therapist.id)}
-                      disabled={processingId === therapist.id}
-                    >
-                      {processingId === therapist.id ? (
-                        "Processing..."
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Approve
-                        </>
-                      )}
-                    </Button>
-                    
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          disabled={processingId === therapist.id}
-                        >
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Reject
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Reject Application</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="rejectionReason">Reason for Rejection</Label>
-                            <Textarea
-                              id="rejectionReason"
-                              placeholder="Please provide a reason for rejecting this application..."
-                              value={rejectionReason}
-                              onChange={(e) => setRejectionReason(e.target.value)}
-                              rows={4}
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              onClick={() => setRejectionReason("")}
-                            >
-                              Cancel
-                            </Button>
-                            <Button 
-                              variant="destructive"
-                              onClick={() => handleReject(therapist.id, rejectionReason)}
-                              disabled={!rejectionReason.trim() || processingId === therapist.id}
-                            >
-                              {processingId === therapist.id ? "Processing..." : "Reject Application"}
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <Card className="shadow-sm border-l-4 border-l-green-500">
+            <CardContent className="py-8">
+              <div className="text-center">
+                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-green-700 mb-2">All Caught Up!</h3>
+                <p className="text-muted-foreground">
+                  No pending availability updates at the moment. All therapist availability requests have been processed.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Filters and Search */}
       <Card className="shadow-sm">
@@ -506,15 +709,15 @@ function TherapistsContent() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="verification">Verification</Label>
+              <Label htmlFor="verification">Availability Status</Label>
               <Select value={verificationFilter} onValueChange={setVerificationFilter}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                  <SelectItem value="unverified">Unverified</SelectItem>
+                  <SelectItem value="verified">Approved</SelectItem>
+                  <SelectItem value="unverified">Pending</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -534,8 +737,9 @@ function TherapistsContent() {
                 <TableHead>Therapist</TableHead>
                 <TableHead>MDCN Code</TableHead>
                 <TableHead>Specializations</TableHead>
+                <TableHead>Session Rate</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Verification</TableHead>
+                <TableHead>Availability Status</TableHead>
                 <TableHead>Sessions</TableHead>
                 <TableHead>Rating</TableHead>
                 <TableHead>Actions</TableHead>
@@ -569,6 +773,50 @@ function TherapistsContent() {
                         </Badge>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {editingRate === therapist.id ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={newRate}
+                          onChange={(e) => setNewRate(e.target.value)}
+                          className="w-20 h-8"
+                          min="0"
+                          step="100"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => handleRateUpdate(therapist.id)}
+                          disabled={processingId === therapist.id}
+                          className="h-8 px-2"
+                        >
+                          {processingId === therapist.id ? '...' : '✓'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={cancelRateEdit}
+                          className="h-8 px-2"
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">
+                          ₦{(therapist.session_rate || 5000).toLocaleString()}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startRateEdit(therapist.id, therapist.session_rate || 5000)}
+                          className="h-6 px-2 text-xs"
+                        >
+                          Edit
+                        </Button>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     {getStatusBadge(therapist.status)}
@@ -649,6 +897,10 @@ function TherapistsContent() {
                               <div className="mt-1">{getVerificationBadge(therapist.is_verified)}</div>
                             </div>
                             <div>
+                              <Label>Session Rate</Label>
+                              <p className="text-sm font-medium">₦{(therapist.session_rate || 5000).toLocaleString()}</p>
+                            </div>
+                            <div>
                               <Label>Total Sessions</Label>
                               <p className="text-sm font-medium">{therapist.totalSessions}</p>
                             </div>
@@ -698,6 +950,58 @@ function TherapistsContent() {
                               >
                                 Activate
                               </Button>
+                            )}
+                            {therapist.is_verified && (
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    disabled={processingId === therapist.id}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    Unapprove
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Unapprove Therapist</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    <div>
+                                      <Label htmlFor="unapproveReason">Reason for Unapproval</Label>
+                                      <Textarea
+                                        id="unapproveReason"
+                                        placeholder="Please provide a reason for unapproving this therapist..."
+                                        rows={4}
+                                      />
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        onClick={() => {
+                                          const textarea = document.getElementById('unapproveReason') as HTMLTextAreaElement
+                                          if (textarea) textarea.value = ''
+                                        }}
+                                      >
+                                        Cancel
+                                      </Button>
+                                      <Button 
+                                        variant="destructive"
+                                        onClick={() => {
+                                          const textarea = document.getElementById('unapproveReason') as HTMLTextAreaElement
+                                          const reason = textarea?.value || 'No reason provided'
+                                          handleUnapprove(therapist.id, reason)
+                                          if (textarea) textarea.value = ''
+                                        }}
+                                        disabled={processingId === therapist.id}
+                                      >
+                                        {processingId === therapist.id ? "Processing..." : "Unapprove Therapist"}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
                             )}
                           </div>
                         </div>

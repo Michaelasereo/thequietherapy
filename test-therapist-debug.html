@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Therapist Sessions Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Therapist Sessions Debug Test</h1>
+    <p>This page will help debug why sessions aren't showing on the therapist dashboard.</p>
+    
+    <div class="test-section info">
+        <h3>Step 1: Check Current Session</h3>
+        <p>First, let's check if you're logged in as a therapist:</p>
+        <button onclick="checkCurrentSession()">Check Current Session</button>
+        <div id="session-result"></div>
+    </div>
+    
+    <div class="test-section info">
+        <h3>Step 2: Test Dashboard API</h3>
+        <p>Test the therapist dashboard data API:</p>
+        <button onclick="testDashboardAPI()">Test Dashboard API</button>
+        <div id="dashboard-result"></div>
+    </div>
+    
+    <div class="test-section info">
+        <h3>Step 3: Test Sessions API</h3>
+        <p>Test the sessions API directly:</p>
+        <button onclick="testSessionsAPI()">Test Sessions API</button>
+        <div id="sessions-result"></div>
+    </div>
+    
+    <div class="test-section info">
+        <h3>Step 4: Create Test Session</h3>
+        <p>Create a test session to see if it appears:</p>
+        <button onclick="createTestSession()">Create Test Session</button>
+        <div id="create-result"></div>
+    </div>
+
+    <script>
+        let currentTherapistId = null;
+        
+        async function checkCurrentSession() {
+            const resultDiv = document.getElementById('session-result');
+            resultDiv.innerHTML = '<p>Checking...</p>';
+            
+            try {
+                const response = await fetch('/api/auth/me');
+                const data = await response.json();
+                
+                if (data.success && data.user) {
+                    currentTherapistId = data.user.id;
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Session Found</h4>
+                            <pre>${JSON.stringify(data.user, null, 2)}</pre>
+                            <p><strong>Therapist ID:</strong> ${data.user.id}</p>
+                            <p><strong>User Type:</strong> ${data.user.user_type}</p>
+                            <p><strong>Role:</strong> ${data.user.role}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ No Session Found</h4>
+                            <p>Please log in as a therapist first.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testDashboardAPI() {
+            const resultDiv = document.getElementById('dashboard-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const response = await fetch('/api/therapist/dashboard-data');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="info">
+                        <h4>📊 Dashboard API Response</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                if (data.success && data.data) {
+                    const sessions = data.data.sessions || [];
+                    resultDiv.innerHTML += `
+                        <div class="${sessions.length > 0 ? 'success' : 'error'}">
+                            <h4>${sessions.length > 0 ? '✅' : '❌'} Sessions Found: ${sessions.length}</h4>
+                            ${sessions.length > 0 ? `
+                                <ul>
+                                    ${sessions.map(s => `<li>Session ${s.id}: ${s.scheduled_date} at ${s.scheduled_time} (${s.status})</li>`).join('')}
+                                </ul>
+                            ` : '<p>No sessions found for this therapist.</p>'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testSessionsAPI() {
+            const resultDiv = document.getElementById('sessions-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            if (!currentTherapistId) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ No Therapist ID</h4>
+                        <p>Please run Step 1 first to get the therapist ID.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/sessions?therapist_id=${currentTherapistId}`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="info">
+                        <h4>📊 Sessions API Response</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                if (data.success && data.sessions) {
+                    const sessions = data.sessions;
+                    resultDiv.innerHTML += `
+                        <div class="${sessions.length > 0 ? 'success' : 'error'}">
+                            <h4>${sessions.length > 0 ? '✅' : '❌'} Sessions Found: ${sessions.length}</h4>
+                            ${sessions.length > 0 ? `
+                                <ul>
+                                    ${sessions.map(s => `<li>Session ${s.id}: ${s.start_time} (${s.status})</li>`).join('')}
+                                </ul>
+                            ` : '<p>No sessions found for this therapist.</p>'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function createTestSession() {
+            const resultDiv = document.getElementById('create-result');
+            resultDiv.innerHTML = '<p>Creating test session...</p>';
+            
+            if (!currentTherapistId) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ No Therapist ID</h4>
+                        <p>Please run Step 1 first to get the therapist ID.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                // Create a test session for tomorrow
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                // Format date in local timezone to avoid timezone issues
+                const formatDateLocal = (date) => {
+                    const year = date.getFullYear()
+                    const month = String(date.getMonth() + 1).padStart(2, '0')
+                    const day = String(date.getDate()).padStart(2, '0')
+                    return `${year}-${month}-${day}`
+                }
+                const sessionDate = formatDateLocal(tomorrow);
+                const sessionTime = '10:00';
+                
+                const sessionData = {
+                    therapist_id: currentTherapistId,
+                    session_date: sessionDate,
+                    start_time: sessionTime,
+                    duration: 60,
+                    session_type: 'video',
+                    notes: 'Test session created by debug tool'
+                };
+                
+                const response = await fetch('/api/sessions/book', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(sessionData)
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="info">
+                        <h4>📊 Create Session Response</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                if (data.success) {
+                    resultDiv.innerHTML += `
+                        <div class="success">
+                            <h4>✅ Test Session Created</h4>
+                            <p>Session ID: ${data.data?.session?.id}</p>
+                            <p>Now run Step 2 again to see if it appears in the dashboard.</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML += `
+                        <div class="error">
+                            <h4>❌ Failed to Create Session</h4>
+                            <p>Error: ${data.error}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

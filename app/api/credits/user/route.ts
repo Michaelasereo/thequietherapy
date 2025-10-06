@@ -1,145 +1,195 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserCredits, getUserCreditTransactions } from "@/lib/paystack-enhanced";
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { requireApiAuth } from '@/lib/server-auth'
+import { handleApiError, successResponse } from '@/lib/api-response'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+)
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user from auth header or session
-    const authHeader = request.headers.get('authorization');
-    let userId: string | null = null;
-    let userType: string = 'user';
-
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      // Extract user info from JWT token
-      const token = authHeader.substring(7);
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        if (user && !error) {
-          userId = user.id;
-        }
-      } catch (error) {
-        console.error('Error extracting user from token:', error);
-      }
+    console.log('🔍 Credits API called')
+    // Authentication check
+    const authResult = await requireApiAuth(['individual'])
+    if ('error' in authResult) {
+      return authResult.error
     }
 
-    // If no user from token, try to get from query params (for testing)
-    if (!userId) {
-      const { searchParams } = new URL(request.url);
-      userId = searchParams.get('user_id');
-      userType = searchParams.get('user_type') || 'user';
+    const { session } = authResult
+    const userId = session.user.id
+    console.log('🔍 User ID:', userId)
+
+    // Get user's current credits (check both 'individual' and 'user' types)
+    const { data: credits, error: creditsError } = await supabase
+      .from('user_credits')
+      .select('*')
+      .eq('user_id', userId)
+      .in('user_type', ['individual', 'user'])
+
+    console.log('🔍 Credits query result:', { credits, creditsError })
+
+    if (creditsError) {
+      console.error('❌ Error fetching credits:', creditsError)
+      throw new Error('Failed to fetch credits')
     }
 
-    if (!userId) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'User authentication required'
-        },
-        { status: 401 }
-      );
+    // Calculate total available credits
+    const totalCredits = credits?.reduce((sum, credit) => sum + credit.credits_balance, 0) || 0
+    console.log('🔍 Total credits calculated:', totalCredits)
+
+    // Get credit history
+    const { data: creditHistory, error: historyError } = await supabase
+      .from('user_credits')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (historyError) {
+      console.error('❌ Error fetching credit history:', historyError)
     }
 
-    // Get user credits
-    const credits = await getUserCredits(userId, userType);
+    // Get payment history
+    const { data: paymentHistory, error: paymentError } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'success')
+      .order('created_at', { ascending: false })
+      .limit(10)
 
-    // Get recent transactions
-    const transactions = await getUserCreditTransactions(userId, userType, 10);
+    if (paymentError) {
+      console.error('❌ Error fetching payment history:', paymentError)
+    }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        credits: {
-          balance: credits.credits_balance,
-          purchased: credits.credits_purchased,
-          used: credits.credits_used,
-          expired: credits.credits_expired,
-          last_purchase: credits.last_credit_purchase_date
-        },
-        transactions: transactions.map(tx => ({
-          id: tx.id,
-          type: tx.transaction_type,
-          amount: tx.credits_amount,
-          balance_before: tx.balance_before,
-          balance_after: tx.balance_after,
-          description: tx.description,
-          reference: tx.reference_id,
-          created_at: tx.created_at
-        }))
-      }
-    });
+    const response = successResponse({
+      total_credits: totalCredits,
+      active_credits: credits || [],
+      credit_history: creditHistory || [],
+      payment_history: paymentHistory || [],
+      next_session_duration: totalCredits > 0 ? 35 : 25, // 35 min for paid, 25 min for free
+      timestamp: new Date().toISOString() // Add timestamp to prevent caching
+    })
+    
+    // Add cache-busting headers
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
 
   } catch (error) {
-    console.error('Error fetching user credits:', error);
-    
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Failed to fetch user credits'
-      },
-      { status: 500 }
-    );
+    return handleApiError(error)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { user_id, user_type = 'user', credits, transaction_type, description, reference_id } = body;
-
-    if (!user_id || !credits || !transaction_type) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Missing required fields: user_id, credits, transaction_type'
-        },
-        { status: 400 }
-      );
+    // Authentication check
+    const authResult = await requireApiAuth(['individual'])
+    if ('error' in authResult) {
+      return authResult.error
     }
 
-    // Call the database function to add credits
-    const { data, error } = await supabase.rpc('add_user_credits', {
-      p_user_id: user_id,
-      p_user_type: user_type,
-      p_credits: credits,
-      p_transaction_type: transaction_type,
-      p_reference_id: reference_id,
-      p_description: description,
-      p_metadata: { source: 'api' }
-    });
+    const { session } = authResult
+    const userId = session.user.id
 
-    if (error) {
-      console.error('Error adding credits:', error);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Failed to add credits'
-        },
-        { status: 500 }
-      );
-    }
+    const { action, session_id, amount } = await request.json()
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        new_balance: data,
-        message: `Successfully added ${credits} credits`
+    if (action === 'add_test_credits') {
+      // Add test credits for development/testing
+      const creditsToAdd = amount || 10
+      
+      console.log(`🔧 Adding ${creditsToAdd} test credits to user: ${userId}`)
+      
+      const { data: newCredits, error: insertError } = await supabase
+        .from('user_credits')
+        .insert({
+          user_id: userId,
+          user_type: 'user',
+          credits_balance: creditsToAdd,
+          credits_purchased: creditsToAdd,
+          credits_used: 0,
+          credits_expired: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+      
+      if (insertError) {
+        console.error('❌ Error adding test credits:', insertError)
+        throw new Error('Failed to add test credits')
       }
-    });
+      
+      console.log('✅ Test credits added successfully:', newCredits)
+      
+      return successResponse({
+        success: true,
+        credits_added: creditsToAdd,
+        message: `Successfully added ${creditsToAdd} test credits`
+      })
+    }
+
+    if (action === 'use_credit') {
+      if (!session_id) {
+        throw new Error('Session ID is required to use credit')
+      }
+
+      // Find an available credit to use (check both 'individual' and 'user' types)
+      const { data: availableCredits, error: creditsError } = await supabase
+        .from('user_credits')
+        .select('*')
+        .eq('user_id', userId)
+        .in('user_type', ['individual', 'user'])
+        .gt('credits_balance', 0)
+        .order('created_at', { ascending: true }) // Use oldest credits first
+        .limit(1)
+
+      if (creditsError || !availableCredits || availableCredits.length === 0) {
+        throw new Error('No available credits found')
+      }
+
+      const credit = availableCredits[0]
+
+      // Deduct one credit
+      const { error: updateError } = await supabase
+        .from('user_credits')
+        .update({
+          credits_balance: credit.credits_balance - 1,
+          credits_used: credit.credits_used + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', credit.id)
+
+      if (updateError) {
+        throw new Error('Failed to deduct credit')
+      }
+
+      // Record credit usage
+      await supabase
+        .from('credit_usage')
+        .insert({
+          user_id: userId,
+          credit_id: credit.id,
+          session_id: session_id,
+          credits_used: 1,
+          created_at: new Date().toISOString()
+        })
+
+      console.log('✅ Credit used for session:', session_id)
+
+      return successResponse({
+        success: true,
+        credits_remaining: credit.credits_remaining - 1,
+        message: 'Credit used successfully'
+      })
+    }
+
+    throw new Error('Invalid action')
 
   } catch (error) {
-    console.error('Error in credits POST:', error);
-    
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error'
-      },
-      { status: 500 }
-    );
+    return handleApiError(error)
   }
 }

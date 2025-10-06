@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Info, Stethoscope, Pill } from "lucide-react"
 import { usePatientData } from "@/hooks/usePatientData"
 import { useEffect } from "react"
+import { RealTimeStatus } from "@/components/RealTimeStatus"
 
 export default function MedicalHistoryPage() {
   const { 
@@ -21,7 +22,9 @@ export default function MedicalHistoryPage() {
     refreshFamilyHistory,
     refreshSocialHistory,
     refreshMedicalHistory,
-    refreshDrugHistory
+    refreshDrugHistory,
+    realTimeUpdates,
+    isOnline
   } = usePatientData()
 
   // Load all data on mount
@@ -58,11 +61,20 @@ export default function MedicalHistoryPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Medical History</h2>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Stethoscope className="h-4 w-4" />
-          <span>Therapist-managed information</span>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold">Medical History</h2>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Stethoscope className="h-4 w-4" />
+            <span>Therapist-managed information</span>
+          </div>
         </div>
+        
+        {/* Real-time Status */}
+        <RealTimeStatus 
+          realTimeUpdates={realTimeUpdates}
+          isOnline={isOnline}
+          showUpdateCount={true}
+        />
       </div>
 
       {/* Information Alert */}

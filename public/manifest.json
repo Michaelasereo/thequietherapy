@@ -1,53 +1,29 @@
 {
-  "name": "Quiet - Your Therapy Partner",
-  "short_name": "Quiet",
-  "description": "Connect with therapists and manage your mental well-being",
+  "name": "Quiet Therapy",
+  "short_name": "Quiet Therapy",
+  "description": "Connect with therapists and manage your mental well-being.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
   "orientation": "portrait-primary",
-  "scope": "/",
-  "lang": "en",
-  "categories": ["health", "medical", "lifestyle"],
   "icons": [
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     }
   ],
-  "shortcuts": [
-    {
-      "name": "Book Session",
-      "short_name": "Book",
-      "description": "Book a therapy session",
-      "url": "/book",
-      "icons": [
-        {
-          "src": "/icon-192x192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "My Sessions",
-      "short_name": "Sessions",
-      "description": "View your therapy sessions",
-      "url": "/dashboard/sessions",
-      "icons": [
-        {
-          "src": "/icon-192x192.png",
-          "sizes": "192x192"
-        }
-      ]
-    }
-  ]
+  "categories": ["health", "medical", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
 }

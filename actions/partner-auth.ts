@@ -149,76 +149,76 @@ export async function partnerOnboardingAction(_prevState: any, formData: FormDat
     const insertData: any = {
       organization_name: organizationName,
       contact_person: contactName,
-      email: email.trim(),
-      employee_count: employeeCount,
       organization_type: mapOrganizationType(industry),
       address: address || 'Not provided',
       phone: phone || 'Not provided',
-      status: 'pending',
-      created_at: new Date().toISOString()
+      website: '', // Will be set later if provided
+      is_verified: false,
+      verification_status: 'pending'
     }
 
-    // First, check if a partner with this email already exists
-    const { data: existingPartner, error: checkError } = await supabase
-      .from('partners')
+    // First, check if a user with this email already exists
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
       .select('*')
       .eq('email', email.trim())
+      .eq('user_type', 'partner')
       .single()
 
-    if (existingPartner) {
-      console.log("Partner with this email already exists:", existingPartner)
-      if (existingPartner.status === 'pending') {
+    if (existingUser) {
+      console.log("Partner user with this email already exists:", existingUser)
+      if (existingUser.partner_status === 'pending') {
         return { success: "Enrollment submitted! Please check your email to complete the verification process." }
-      } else if (existingPartner.status === 'verified') {
+      } else if (existingUser.partner_status === 'active') {
         return { success: "You are already enrolled and verified! Please use the login page to access your dashboard." }
       }
     }
 
-    // Insert partner data
-    const { data: partner, error: partnerError } = await supabase
-      .from('partners')
-      .insert(insertData)
-      .select()
-      .single()
-
-    if (partnerError) {
-      console.error('Database error:', partnerError)
-      // Check if it's a duplicate email error
-      if (partnerError.code === '23505' && partnerError.message.includes('email')) {
-        return { success: "Enrollment already exists! Please check your email to complete the process." }
-      }
-      return { error: "Failed to save enrollment data. Please try again." }
-    }
-
-    console.log("Partner data inserted successfully:", partner) // Debug log
-
-    console.log("Creating magic link for partner...") // Debug log
-    
-    // Create user record in users table for partner
+    // Create user record first
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert({
         email: email.trim(),
         full_name: contactName,
         user_type: 'partner',
-        is_verified: false, // Will be verified when they click the magic link
-        is_active: true, // Active by default, but availability controlled by approval
+        is_verified: false,
+        is_active: true,
         company_name: organizationName,
         organization_type: mapOrganizationType(industry),
         contact_person: contactName,
-        partner_status: 'temporary', // Grant temporary approval immediately
-        temporary_approval: true, // Mark as temporarily approved
-        approval_date: new Date().toISOString()
+        partner_status: 'pending',
+        temporary_approval: false
       })
       .select()
       .single()
 
     if (userError) {
       console.error('Error creating user record:', userError)
-      // Don't fail the enrollment if user creation fails - the verifyMagicLink function will handle it
-    } else {
-      console.log('User record created for partner:', userData.id)
+      return { error: "Failed to create user account. Please try again." }
     }
+
+    console.log('User record created for partner:', userData.id)
+
+    // Now create partner record with user_id
+    const partnerData = {
+      ...insertData,
+      user_id: userData.id
+    }
+
+    const { data: partner, error: partnerError } = await supabase
+      .from('partners')
+      .insert(partnerData)
+      .select()
+      .single()
+
+    if (partnerError) {
+      console.error('Database error creating partner record:', partnerError)
+      return { error: "Failed to save partner data. Please try again." }
+    }
+
+    console.log("Partner data inserted successfully:", partner) // Debug log
+
+    console.log("Creating magic link for partner...") // Debug log
     
     console.log("About to call createMagicLink with data:", {
       email: email.trim(),

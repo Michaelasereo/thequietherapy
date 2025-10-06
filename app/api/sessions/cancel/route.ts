@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cancelSession } from '@/lib/session-management'
+import { cancelSession } from '@/lib/session-management-server'
 import { getSession } from '@/lib/auth/session'
 
 export async function POST(req: NextRequest) {
@@ -26,8 +26,7 @@ export async function POST(req: NextRequest) {
     // Cancel the session
     const result = await cancelSession(
       sessionId,
-      reason,
-      cancelledBy || session.userType
+      reason
     )
 
     if (result.success) {

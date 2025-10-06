@@ -22,6 +22,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Sanitize room name for Daily.co requirements
+    const sanitizedRoomName = roomName.toLowerCase().replace(/[^a-z0-9-]/g, '-')
+    
+    console.log('🏗️ Creating Daily.co room:', sanitizedRoomName)
+
     const response = await fetch(`https://api.daily.co/v1/rooms`, {
       method: 'POST',
       headers: {
@@ -29,15 +34,20 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${DAILY_API_KEY}`,
       },
       body: JSON.stringify({
-        name: roomName,
-        privacy: 1, // Private room
+        name: sanitizedRoomName,
+        privacy: 'private', // Must be 'public', 'private', or 'org'
         properties: {
-          exp: Math.round(Date.now() / 1000) + (60 * 60 * 2), // 2 hours
+          exp: Math.round(Date.now() / 1000) + (30 * 60), // 30 minutes for therapy session
           eject_at_room_exp: true,
           enable_chat: true,
           enable_recording: false, // Disabled for Nigerian compliance
+          enable_transcription: false, // Use OpenAI Whisper instead
+          enable_prejoin_ui: true,
+          enable_network_ui: true,
+          enable_screenshare: true,
           start_video_off: false,
           start_audio_off: false,
+          max_participants: 2, // Only therapist and patient
           ...properties
         }
       }),
@@ -46,10 +56,27 @@ export async function POST(request: NextRequest) {
     const data = await response.json()
 
     if (!response.ok) {
-      console.error('Daily.co API error:', data)
+      console.error('❌ Daily.co API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: data
+      })
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to create video room'
+      if (response.status === 401) {
+        errorMessage = 'Invalid Daily.co API key'
+      } else if (response.status === 403) {
+        errorMessage = 'Daily.co API key lacks room creation permissions'
+      } else if (response.status === 409) {
+        errorMessage = `Room name "${sanitizedRoomName}" already exists`
+      } else if (data.error) {
+        errorMessage = `Daily.co error: ${data.error}${data.info ? ` - ${data.info}` : ''}`
+      }
+      
       return NextResponse.json(
-        { error: 'Failed to create video room' },
-        { status: 500 }
+        { error: errorMessage, details: data },
+        { status: response.status }
       )
     }
 

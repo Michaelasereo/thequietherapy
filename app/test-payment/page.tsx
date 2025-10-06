@@ -149,7 +149,7 @@ export default function TestPaymentPage() {
                 <h4 className="font-semibold mb-2">Test Instructions:</h4>
                 <ol className="list-decimal list-inside space-y-1 text-sm">
                   <li>Ensure your Paystack API keys are set in environment variables</li>
-                  <li>Configure webhook URL: <code className="bg-gray-100 px-1 rounded">http://localhost:3000/api/paystack/webhook</code></li>
+                  <li>Configure webhook URL: <code className="bg-gray-100 px-1 rounded">http://localhost:3001/api/paystack/webhook</code></li>
                   <li>Click "Test Paystack Connection" to verify API integration</li>
                   <li>Click "Test Credit Packages" to verify database setup</li>
                 </ol>
@@ -173,7 +173,7 @@ export default function TestPaymentPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span>NEXT_PUBLIC_APP_URL: {process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}</span>
+                  <span>NEXT_PUBLIC_APP_URL: {process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}</span>
                 </div>
               </div>
             </CardContent>

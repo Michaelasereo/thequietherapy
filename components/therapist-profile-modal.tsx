@@ -58,7 +58,7 @@ interface TherapistProfileModalProps {
     age: string
     maritalStatus: string
     bio: string
-    availability: string[]
+    languages: string[]
     isVerified?: boolean
   } | null
   onSelectTherapist: (therapistId: string) => void
@@ -94,16 +94,35 @@ export default function TherapistProfileModal({
           <DialogDescription className="text-md text-muted-foreground">{therapist.specialization}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="text-sm text-muted-foreground text-center">
-            {therapist.gender}, {therapist.age}, {therapist.maritalStatus}
+          {/* Personal Information */}
+          <div className="space-y-3">
+            {therapist.gender && therapist.gender !== 'Not specified' && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-muted-foreground">Gender:</span>
+                <span className="text-sm">{therapist.gender}</span>
+              </div>
+            )}
+            {therapist.maritalStatus && therapist.maritalStatus !== 'Not specified' && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-muted-foreground">Marital Status:</span>
+                <span className="text-sm">{therapist.maritalStatus}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-muted-foreground">Languages:</span>
+              <span className="text-sm">{Array.isArray(therapist.languages) ? therapist.languages.join(", ") : therapist.languages}</span>
+            </div>
           </div>
+          
+          {/* Professional Information */}
           <div className="space-y-2">
-            <h4 className="font-semibold text-lg">About Me</h4>
+            <h4 className="font-semibold text-lg">Specialization</h4>
+            <p className="text-sm text-muted-foreground">{therapist.specialization}</p>
+          </div>
+          
+          <div className="space-y-2">
+            <h4 className="font-semibold text-lg">Professional Bio</h4>
             <p className="text-sm text-muted-foreground">{therapist.bio}</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-semibold text-lg">Availability</h4>
-            <p className="text-sm text-muted-foreground">{therapist.availability.join(", ")}</p>
           </div>
         </div>
         <Button

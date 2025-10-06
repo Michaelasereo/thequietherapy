@@ -169,21 +169,45 @@ export default function CSVUpload() {
     setUploadProgress(0)
 
     try {
+      // Convert data back to CSV format for the API
+      const headers = ['name', 'email', 'phone', 'department', 'position', 'credits', 'package']
+      const csvRows = [
+        headers.join(','),
+        ...data.map(row => headers.map(header => {
+          const value = (row as any)[header] || ''
+          // Escape commas and quotes in CSV values
+          return value.toString().includes(',') ? `"${value}"` : value
+        }).join(','))
+      ]
+      const csvContent = csvRows.join('\n')
+
+      // Simulate progress for better UX
+      const interval = setInterval(() => {
+        setUploadProgress((prev: any) => {
+          if (prev >= 90) {
+            clearInterval(interval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 300)
+
       const response = await fetch('/api/partner/bulk-upload-members', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'text/csv'
         },
-        body: JSON.stringify({
-          members: data
-        })
+        body: csvContent
       })
+
+      clearInterval(interval)
+      setUploadProgress(100)
 
       const result = await response.json()
 
       if (response.ok) {
         setUploadResult(result)
-        toast.success(`Upload completed! ${result.success} members added, ${result.failed} failed`)
+        toast.success(`Upload completed! ${result.successfulRecords} members added, ${result.failedRecords} failed`)
         
         // Reset form
         setFile(null)
@@ -389,26 +413,33 @@ export default function CSVUpload() {
 
           {/* Upload Results */}
           {uploadResult && (
-            <Alert>
+            <Alert className={uploadResult.success ? "border-green-200 bg-green-50" : "border-yellow-200 bg-yellow-50"}>
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>
-                Upload completed! {uploadResult.success} members added successfully, 
-                {uploadResult.failed} failed. 
-                {uploadResult.errors.length > 0 && (
-                  <span className="block mt-2">
-                    <strong>Errors:</strong>
-                    <ul className="list-disc list-inside mt-1">
-                      {uploadResult.errors.slice(0, 5).map((error, index) => (
-                        <li key={index}>
-                          Row {error.row}: {error.message}
-                        </li>
-                      ))}
-                      {uploadResult.errors.length > 5 && (
-                        <li>... and {uploadResult.errors.length - 5} more errors</li>
-                      )}
-                    </ul>
-                  </span>
-                )}
+                <div className="space-y-2">
+                  <p className="font-medium">{uploadResult.message}</p>
+                  <div className="text-sm">
+                    <span className="text-green-600">✅ Successful: {uploadResult.successfulRecords}</span>
+                    {uploadResult.failedRecords > 0 && (
+                      <span className="ml-4 text-red-600">❌ Failed: {uploadResult.failedRecords}</span>
+                    )}
+                  </div>
+                  {uploadResult.errors && uploadResult.errors.length > 0 && (
+                    <div className="mt-3">
+                      <strong className="text-red-700">Errors:</strong>
+                      <ul className="list-disc list-inside mt-1 text-sm space-y-1">
+                        {uploadResult.errors.slice(0, 5).map((error, index) => (
+                          <li key={index} className="text-red-600">
+                            Row {error.row}: {error.field ? `${error.field} - ` : ''}{(error as Error).message}
+                          </li>
+                        ))}
+                        {uploadResult.errors.length > 5 && (
+                          <li className="text-red-600">... and {uploadResult.errors.length - 5} more errors</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </AlertDescription>
             </Alert>
           )}

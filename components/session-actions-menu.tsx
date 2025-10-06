@@ -60,7 +60,7 @@ export default function SessionActionsMenu({ session, onSessionUpdate, userType 
 
   // Check if session can be modified
   const canModify = session.status === 'scheduled'
-  const sessionDateTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
+  const sessionDateTime = new Date(session.start_time || "" || "")
   const now = new Date()
   const timeDiff = sessionDateTime.getTime() - now.getTime()
   const hoursDiff = timeDiff / (1000 * 60 * 60)
@@ -284,22 +284,37 @@ export default function SessionActionsMenu({ session, onSessionUpdate, userType 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium">Date</Label>
-                <p className="text-sm text-muted-foreground">{session.scheduled_date}</p>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(session.start_time || "" || "").toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
               </div>
               <div>
                 <Label className="text-sm font-medium">Time</Label>
-                <p className="text-sm text-muted-foreground">{session.scheduled_time}</p>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(session.start_time || "" || "").toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })} - {new Date(session.end_time || "" || "").toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
               </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium">Client</Label>
-                <p className="text-sm text-muted-foreground">{session.client_name || 'N/A'}</p>
+                <p className="text-sm text-muted-foreground">{session.client_name || "N/A" || 'N/A'}</p>
               </div>
               <div>
                 <Label className="text-sm font-medium">Therapist</Label>
-                <p className="text-sm text-muted-foreground">{session.therapist_name || 'N/A'}</p>
+                <p className="text-sm text-muted-foreground">{session.therapist_name || "N/A" || 'N/A'}</p>
               </div>
             </div>
             
@@ -308,17 +323,17 @@ export default function SessionActionsMenu({ session, onSessionUpdate, userType 
               <p className="text-sm text-muted-foreground">{session.session_type}</p>
             </div>
             
-            {session.session_summary && (
+            {session.session_summary || "" && (
               <div>
                 <Label className="text-sm font-medium">Summary</Label>
-                <p className="text-sm text-muted-foreground">{session.session_summary}</p>
+                <p className="text-sm text-muted-foreground">{session.session_summary || ""}</p>
               </div>
             )}
             
-            {session.reschedule_reason && (
+            {session.reschedule_reason || "" && (
               <div>
                 <Label className="text-sm font-medium">Reschedule Reason</Label>
-                <p className="text-sm text-muted-foreground">{session.reschedule_reason}</p>
+                <p className="text-sm text-muted-foreground">{session.reschedule_reason || ""}</p>
               </div>
             )}
             
@@ -332,7 +347,7 @@ export default function SessionActionsMenu({ session, onSessionUpdate, userType 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium">Amount Paid</Label>
-                <p className="text-sm text-muted-foreground">₦{session.amount_paid?.toLocaleString() || '0'}</p>
+                <p className="text-sm text-muted-foreground">₦{session.amount_paid || 0?.toLocaleString() || '0'}</p>
               </div>
               <div>
                 <Label className="text-sm font-medium">Created</Label>

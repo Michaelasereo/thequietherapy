@@ -1,41 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { startSessionRecording } from '@/lib/daily'
+import { requireApiAuth } from '@/lib/server-auth'
+import { handleApiError, ValidationError, successResponse, validateRequired } from '@/lib/api-response'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { roomName, sessionId, layout, audioOnly } = body;
+    // Authentication check - only therapists can start recordings
+    const authResult = await requireApiAuth(['therapist'])
+    if ('error' in authResult) {
+      return authResult.error
+    }
 
-    console.log('Daily.co recording is DISABLED for compliance');
-    console.log('Using browser-based MediaRecorder instead');
+    const { roomName } = await request.json()
+    validateRequired({ roomName }, ['roomName'])
 
-    // Return success with compliance note
-    return NextResponse.json({
-      success: true,
-      message: 'Daily.co recording disabled for compliance',
-      note: 'Raw audio is not stored on Daily.co servers - only processed locally via browser MediaRecorder',
-      compliance: {
-        raw_audio_storage: 'disabled',
-        processing_location: 'browser_local',
-        data_storage: 'transcripts_only',
-        third_party_audio: 'none'
-      },
-      recording: {
-        id: 'browser-media-recorder',
-        status: 'local_only',
-        method: 'MediaRecorder API',
-        storage: 'transcripts only'
-      }
-    });
+    console.log('🎥 Starting recording for room:', roomName)
+
+    const result = await startSessionRecording(roomName)
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to start recording')
+    }
+
+    return successResponse({
+      recordingId: result.recordingId,
+      message: 'Recording started successfully'
+    })
 
   } catch (error) {
-    console.error('Daily.co recording error (disabled):', error);
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Daily.co recording is disabled for compliance reasons',
-        note: 'Use browser MediaRecorder for audio recording'
-      },
-      { status: 200 } // Return 200 since this is expected behavior
-    );
+    return handleApiError(error)
   }
 }

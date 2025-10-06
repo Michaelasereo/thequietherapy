@@ -18,6 +18,7 @@ import {
   getCurrentUserId
 } from '@/lib/patient-data'
 import { toast } from '@/components/ui/use-toast'
+import { supabase } from '@/lib/supabase'
 
 interface UsePatientDataReturn {
   // State
@@ -59,6 +60,10 @@ interface UsePatientDataReturn {
   refreshDrugHistory: () => Promise<void>
   refreshCompleteProfile: () => Promise<void>
   
+  // Real-time data
+  realTimeUpdates: number
+  isOnline: boolean
+  
   // Utility
   userId: string | null
   isLoading: boolean
@@ -75,6 +80,10 @@ export function usePatientData(): UsePatientDataReturn {
   const [medicalHistory, setMedicalHistory] = useState<PatientMedicalHistory[]>([])
   const [drugHistory, setDrugHistory] = useState<PatientDrugHistory[]>([])
   const [completeProfile, setCompleteProfile] = useState<CompletePatientProfile | null>(null)
+  
+  // Real-time data state
+  const [realTimeUpdates, setRealTimeUpdates] = useState(0)
+  const [isOnline, setIsOnline] = useState(true)
   
   // Loading states
   const [loading, setLoading] = useState({
@@ -104,8 +113,8 @@ export function usePatientData(): UsePatientDataReturn {
     }
     fetchUserId()
   }, [])
-  
-  // Refresh biodata
+
+  // Refresh functions - defined before useEffect that uses them
   const refreshBiodata = useCallback(async () => {
     if (!userId) return
     
@@ -123,6 +132,115 @@ export function usePatientData(): UsePatientDataReturn {
       setLoading(prev => ({ ...prev, biodata: false }))
     }
   }, [userId])
+
+  const refreshFamilyHistory = useCallback(async () => {
+    if (!userId) return
+    
+    setLoading(prev => ({ ...prev, familyHistory: true }))
+    setErrors(prev => ({ ...prev, familyHistory: null }))
+    
+    try {
+      const data = await getPatientFamilyHistory(userId)
+      setFamilyHistory(data)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch family history'
+      setErrors(prev => ({ ...prev, familyHistory: errorMessage }))
+      console.error('Error fetching family history:', error)
+    } finally {
+      setLoading(prev => ({ ...prev, familyHistory: false }))
+    }
+  }, [userId])
+
+  const refreshSocialHistory = useCallback(async () => {
+    if (!userId) return
+    
+    setLoading(prev => ({ ...prev, socialHistory: true }))
+    setErrors(prev => ({ ...prev, socialHistory: null }))
+    
+    try {
+      const data = await getPatientSocialHistory(userId)
+      setSocialHistory(data)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch social history'
+      setErrors(prev => ({ ...prev, socialHistory: errorMessage }))
+      console.error('Error fetching social history:', error)
+    } finally {
+      setLoading(prev => ({ ...prev, socialHistory: false }))
+    }
+  }, [userId])
+
+  const refreshMedicalHistory = useCallback(async () => {
+    if (!userId) return
+    
+    setLoading(prev => ({ ...prev, medicalHistory: true }))
+    setErrors(prev => ({ ...prev, medicalHistory: null }))
+    
+    try {
+      const data = await getPatientMedicalHistory(userId)
+      setMedicalHistory(data)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch medical history'
+      setErrors(prev => ({ ...prev, medicalHistory: errorMessage }))
+      console.error('Error fetching medical history:', error)
+    } finally {
+      setLoading(prev => ({ ...prev, medicalHistory: false }))
+    }
+  }, [userId])
+
+  const refreshDrugHistory = useCallback(async () => {
+    if (!userId) return
+    
+    setLoading(prev => ({ ...prev, drugHistory: true }))
+    setErrors(prev => ({ ...prev, drugHistory: null }))
+    
+    try {
+      const data = await getPatientDrugHistory(userId)
+      setDrugHistory(data)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch drug history'
+      setErrors(prev => ({ ...prev, drugHistory: errorMessage }))
+      console.error('Error fetching drug history:', error)
+    } finally {
+      setLoading(prev => ({ ...prev, drugHistory: false }))
+    }
+  }, [userId])
+
+  // Real-time subscriptions for medical data
+  useEffect(() => {
+    if (!userId) return
+
+    console.log('🔍 Setting up real-time subscriptions for patient medical data:', userId)
+
+    // Subscribe to biodata changes
+    // Real-time subscriptions disabled - using polling instead
+    // const biodataSubscription = supabase...
+
+    // Real-time subscriptions disabled - using polling instead
+    // const familyHistorySubscription = supabase...
+
+    // Real-time subscriptions disabled - using polling instead
+    // const socialHistorySubscription = supabase...
+
+    // Real-time subscriptions disabled - using polling instead
+    // const medicalHistorySubscription = supabase...
+
+    // Real-time subscriptions disabled - using polling instead
+    // const drugHistorySubscription = supabase...
+
+    // Network status monitoring
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      console.log('🔍 Cleaning up patient medical data subscriptions')
+      // Real-time subscriptions disabled - no cleanup needed
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [userId, refreshBiodata, refreshFamilyHistory, refreshSocialHistory, refreshMedicalHistory, refreshDrugHistory])
   
   // Update biodata
   const updateBiodata = useCallback(async (data: Partial<PatientBiodata>): Promise<boolean> => {
@@ -168,24 +286,6 @@ export function usePatientData(): UsePatientDataReturn {
     }
   }, [userId])
   
-  // Refresh family history
-  const refreshFamilyHistory = useCallback(async () => {
-    if (!userId) return
-    
-    setLoading(prev => ({ ...prev, familyHistory: true }))
-    setErrors(prev => ({ ...prev, familyHistory: null }))
-    
-    try {
-      const data = await getPatientFamilyHistory(userId)
-      setFamilyHistory(data)
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch family history'
-      setErrors(prev => ({ ...prev, familyHistory: errorMessage }))
-      console.error('Error fetching family history:', error)
-    } finally {
-      setLoading(prev => ({ ...prev, familyHistory: false }))
-    }
-  }, [userId])
   
   // Update family history
   const updateFamilyHistory = useCallback(async (data: Partial<PatientFamilyHistory>): Promise<boolean> => {
@@ -221,24 +321,6 @@ export function usePatientData(): UsePatientDataReturn {
     }
   }, [userId])
   
-  // Refresh social history
-  const refreshSocialHistory = useCallback(async () => {
-    if (!userId) return
-    
-    setLoading(prev => ({ ...prev, socialHistory: true }))
-    setErrors(prev => ({ ...prev, socialHistory: null }))
-    
-    try {
-      const data = await getPatientSocialHistory(userId)
-      setSocialHistory(data)
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch social history'
-      setErrors(prev => ({ ...prev, socialHistory: errorMessage }))
-      console.error('Error fetching social history:', error)
-    } finally {
-      setLoading(prev => ({ ...prev, socialHistory: false }))
-    }
-  }, [userId])
   
   // Update social history
   const updateSocialHistory = useCallback(async (data: Partial<PatientSocialHistory>): Promise<boolean> => {
@@ -274,43 +356,7 @@ export function usePatientData(): UsePatientDataReturn {
     }
   }, [userId])
   
-  // Refresh medical history
-  const refreshMedicalHistory = useCallback(async () => {
-    if (!userId) return
-    
-    setLoading(prev => ({ ...prev, medicalHistory: true }))
-    setErrors(prev => ({ ...prev, medicalHistory: null }))
-    
-    try {
-      const data = await getPatientMedicalHistory(userId)
-      setMedicalHistory(data)
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch medical history'
-      setErrors(prev => ({ ...prev, medicalHistory: errorMessage }))
-      console.error('Error fetching medical history:', error)
-    } finally {
-      setLoading(prev => ({ ...prev, medicalHistory: false }))
-    }
-  }, [userId])
   
-  // Refresh drug history
-  const refreshDrugHistory = useCallback(async () => {
-    if (!userId) return
-    
-    setLoading(prev => ({ ...prev, drugHistory: true }))
-    setErrors(prev => ({ ...prev, drugHistory: null }))
-    
-    try {
-      const data = await getPatientDrugHistory(userId)
-      setDrugHistory(data)
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch drug history'
-      setErrors(prev => ({ ...prev, drugHistory: errorMessage }))
-      console.error('Error fetching drug history:', error)
-    } finally {
-      setLoading(prev => ({ ...prev, drugHistory: false }))
-    }
-  }, [userId])
   
   // Refresh complete profile
   const refreshCompleteProfile = useCallback(async () => {
@@ -360,6 +406,10 @@ export function usePatientData(): UsePatientDataReturn {
     refreshMedicalHistory,
     refreshDrugHistory,
     refreshCompleteProfile,
+    
+    // Real-time data
+    realTimeUpdates,
+    isOnline,
     
     // Utility
     userId,

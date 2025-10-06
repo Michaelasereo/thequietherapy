@@ -105,7 +105,15 @@ export default function PartnerMembersPage() {
       </div>
 
       {/* CSV Upload */}
-      <CSVUpload />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium">Bulk Member Upload</h3>
+          <div className="text-sm text-muted-foreground">
+            Upload CSV files to add multiple members at once
+          </div>
+        </div>
+        <CSVUpload />
+      </div>
 
       {/* Manual Add */}
       <Card>

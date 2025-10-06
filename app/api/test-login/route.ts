@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Set session cookie
-    response.cookies.set('trpi_user', JSON.stringify({
+    response.cookies.set('quiet_user', JSON.stringify({
       id: user.id,
       email: user.email,
       full_name: user.full_name,

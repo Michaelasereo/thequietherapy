@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Interface Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Video Interface Test</h1>
+    
+    <div class="test-section">
+        <h2>Issues Fixed</h2>
+        <div class="status success">
+            ✅ <strong>Contact Owner Message:</strong> Fixed by creating a dedicated video session page that properly handles Daily.co iframe integration
+        </div>
+        <div class="status success">
+            ✅ <strong>Navigation Back to Dashboard:</strong> Added back button and home button in the video interface header
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>New Video Interface Features</h2>
+        <ul>
+            <li><strong>Dedicated Video Session Page:</strong> <code>/video-session/[sessionId]</code></li>
+            <li><strong>Navigation Header:</strong> Back button and Home button for easy navigation</li>
+            <li><strong>Session Timer:</strong> Real-time session duration display</li>
+            <li><strong>Video Controls:</strong> Toggle video, audio, and screen sharing</li>
+            <li><strong>Chat Sidebar:</strong> Optional chat functionality during sessions</li>
+            <li><strong>Error Handling:</strong> Proper error messages and fallbacks</li>
+            <li><strong>Responsive Design:</strong> Works on desktop and mobile devices</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>How to Test</h2>
+        <ol>
+            <li>Go to your dashboard and find a scheduled session</li>
+            <li>Click "Join Session" - it will now navigate to <code>/video-session/[sessionId]</code> instead of opening a new window</li>
+            <li>In the video interface, you should see:
+                <ul>
+                    <li>Header with back button and home button</li>
+                    <li>Session timer showing elapsed time</li>
+                    <li>Video controls at the bottom</li>
+                    <li>Chat toggle button in the header</li>
+                </ul>
+            </li>
+            <li>Test the navigation buttons to ensure they work properly</li>
+            <li>Test the video controls (mute, video off, screen share)</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>API Endpoints Created</h2>
+        <ul>
+            <li><code>GET /api/sessions/[sessionId]</code> - Get session details</li>
+            <li><code>POST /api/sessions/[sessionId]/join</code> - Join a session</li>
+            <li><code>POST /api/sessions/[sessionId]/leave</code> - Leave a session</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Files Modified/Created</h2>
+        <ul>
+            <li><strong>Created:</strong> <code>app/video-session/[sessionId]/page.tsx</code> - Main video interface</li>
+            <li><strong>Created:</strong> <code>app/api/sessions/[sessionId]/route.ts</code> - Session details API</li>
+            <li><strong>Created:</strong> <code>app/api/sessions/[sessionId]/join/route.ts</code> - Join session API</li>
+            <li><strong>Created:</strong> <code>app/api/sessions/[sessionId]/leave/route.ts</code> - Leave session API</li>
+            <li><strong>Modified:</strong> <code>app/therapist/dashboard/video-call/page.tsx</code> - Updated to use new video interface</li>
+            <li><strong>Modified:</strong> <code>app/dashboard/therapy/page.tsx</code> - Updated to use new video interface</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Next Steps</h2>
+        <div class="status info">
+            <strong>Ready for Testing:</strong> The video interface is now ready for testing. Users can join sessions through the dedicated video page with proper navigation back to the dashboard.
+        </div>
+    </div>
+
+    <script>
+        // Simple test to verify the page loads
+        console.log('✅ Video Interface Test Page Loaded Successfully');
+        
+        // Test if we can access the video session page structure
+        if (typeof window !== 'undefined') {
+            console.log('✅ Browser environment detected');
+        }
+    </script>
+</body>
+</html>

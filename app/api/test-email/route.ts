@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     
     console.log('🧪 Testing email sending to:', email)
     
-    const testUrl = 'http://localhost:3000/api/auth/verify-magic-link?token=test-token'
+    const testUrl = 'http://localhost:3001/api/auth/verify-magic-link?token=test-token'
     
     const result = await sendMagicLinkEmail(
       email,

@@ -1,270 +1,311 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { useToast } from '@/components/ui/use-toast'
-import { RefreshCw, Users, CheckCircle, XCircle, AlertCircle, Database, Eye } from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, CheckCircle, XCircle, Users, RefreshCw, AlertTriangle } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface SyncResult {
-  total: number
-  successful: number
-  failed: number
-  results: Array<{
-    user_id: string
-    email: string
-    result: {
-      success: boolean
-      auth_user_id?: string
-      message?: string
-      error?: string
-    }
-  }>
+  success: boolean;
+  totalUsers?: number;
+  successCount?: number;
+  errorCount?: number;
+  results?: Array<{
+    userId: string;
+    email: string;
+    success: boolean;
+    action?: string;
+    error?: string;
+  }>;
+  error?: string;
 }
 
-interface SupabaseAuthUser {
-  id: string
-  email: string
-  user_type?: string
-  full_name?: string
-  phone?: string
-  created_at: string
-  last_sign_in?: string
-  email_confirmed?: string
-  provider?: string
-}
-
-interface SupabaseAuthData {
-  total_users: number
-  users: SupabaseAuthUser[]
+interface SyncStatus {
+  success: boolean;
+  total_users: number;
+  checked_users: number;
+  users: Array<{
+    id: string;
+    email: string;
+    user_type: string;
+    created_at: string;
+    synced_with_auth: boolean;
+    sync_error?: string;
+  }>;
 }
 
 export default function SyncUsersPage() {
-  const { toast } = useToast()
-  const [isLoading, setIsLoading] = useState(false)
-  const [isViewingUsers, setIsViewingUsers] = useState(false)
-  const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
-  const [supabaseAuthData, setSupabaseAuthData] = useState<SupabaseAuthData | null>(null)
+  const { toast } = useToast();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
 
-  const handleSyncUsers = async () => {
-    setIsLoading(true)
+  // Load sync status on component mount
+  useEffect(() => {
+    loadSyncStatus();
+  }, []);
+
+  const loadSyncStatus = async () => {
+    setIsLoadingStatus(true);
     try {
-      const response = await fetch('/api/sync-users-to-supabase-auth', {
-        method: 'POST'
-      })
+      const response = await fetch('/api/admin/sync-users', {
+        method: 'GET',
+      });
       
-      const data = await response.json()
+      const data = await response.json();
       
       if (data.success) {
-        setSyncResult(data.sync)
-        setSupabaseAuthData(data.supabase_auth)
-        toast({
-          title: 'Sync Completed',
-          description: `Successfully synced ${data.sync.successful} users to Supabase auth`,
-        })
+        setSyncStatus(data);
       } else {
         toast({
-          title: 'Sync Failed',
-          description: data.error || 'Failed to sync users',
-          variant: 'destructive',
-        })
+          title: "Error",
+          description: data.error || "Failed to load sync status",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error('Sync error:', error)
       toast({
-        title: 'Sync Error',
-        description: 'Network error occurred during sync',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: "Failed to load sync status",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoadingStatus(false);
     }
-  }
+  };
 
-  const handleViewUsers = async () => {
-    setIsViewingUsers(true)
+  const syncAllUsers = async () => {
+    setIsSyncing(true);
+    setSyncResult(null);
+    
     try {
-      const response = await fetch('/api/sync-users-to-supabase-auth')
-      const data = await response.json()
+      const response = await fetch('/api/admin/sync-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'sync-all' }),
+      });
+      
+      const data = await response.json();
+      setSyncResult(data);
       
       if (data.success) {
-        setSupabaseAuthData(data.data)
         toast({
-          title: 'Users Retrieved',
-          description: `Found ${data.data.total_users} users in Supabase auth`,
-        })
+          title: "Sync Completed",
+          description: `Successfully synced ${data.successCount || 0} users with ${data.errorCount || 0} errors`,
+        });
+        
+        // Reload sync status
+        await loadSyncStatus();
       } else {
         toast({
-          title: 'Failed to Get Users',
-          description: data.error || 'Failed to retrieve users',
-          variant: 'destructive',
-        })
+          title: "Sync Failed",
+          description: data.error || "Failed to sync users",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error('Get users error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setSyncResult({ success: false, error: errorMessage });
       toast({
-        title: 'Error',
-        description: 'Network error occurred',
-        variant: 'destructive',
-      })
+        title: "Sync Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
-      setIsViewingUsers(false)
+      setIsSyncing(false);
     }
-  }
+  };
+
+  const syncSingleUser = async (userId: string) => {
+    try {
+      const response = await fetch('/api/admin/sync-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'sync-single', userId }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast({
+          title: "User Synced",
+          description: `Successfully synced user ${data.user?.email}`,
+        });
+        
+        // Reload sync status
+        await loadSyncStatus();
+      } else {
+        toast({
+          title: "Sync Failed",
+          description: data.error || "Failed to sync user",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Sync Failed",
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">User Sync Management</h1>
-          <p className="text-muted-foreground">
-            Sync your custom users to Supabase auth for dashboard visibility
-          </p>
-        </div>
+    <div className="container mx-auto p-6 max-w-6xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Sync Users with Supabase Auth</h1>
+        <p className="text-muted-foreground">
+          Synchronize your custom user database with Supabase Auth to resolve authentication conflicts.
+        </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Sync Action Card */}
+      {/* Sync Status Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Sync Users to Supabase Auth
-            </CardTitle>
-            <CardDescription>
-              Sync all custom users to Supabase's auth.users table so you can see them in the dashboard
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button 
-              onClick={handleSyncUsers} 
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Syncing...
-                </>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoadingStatus ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
               ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Sync All Users
-                </>
+                syncStatus?.total_users || 0
               )}
-            </Button>
-
-            {syncResult && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Total Users:</span>
-                  <Badge variant="outline">{syncResult.total}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Successful:</span>
-                  <Badge variant="default" className="bg-green-500">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    {syncResult.successful}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Failed:</span>
-                  <Badge variant="destructive">
-                    <XCircle className="h-3 w-3 mr-1" />
-                    {syncResult.failed}
-                  </Badge>
-                </div>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* View Users Card */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Supabase Auth Users
-            </CardTitle>
-            <CardDescription>
-              View all users currently in Supabase's auth.users table
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Synced Users</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button 
-              onClick={handleViewUsers} 
-              disabled={isViewingUsers}
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {isLoadingStatus ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                syncStatus?.users.filter(u => u.synced_with_auth).length || 0
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Needs Sync</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {isLoadingStatus ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                syncStatus?.users.filter(u => !u.synced_with_auth).length || 0
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Sync Actions */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Sync Actions</CardTitle>
+          <CardDescription>
+            Synchronize users between your database and Supabase Auth
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-4">
+            <Button
+              onClick={syncAllUsers}
+              disabled={isSyncing}
+              className="flex items-center gap-2"
+            >
+              {isSyncing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {isSyncing ? 'Syncing All Users...' : 'Sync All Users'}
+            </Button>
+            
+            <Button
+              onClick={loadSyncStatus}
+              disabled={isLoadingStatus}
               variant="outline"
-              className="w-full"
+              className="flex items-center gap-2"
             >
-              {isViewingUsers ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Loading...
-                </>
+              {isLoadingStatus ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Users
-                </>
+                <Users className="h-4 w-4" />
               )}
+              Refresh Status
             </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-            {supabaseAuthData && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Total Users:</span>
-                  <Badge variant="outline">{supabaseAuthData.total_users}</Badge>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Sync Results */}
-      {syncResult && syncResult.results.length > 0 && (
-        <Card>
+      {/* User Status List */}
+      {syncStatus && (
+        <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Sync Results</CardTitle>
+            <CardTitle>User Sync Status</CardTitle>
             <CardDescription>
-              Detailed results of the user synchronization
+              Showing first {syncStatus.checked_users} of {syncStatus.total_users} users
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {syncResult.results.map((result, index) => (
-                <div 
-                  key={index} 
-                  className={`p-3 rounded-lg border ${
-                    result.result.success 
-                      ? 'bg-green-50 border-green-200' 
-                      : 'bg-red-50 border-red-200'
-                  }`}
+            <div className="space-y-4">
+              {syncStatus.users.map((user) => (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{result.email}</p>
-                      <p className="text-sm text-muted-foreground">ID: {result.user_id}</p>
-                    </div>
+                  <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      {result.result.success ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          <span className="text-sm text-green-600">
-                            {result.result.message}
-                          </span>
-                        </>
+                      {user.synced_with_auth ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
                       ) : (
-                        <>
-                          <XCircle className="h-4 w-4 text-red-500" />
-                          <span className="text-sm text-red-600">
-                            {result.result.error}
-                          </span>
-                        </>
+                        <XCircle className="h-5 w-5 text-red-600" />
                       )}
                     </div>
+                    <div>
+                      <div className="font-medium">{user.email}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {user.user_type} • Created {new Date(user.created_at).toLocaleDateString()}
+                      </div>
+                      {user.sync_error && (
+                        <div className="text-sm text-red-600 mt-1">
+                          Error: {user.sync_error}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={user.synced_with_auth ? "default" : "destructive"}>
+                      {user.synced_with_auth ? "Synced" : "Not Synced"}
+                    </Badge>
+                    {!user.synced_with_auth && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => syncSingleUser(user.id)}
+                      >
+                        Sync
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -273,50 +314,70 @@ export default function SyncUsersPage() {
         </Card>
       )}
 
-      {/* Supabase Auth Users List */}
-      {supabaseAuthData && supabaseAuthData.users.length > 0 && (
+      {/* Sync Results */}
+      {syncResult && (
         <Card>
           <CardHeader>
-            <CardTitle>Supabase Auth Users</CardTitle>
-            <CardDescription>
-              All users currently in Supabase's auth.users table
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              {syncResult.success ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <XCircle className="h-5 w-5 text-red-600" />
+              )}
+              Sync Results
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {supabaseAuthData.users.map((user) => (
-                <div key={user.id} className="p-3 rounded-lg border bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{user.email}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>ID: {user.id}</span>
-                        {user.user_type && (
-                          <Badge variant="secondary">{user.user_type}</Badge>
-                        )}
-                        {user.provider && (
-                          <Badge variant="outline">{user.provider}</Badge>
-                        )}
-                      </div>
-                      {user.full_name && (
-                        <p className="text-sm text-muted-foreground">
-                          Name: {user.full_name}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right text-sm text-muted-foreground">
-                      <p>Created: {new Date(user.created_at).toLocaleDateString()}</p>
-                      {user.last_sign_in && (
-                        <p>Last Sign In: {new Date(user.last_sign_in).toLocaleDateString()}</p>
-                      )}
-                    </div>
+            {syncResult.success ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold">{syncResult.totalUsers || 0}</div>
+                    <div className="text-sm text-muted-foreground">Total Users</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{syncResult.successCount || 0}</div>
+                    <div className="text-sm text-muted-foreground">Successful</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-red-600">{syncResult.errorCount || 0}</div>
+                    <div className="text-sm text-muted-foreground">Errors</div>
                   </div>
                 </div>
-              ))}
-            </div>
+                
+                {syncResult.results && syncResult.results.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-medium mb-2">Detailed Results:</h4>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {syncResult.results.map((result, index) => (
+                        <div
+                          key={index}
+                          className={`p-2 rounded text-sm ${
+                            result.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+                          }`}
+                        >
+                          <div className="font-medium">{result.email}</div>
+                          <div>
+                            {result.success 
+                              ? `${result.action || 'synced'} successfully`
+                              : `Error: ${result.error}`
+                            }
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-red-600">
+                <div className="font-medium">Sync Failed</div>
+                <div className="text-sm mt-1">{syncResult.error}</div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
     </div>
-  )
+  );
 }

@@ -1,0 +1,67 @@
+{
+  "summary": {
+    "total": 11,
+    "passed": 4,
+    "failed": 7,
+    "successRate": "36.4%",
+    "duration": "76.46s"
+  },
+  "details": [
+    {
+      "testName": "Database Connection",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "Daily.co Integration",
+      "success": false,
+      "details": ""
+    },
+    {
+      "testName": "Patient Magic Link Request",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "Therapist Magic Link Request",
+      "success": false,
+      "details": "invalid json response body at http://localhost:3000/api/auth/therapist/magic-link reason: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+    },
+    {
+      "testName": "Therapist Enrollment",
+      "success": false,
+      "details": "invalid json response body at http://localhost:3000/api/therapist/enroll reason: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+    },
+    {
+      "testName": "Get Available Therapists",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "Get Therapist Availability",
+      "success": false,
+      "details": ""
+    },
+    {
+      "testName": "Create Video Room",
+      "success": false,
+      "details": ""
+    },
+    {
+      "testName": "Get User Sessions",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "Get Upcoming Sessions",
+      "success": false,
+      "details": ""
+    },
+    {
+      "testName": "AI Session Processing",
+      "success": false,
+      "details": ""
+    }
+  ],
+  "timestamp": "2025-09-29T22:35:06.528Z"
+}

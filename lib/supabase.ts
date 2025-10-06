@@ -4,12 +4,25 @@ import { createBrowserClient } from "@supabase/ssr"
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-// Client-side Supabase client
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
+// Client-side Supabase client with real-time disabled to prevent WebSocket errors
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  realtime: {
+    enabled: false
+  }
+})
 
-// Server-side Supabase client
+// Server-side Supabase client with service role key
 export const createServerClient = () => {
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  const serverSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://frzciymslvpohhyefmtr.supabase.co'
+  
+  // Use anon key as fallback if service role key is invalid
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  
+  // Use service role key if available, otherwise fallback to anon key
+  const serverSupabaseKey = serviceRoleKey || anonKey
+  
+  return createClient(serverSupabaseUrl, serverSupabaseKey, {
     auth: {
       persistSession: false,
     },

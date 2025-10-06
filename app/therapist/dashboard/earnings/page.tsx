@@ -1,87 +1,117 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useTherapistUser } from "@/context/therapist-user-context"
+import { getTherapistDashboardData } from "@/lib/therapist-data"
 
 export default function TherapistEarningsPage() {
-  // Default data in case imports are not available during build
-  const therapistSummaryCards = [
-    {
-      title: "Total Earnings",
-      value: "₦122,500"
-    }
-  ]
+  const { therapistUser } = useTherapistUser()
+  const [dashboardData, setDashboardData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const earningsTransactions = [
-    {
-      id: "t1",
-      date: "2024-09-15",
-      description: "CBT Session - Sarah Johnson",
-      amount: 5000.00,
-      type: "credit"
-    },
-    {
-      id: "t2", 
-      date: "2024-09-14",
-      description: "Trauma Therapy - Michael Chen",
-      amount: 5000.00,
-      type: "credit"
-    },
-    {
-      id: "t3",
-      date: "2024-09-13", 
-      description: "Mindfulness Session - Lisa Wang",
-      amount: 5000.00,
-      type: "credit"
-    },
-    {
-      id: "t4",
-      date: "2024-09-12",
-      description: "Platform Fee",
-      amount: 500.00,
-      type: "debit"
-    }
-  ]
+  useEffect(() => {
+    const fetchEarningsData = async () => {
+      if (!therapistUser?.id) return
 
-  const mtd = therapistSummaryCards.find((c) => c.title.includes("Earnings"))?.value ?? "₦0"
+      try {
+        setLoading(true)
+        const data = await getTherapistDashboardData(therapistUser.id)
+        setDashboardData(data)
+      } catch (error) {
+        console.error('Error fetching earnings data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchEarningsData()
+  }, [therapistUser?.id])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold">Earnings</h2>
+        <div className="animate-pulse">
+          <div className="h-32 bg-gray-200 rounded"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    )
+  }
+
+  const earnings = dashboardData?.earnings || { thisMonth: 0, total: 0, transactions: [] }
+  const mtd = `₦${earnings.thisMonth.toLocaleString()}`
 
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Earnings</h2>
 
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle>Month-to-Date</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">{mtd}</div>
-          <p className="text-muted-foreground">Based on completed sessions this month.</p>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>This Month</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{mtd}</div>
+            <p className="text-muted-foreground">Based on completed sessions this month.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>Total Earnings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">₦{earnings.total.toLocaleString()}</div>
+            <p className="text-muted-foreground">All time earnings from completed sessions.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>Completed Sessions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{dashboardData?.therapist?.completedSessions || 0}</div>
+            <p className="text-muted-foreground">Total completed sessions.</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle>Transactions</CardTitle>
+          <CardTitle>Recent Transactions</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {earningsTransactions.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell>{t.date}</TableCell>
-                  <TableCell>{t.description}</TableCell>
-                  <TableCell className={`text-right ${t.type === "debit" ? "text-red-600" : "text-green-600"}`}>
-                    {t.type === "debit" ? "-" : "+"}₦{t.amount.toLocaleString()}
-                  </TableCell>
+          {earnings.transactions.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {earnings.transactions.map((t: any) => (
+                  <TableRow key={t.id}>
+                    <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{t.description}</TableCell>
+                    <TableCell className="text-right text-green-600">
+                      +₦{t.amount.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No completed sessions yet.</p>
+              <p className="text-sm">Earnings will appear here once you complete sessions.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

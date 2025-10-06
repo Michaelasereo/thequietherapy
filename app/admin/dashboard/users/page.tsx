@@ -45,13 +45,17 @@ export default function UsersPage() {
       const response = await fetch('/api/admin/users')
       if (response.ok) {
         const data = await response.json()
-        setUsers(data)
+        // Handle the new API response structure
+        const usersData = data.users || data || []
+        setUsers(Array.isArray(usersData) ? usersData : [])
       } else {
         toast.error('Failed to fetch users')
+        setUsers([]) // Ensure users is always an array
       }
     } catch (error) {
       console.error('Error fetching users:', error)
       toast.error('Error loading users')
+      setUsers([]) // Ensure users is always an array
     } finally {
       setLoading(false)
     }
@@ -154,23 +158,23 @@ export default function UsersPage() {
   }
 
   // Filter users based on search and filters
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = Array.isArray(users) ? users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesUserType = userTypeFilter === "all" || user.user_type === userTypeFilter
     const matchesStatus = statusFilter === "all" || user.status === statusFilter
     
     return matchesSearch && matchesUserType && matchesStatus
-  })
+  }) : []
 
   const userStats = {
-    total: users.length,
-    users: users.filter(u => u.user_type === 'user').length,
-    therapists: users.filter(u => u.user_type === 'therapist').length,
-    partners: users.filter(u => u.user_type === 'partner').length,
-    admins: users.filter(u => u.user_type === 'admin').length,
-    active: users.filter(u => u.is_active).length,
-    verified: users.filter(u => u.is_verified).length
+    total: Array.isArray(users) ? users.length : 0,
+    users: Array.isArray(users) ? users.filter(u => u.user_type === 'user').length : 0,
+    therapists: Array.isArray(users) ? users.filter(u => u.user_type === 'therapist').length : 0,
+    partners: Array.isArray(users) ? users.filter(u => u.user_type === 'partner').length : 0,
+    admins: Array.isArray(users) ? users.filter(u => u.user_type === 'admin').length : 0,
+    active: Array.isArray(users) ? users.filter(u => u.is_active).length : 0,
+    verified: Array.isArray(users) ? users.filter(u => u.is_verified).length : 0
   }
 
   if (loading) {

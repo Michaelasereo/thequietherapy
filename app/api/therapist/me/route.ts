@@ -1,10 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { SessionManager } from '@/lib/session-manager'
 
 export async function GET(request: NextRequest) {
   console.log('🔍 GET /therapist/me called')
   
   try {
+    // Try unified session first
+    const unifiedSession = await SessionManager.getSessionFromRequest(request)
+    
+    if (unifiedSession && unifiedSession.role === 'therapist') {
+      console.log('✅ Using unified session for therapist:', unifiedSession.email)
+      
+      // Get therapist enrollment data
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      
+      const { data: therapistData, error: therapistError } = await supabase
+        .from('therapist_enrollments')
+        .select('*')
+        .eq('email', unifiedSession.email)
+        .single()
+
+      if (therapistError || !therapistData) {
+        console.log('❌ Therapist enrollment not found:', therapistError?.message)
+        return NextResponse.json({ error: 'Therapist profile not found' }, { status: 404 })
+      }
+
+      const responseData = {
+        success: true,
+        therapist: {
+          id: therapistData.id,
+          email: therapistData.email,
+          full_name: therapistData.full_name,
+          phone: therapistData.phone,
+          specialization: therapistData.specialization,
+          languages: therapistData.languages,
+          status: therapistData.status,
+          is_active: therapistData.is_active,
+          hourly_rate: therapistData.hourly_rate,
+          bio: therapistData.bio
+        }
+      }
+
+      console.log('✅ Returning therapist data from unified session:', responseData)
+      return NextResponse.json(responseData)
+    }
+    
+    // Fallback to old session system
+    console.log('🔍 No unified session found, trying old session system...')
+    
     // Get session token from cookie
     const cookieHeader = request.headers.get('cookie')
     console.log('🔍 Cookie header:', cookieHeader)
@@ -25,19 +72,19 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Parsed cookies:', cookies)
 
-    const trpiTherapistUserCookie = cookies['trpi_therapist_user']
-    if (!trpiTherapistUserCookie) {
-      console.log('❌ No trpi_therapist_user cookie found')
+    const quietTherapistUserCookie = cookies['quiet_therapist_user']
+    if (!quietTherapistUserCookie) {
+      console.log('❌ No quiet_therapist_user cookie found')
       console.log('🔍 Available cookies:', Object.keys(cookies))
       return NextResponse.json({ error: 'No session found' }, { status: 401 })
     }
 
-    console.log('🔍 Found trpi_therapist_user cookie:', trpiTherapistUserCookie)
+    console.log('🔍 Found quiet_therapist_user cookie:', quietTherapistUserCookie)
 
     let userData
     try {
       // Handle both URL-encoded and plain JSON
-      const decodedCookie = decodeURIComponent(trpiTherapistUserCookie)
+      const decodedCookie = decodeURIComponent(quietTherapistUserCookie)
       console.log('🔍 Decoded cookie:', decodedCookie)
       userData = JSON.parse(decodedCookie)
       console.log('🔍 Parsed user data:', userData)

@@ -11,6 +11,7 @@ interface TherapistData {
   license_number: string
   is_verified: boolean
   is_active: boolean
+  availability_approved: boolean
   rating: number
   total_sessions: number
   total_clients: number
@@ -176,6 +177,7 @@ type TherapistDashboardAction =
   | { type: 'SET_THERAPIST'; payload: TherapistData }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'REFETCH_THERAPIST_DATA' }
   | { type: 'UPDATE_STATS'; payload: Partial<TherapistStats> }
   | { type: 'SET_CLIENTS'; payload: Client[] }
   | { type: 'SET_SESSIONS'; payload: { upcoming: TherapistSession[]; past: TherapistSession[] } }
@@ -262,6 +264,9 @@ function therapistDashboardReducer(state: TherapistDashboardState, action: Thera
     
     case 'SET_ERROR':
       return { ...state, error: action.payload, isLoading: false }
+    
+    case 'REFETCH_THERAPIST_DATA':
+      return { ...state, isLoading: true }
     
     case 'UPDATE_STATS':
       return { ...state, stats: { ...state.stats, ...action.payload } }
@@ -440,6 +445,7 @@ interface TherapistDashboardContextType {
   dispatch: React.Dispatch<TherapistDashboardAction>
   // Helper functions
   fetchTherapistData: () => Promise<void>
+  refetchTherapistData: () => Promise<void>
   fetchClients: () => Promise<void>
   fetchSessions: () => Promise<void>
   fetchStats: () => Promise<void>
@@ -478,12 +484,19 @@ export function TherapistDashboardProvider({ children }: { children: React.React
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
       
-      // Fetch therapist data from API
-      const response = await fetch('/api/therapist/profile')
+      // Fetch therapist data from API with cache busting
+      const response = await fetch('/api/therapist/profile', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.therapist) {
-          dispatch({ type: 'SET_THERAPIST', payload: data.therapist })
+        if (data.success && data.data && data.data.therapist) {
+          console.log('🔍 Context: Setting therapist data:', data.data.therapist)
+          console.log('🔍 Context: availability_approved value:', data.data.therapist.availability_approved)
+          dispatch({ type: 'SET_THERAPIST', payload: data.data.therapist })
         } else {
           dispatch({ type: 'SET_ERROR', payload: data.error || 'Failed to load therapist data' })
         }
@@ -493,6 +506,43 @@ export function TherapistDashboardProvider({ children }: { children: React.React
     } catch (error) {
       console.error('Error fetching therapist data:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load therapist data' })
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false })
+    }
+  }, [dispatch])
+
+  // Refetch therapist data (for cache invalidation)
+  const refetchTherapistData = useCallback(async () => {
+    console.log('🔄 Context: Manually refetching therapist data...')
+    try {
+      dispatch({ type: 'REFETCH_THERAPIST_DATA' })
+      
+      // Re-use the same logic as fetchTherapistData but with explicit cache busting
+      const response = await fetch('/api/therapist/profile', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data && data.data.therapist) {
+          console.log('🔄 Context: Refetched data:', data.data.therapist)
+          console.log('🔄 Context: availability_approved value:', data.data.therapist.availability_approved)
+          dispatch({ type: 'SET_THERAPIST', payload: data.data.therapist })
+        } else {
+          console.error('🔄 Context: Failed to refetch - invalid response:', data)
+          dispatch({ type: 'SET_ERROR', payload: data.error || 'Failed to refetch therapist data' })
+        }
+      } else {
+        console.error('🔄 Context: Failed to refetch - HTTP error:', response.status)
+        dispatch({ type: 'SET_ERROR', payload: 'Failed to refetch therapist data' })
+      }
+    } catch (error) {
+      console.error('🔄 Context: Failed to refetch therapist data:', error)
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to refetch therapist data' })
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false })
     }
@@ -626,6 +676,21 @@ export function TherapistDashboardProvider({ children }: { children: React.React
     fetchTherapistData()
   }, [])
 
+  // Listen for global refresh events
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      console.log('🔄 Context: Received global refresh event')
+      refetchTherapistData()
+    }
+
+    // Listen for custom events
+    window.addEventListener('therapist-data-refresh', handleGlobalRefresh)
+    
+    return () => {
+      window.removeEventListener('therapist-data-refresh', handleGlobalRefresh)
+    }
+  }, [refetchTherapistData])
+
   useEffect(() => {
     if (state.therapist) {
       fetchClients()
@@ -638,6 +703,7 @@ export function TherapistDashboardProvider({ children }: { children: React.React
     state,
     dispatch,
     fetchTherapistData,
+    refetchTherapistData,
     fetchClients,
     fetchSessions,
     fetchStats,

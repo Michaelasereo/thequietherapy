@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     console.log('📧 Testing email sending to:', email)
 
     // Test email sending
-    const testUrl = 'http://localhost:3000/api/auth/verify-magic-link?token=test-token&auth_type=individual'
+    const testUrl = 'http://localhost:3001/api/auth/verify-magic-link?token=test-token&auth_type=individual'
     const result = await sendMagicLinkEmail(email, testUrl, 'login', { user_type: 'individual' })
 
     if (result.success) {

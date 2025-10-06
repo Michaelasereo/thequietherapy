@@ -4,8 +4,16 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
-import { navLinks } from "@/lib/data"
 import { Logo } from "@/components/ui/logo"
+
+// Navigation links - moved from lib/data.ts
+const navLinks = [
+  { name: "Therapy", href: "#therapy" },
+  { name: "Campaigns", href: "/campaigns" },
+  { name: "About Us", href: "#about" },
+  { name: "FAQs", href: "/faqs" },
+  { name: "Articles", href: "/articles" },
+]
 
 export default function LandingNavbar() {
   return (
@@ -34,7 +42,7 @@ export default function LandingNavbar() {
         </nav>
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" className="hidden md:inline-flex text-gray-600 hover:text-black hover:bg-gray-50 rounded-xl">
-            <Link href="/signup">Get Started</Link>
+            <Link href="/login?user_type=individual">Get Started</Link>
           </Button>
           <Button asChild className="bg-black text-white hover:bg-gray-800 rounded-xl border border-white">
             <Link href="/book-session">Book a Session</Link>
@@ -53,7 +61,7 @@ export default function LandingNavbar() {
                     {link.name}
                   </Link>
                 ))}
-                <Link href="/signup" className="text-lg font-semibold">
+                <Link href="/login?user_type=individual" className="text-lg font-semibold">
                   Get Started
                 </Link>
                 <Link href="/book-session" className="text-lg font-semibold">

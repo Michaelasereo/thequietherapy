@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,7 @@ import { useRouter } from 'next/navigation';
 import PendingVerificationsCard from '@/components/admin/pending-verifications-card';
 // Data fetching functions moved to API routes
 
-export default function AdminDashboardPage() {
+const AdminDashboardPage = memo(function AdminDashboardPage() {
   const { adminInfo, userStats, systemHealth, revenueStats, fetchAdminData, fetchSystemUsers, fetchSystemStats, fetchSystemSettings } = useAdminData();
   const { addSystemAlert } = useAdminNotificationState();
   const { broadcastSystemAlert } = useCrossDashboardBroadcast();
@@ -63,13 +63,13 @@ export default function AdminDashboardPage() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Fetch real data on component mount
+  // Fetch real data on component mount - only once
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Fetch all data in parallel using API routes
+        // Fetch all data in parallel using API routes with no-cache
         const [
           summaryResponse,
           activitiesResponse,
@@ -78,12 +78,12 @@ export default function AdminDashboardPage() {
           revenueResponse,
           healthResponse
         ] = await Promise.all([
-          fetch('/api/admin/summary'),
-          fetch('/api/admin/recent-activities'),
-          fetch('/api/admin/pending-verifications'),
-          fetch('/api/admin/platform-stats'),
-          fetch('/api/admin/revenue-data'),
-          fetch('/api/admin/system-health')
+          fetch('/api/admin/summary', { cache: 'no-cache' }),
+          fetch('/api/admin/recent-activities', { cache: 'no-cache' }),
+          fetch('/api/admin/pending-verifications', { cache: 'no-cache' }),
+          fetch('/api/admin/platform-stats', { cache: 'no-cache' }),
+          fetch('/api/admin/revenue-data', { cache: 'no-cache' }),
+          fetch('/api/admin/system-health', { cache: 'no-cache' })
         ]);
 
         const summaryData = await summaryResponse.json();
@@ -93,10 +93,19 @@ export default function AdminDashboardPage() {
         const revenueDataResult = await revenueResponse.json();
         const healthData = await healthResponse.json();
 
-        setAdminSummary(summaryData);
-        setRecentActivities(activitiesData);
-        setPendingVerifications(verificationsData);
-        setPlatformStats(statsData);
+        // Only update state if API calls were successful
+        if (summaryResponse.ok && summaryData && !summaryData.error) {
+          setAdminSummary(summaryData);
+        }
+        if (activitiesResponse.ok && activitiesData && !activitiesData.error) {
+          setRecentActivities(activitiesData);
+        }
+        if (verificationsResponse.ok && verificationsData && !verificationsData.error) {
+          setPendingVerifications(verificationsData);
+        }
+        if (statsResponse.ok && statsData && !statsData.error) {
+          setPlatformStats(statsData);
+        }
         setRevenueData(revenueDataResult);
         setLocalSystemHealth(healthData);
 
@@ -109,7 +118,7 @@ export default function AdminDashboardPage() {
     };
 
     fetchData();
-  }, [addSystemAlert]);
+  }, []); // Empty dependency array to ensure it only runs once
 
   const handleSystemMaintenance = (maintenanceMode: boolean) => {
     // Update local state
@@ -158,21 +167,30 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-6 w-full">
-      <div>
-        <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Platform overview and management</p>
+    <div className="grid gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold text-foreground">
+              Welcome, {adminInfo?.name || adminInfo?.email?.split('@')[0] || 'Admin'}
+            </h1>
+            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-md">
+              Admin
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">Platform overview and management</p>
+        </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+      {/* Summary Cards - Consistent with other dashboards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adminSummary.totalUsers.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(adminSummary?.totalUsers || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Registered platform users</p>
           </CardContent>
         </Card>
@@ -182,7 +200,7 @@ export default function AdminDashboardPage() {
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adminSummary.totalTherapists.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(adminSummary?.totalTherapists || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Verified therapists</p>
           </CardContent>
         </Card>
@@ -192,7 +210,7 @@ export default function AdminDashboardPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adminSummary.totalPartners.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(adminSummary?.totalPartners || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Partner institutions</p>
           </CardContent>
         </Card>
@@ -202,21 +220,17 @@ export default function AdminDashboardPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adminSummary.totalSessions.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(adminSummary?.totalSessions || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Completed sessions</p>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Second Row Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Verifications</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adminSummary.pendingVerifications.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(adminSummary?.pendingVerifications || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Awaiting approval</p>
           </CardContent>
         </Card>
@@ -236,7 +250,7 @@ export default function AdminDashboardPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adminSummary.activeSessions.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(adminSummary?.activeSessions || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Currently ongoing</p>
           </CardContent>
         </Card>
@@ -253,7 +267,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Platform Stats and Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Platform Statistics */}
         <Card className="shadow-sm">
           <CardHeader>
@@ -263,7 +277,7 @@ export default function AdminDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Daily Active Users</div>
                 <div className="text-2xl font-bold">{platformStats.dailyActiveUsers.toLocaleString()}</div>
@@ -279,6 +293,36 @@ export default function AdminDashboardPage() {
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Therapist Retention</div>
                 <div className="text-2xl font-bold">{platformStats.therapistRetentionRate}%</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* System Health Overview */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              System Health
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">Uptime</div>
+                <div className="text-2xl font-bold">{localSystemHealth.uptime}%</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">Response Time</div>
+                <div className="text-2xl font-bold">{localSystemHealth.responseTime}ms</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">Error Rate</div>
+                <div className="text-2xl font-bold">{localSystemHealth.errorRate}%</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">Server Load</div>
+                <div className="text-2xl font-bold">{localSystemHealth.serverLoad}%</div>
               </div>
             </div>
           </CardContent>
@@ -368,4 +412,6 @@ export default function AdminDashboardPage() {
       </Card>
     </div>
   )
-}
+})
+
+export default AdminDashboardPage

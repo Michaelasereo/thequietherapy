@@ -144,10 +144,10 @@ export default function FAQsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Frequently Asked Questions
+              Online Therapy & Mental Health FAQs
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Find answers to common questions about Quiet and our mental health services
+              Get answers to common questions about online therapy, mental health counseling, and our licensed therapist services
             </p>
           </div>
         </div>

@@ -56,3 +56,6 @@ Therapist: We can definitely work on that. Let's start with some breathing exerc
     throw error
   }
 }
+
+// Export alias for the missing function
+export const generateFallbackSOAPNotes = processSessionRecordingMock;

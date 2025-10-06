@@ -1,7 +1,14 @@
 import type React from "react"
 import Link from "next/link"
 import { Logo } from "@/components/ui/logo"
-import { navLinks } from "@/lib/data"
+// Navigation links - moved from lib/data.ts
+const navLinks = [
+  { name: "Therapy", href: "#therapy" },
+  { name: "Campaigns", href: "/campaigns" },
+  { name: "About Us", href: "#about" },
+  { name: "FAQs", href: "/faqs" },
+  { name: "Articles", href: "/articles" },
+]
 
 export default function Footer() {
   return (

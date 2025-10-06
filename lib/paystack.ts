@@ -1,14 +1,21 @@
 // Server-side Paystack functions (only import on server)
-let paystack: any = null;
+if (typeof window !== 'undefined') {
+  throw new Error('Paystack module must only be imported on the server');
+}
 
-// Only initialize Paystack on server-side
-if (typeof window === 'undefined') {
-  try {
-    const Paystack = require('paystack');
-    paystack = Paystack(process.env.PAYSTACK_SECRET_KEY || '');
-  } catch (error) {
-    console.warn('Paystack library not available on client-side');
-  }
+// Enforce required secrets
+if (!process.env.PAYSTACK_SECRET_KEY) {
+  throw new Error('PAYSTACK_SECRET_KEY environment variable is required');
+}
+
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
+
+let paystack: any = null;
+try {
+  const Paystack = require('paystack');
+  paystack = Paystack(PAYSTACK_SECRET_KEY);
+} catch (error) {
+  throw new Error('Paystack initialization failed');
 }
 
 export interface PaymentData {
@@ -39,11 +46,6 @@ export const CREDIT_PACKAGES: CreditPackage[] = userCreditPackages.map(pkg => ({
 }));
 
 export async function initializePayment(data: PaymentData) {
-  // Only run on server-side
-  if (typeof window !== 'undefined') {
-    throw new Error('initializePayment can only be called on server-side');
-  }
-
   if (!paystack) {
     throw new Error('Paystack not initialized');
   }
@@ -62,20 +64,12 @@ export async function initializePayment(data: PaymentData) {
       data: response.data
     };
   } catch (error) {
-    console.error('Paystack initialization error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Payment initialization failed'
-    };
+    const msg = error instanceof Error ? error.message : 'Payment initialization failed';
+    throw new Error(`PAYSTACK_INIT_ERROR: ${msg}`);
   }
 }
 
 export async function verifyPayment(reference: string) {
-  // Only run on server-side
-  if (typeof window !== 'undefined') {
-    throw new Error('verifyPayment can only be called on server-side');
-  }
-
   if (!paystack) {
     throw new Error('Paystack not initialized');
   }
@@ -85,14 +79,12 @@ export async function verifyPayment(reference: string) {
     
     return {
       success: true,
-      data: response.data
+      data: response.data,
+      isSuccessful: response.data.status === 'success'
     };
   } catch (error) {
-    console.error('Paystack verification error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Payment verification failed'
-    };
+    const msg = error instanceof Error ? error.message : 'Payment verification failed';
+    throw new Error(`PAYSTACK_VERIFY_ERROR: ${msg}`);
   }
 }
 

@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Set session cookie
-    response.cookies.set('trpi_user_session', sessionToken, {
+    response.cookies.set('quiet_user_session', sessionToken, {
       httpOnly: true,
       secure: false, // false for localhost
       maxAge: 24 * 60 * 60, // 24 hours
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       cookieData.package_type = user.package_type;
     }
 
-    response.cookies.set('trpi_user', JSON.stringify(cookieData), {
+    response.cookies.set('quiet_user', JSON.stringify(cookieData), {
       httpOnly: false, // accessible by frontend
       secure: false,
       maxAge: 24 * 60 * 60,

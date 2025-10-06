@@ -36,7 +36,16 @@ export async function GET(request: NextRequest) {
     
     let authUserId = userId
     
-    if (existingAuthUser.users) {
+    if (checkError) {
+      console.error('❌ Error checking auth users:', checkError)
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Failed to check user authentication',
+        details: checkError.message 
+      }, { status: 500 })
+    }
+    
+    if (existingAuthUser?.users) {
       const existingUser = existingAuthUser.users.find(user => user.email === userData.email)
       if (existingUser) {
         console.log('User found in auth.users by email:', existingUser.id)
@@ -107,7 +116,16 @@ export async function POST(request: NextRequest) {
     
     let authUserId = userId
     
-    if (existingAuthUser.users) {
+    if (checkError) {
+      console.error('❌ Error checking auth users:', checkError)
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Failed to check user authentication',
+        details: checkError.message 
+      }, { status: 500 })
+    }
+    
+    if (existingAuthUser?.users) {
       const existingUser = existingAuthUser.users.find(user => user.email === userData.email)
       if (existingUser) {
         console.log('User found in auth.users by email:', existingUser.id)

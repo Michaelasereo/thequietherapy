@@ -21,25 +21,33 @@ export default function CreditsPage() {
     {
       id: "basic",
       name: "Basic Package",
-      credits: 5,
-      price: 50,
+      credits: 1,
+      price: 5000,
       savings: 0,
       popular: false
     },
     {
       id: "standard",
       name: "Standard Package",
-      credits: 12,
-      price: 100,
-      savings: 20,
+      credits: 3,
+      price: 14000,
+      savings: 1000,
       popular: true
     },
     {
       id: "premium",
       name: "Premium Package",
-      credits: 25,
-      price: 180,
-      savings: 50,
+      credits: 5,
+      price: 22500,
+      savings: 2500,
+      popular: false
+    },
+    {
+      id: "family",
+      name: "Family Package",
+      credits: 10,
+      price: 42500,
+      savings: 7500,
       popular: false
     }
   ]
@@ -48,19 +56,22 @@ export default function CreditsPage() {
   useEffect(() => {
     const fetchUserCredits = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data, error } = await supabase
-            .from('global_users')
-            .select('credits')
-            .eq('id', user.id)
-            .single()
-
-          if (error) {
-            console.error('Error fetching user credits:', error)
-            setUserCredits(0)
+        console.log('🔍 Credits page: Fetching user credits...')
+        const response = await fetch('/api/credits/user')
+        console.log('🔍 Credits page: Response status:', response.status)
+        
+        if (!response.ok) {
+          console.warn('Credits API not available, assuming no credits')
+          setUserCredits(0)
+        } else {
+          const creditsData = await response.json()
+          console.log('🔍 Credits page: Credits data received:', creditsData)
+          
+          if (creditsData.success) {
+            setUserCredits(creditsData.data.total_credits || 0)
           } else {
-            setUserCredits(data?.credits || 0)
+            console.warn('Failed to fetch credits, assuming no credits:', creditsData)
+            setUserCredits(0)
           }
         }
       } catch (error) {
@@ -92,7 +103,7 @@ export default function CreditsPage() {
 
     if (isCustomAmount && customAmount) {
       amount = parseFloat(customAmount)
-      credits = Math.floor(amount / 10) // 1 credit = $10
+      credits = Math.floor(amount / 5000) // 1 credit = ₦5000
     } else if (selectedPackage) {
       const pkg = creditPackages.find(p => p.id === selectedPackage)
       if (pkg) {
@@ -111,10 +122,10 @@ export default function CreditsPage() {
     }
 
     // Here you would integrate with your payment system
-    toast({
-      title: "Processing Payment",
-      description: `Processing payment for ${credits} credits ($${amount.toFixed(2)})`,
-    })
+      toast({
+        title: "Processing Payment",
+        description: `Processing payment for ${credits} credits (₦${amount.toLocaleString()})`,
+      })
 
     // Simulate payment processing and update credits
     setTimeout(async () => {
@@ -137,7 +148,7 @@ export default function CreditsPage() {
             setUserCredits(prev => prev + credits)
             toast({
               title: "Payment Successful! 🎉",
-              description: `You've purchased ${credits} credits for $${amount.toFixed(2)}`,
+              description: `You've purchased ${credits} credits for ₦${amount.toLocaleString()}`,
             })
           }
         }
@@ -262,7 +273,7 @@ export default function CreditsPage() {
       <div className="flex justify-center">
         <Button 
           onClick={handlePurchase}
-          disabled={!selectedPackage && (!customAmount || parseFloat(customAmount) < 10)}
+          disabled={!selectedPackage && (!customAmount || parseFloat(customAmount) < 5000)}
           className="px-8 py-3"
         >
           <CreditCard className="mr-2 h-4 w-4" />

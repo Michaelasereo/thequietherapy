@@ -23,7 +23,23 @@ export async function GET(request: Request) {
       .eq('user_type', 'partner')
       .single()
 
-    if (partnerError) throw partnerError
+    if (partnerError) {
+      console.log('Partner not found, returning default data:', partnerError.message)
+      return NextResponse.json({
+        partner: null,
+        summary: {
+          totalCreditsPurchased: 0,
+          creditsRemaining: 0,
+          activeMembers: 0,
+          totalSessionsBooked: 0
+        },
+        recentActivity: {
+          latestMembers: [],
+          latestPurchases: [],
+          recentUsage: []
+        }
+      })
+    }
 
     // Fetch partner members (users associated with this partner)
     const { data: members, error: membersError } = await supabase

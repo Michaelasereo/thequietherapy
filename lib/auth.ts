@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import { sendMagicLinkEmail } from './email';
-import { syncUserToSupabaseAuth } from './supabase-auth-sync';
+import { syncUserToSupabaseAuth, createUserWithSupabaseAuth } from './supabase-auth-sync';
+import { RateLimiter } from './rate-limit';
+import { AuditLogger } from './audit-logger';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -27,6 +29,24 @@ export interface SessionData {
   ip_address?: string;
 }
 
+/**
+ * Get magic link expiry based on user email domain
+ * Healthcare workers get 15 minutes for security
+ * Regular users get 24 hours for convenience
+ */
+function getMagicLinkExpiry(email: string): number {
+  const healthcareDomains = ['@clinic.', '@hospital.', '@health.', '@medical.', '.med', '.health']
+  const isHealthcareUser = healthcareDomains.some(domain => email.toLowerCase().includes(domain))
+  
+  if (isHealthcareUser) {
+    console.log('🏥 Healthcare user detected, using 15-minute magic link expiry')
+    return 15 * 60 * 1000 // 15 minutes for healthcare workers
+  }
+  
+  console.log('👤 Regular user, using 24-hour magic link expiry')
+  return 24 * 60 * 60 * 1000 // 24 hours for regular users
+}
+
 // Unified function to create magic link for any auth type
 export async function createMagicLinkForAuthType(
   email: string, 
@@ -37,8 +57,21 @@ export async function createMagicLinkForAuthType(
   console.log('🔑 createMagicLinkForAuthType called:', { email, authType, type, metadata })
   
   try {
+    // Rate limiting check - 10 magic links per hour per email
+    const rateLimitAllowed = await RateLimiter.checkMagicLinkRequest(email)
+    if (!rateLimitAllowed) {
+      console.warn('⚠️ Rate limit exceeded for magic link request:', email)
+      await AuditLogger.logRateLimitExceeded(email, 'magic_link_request', {
+        email,
+        authType,
+        type
+      })
+      return { success: false, error: 'Too many requests. Please try again in an hour.' }
+    }
+
     const token = randomUUID()
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    const expiryDuration = getMagicLinkExpiry(email)
+    const expiresAt = new Date(Date.now() + expiryDuration)
 
     console.log('✅ Token created:', { 
       token: token.substring(0, 8) + '...', 
@@ -77,6 +110,15 @@ export async function createMagicLinkForAuthType(
       console.log('⚠️ Magic link created but email failed to send. Token:', token.substring(0, 8) + '...')
     } else {
       console.log('✅ Magic link email sent successfully')
+      
+      // Audit log: Magic link sent
+      await AuditLogger.logMagicLinkSent(email, {
+        email,
+        authType,
+        type,
+        expiryDuration: expiryDuration / 1000 / 60, // minutes
+        expiresAt: expiresAt.toISOString()
+      })
     }
 
     return { success: true, token }
@@ -91,6 +133,17 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
   console.log('🔍 verifyMagicLinkForAuthType called with token:', token.substring(0, 8) + '...', 'authType:', authType)
   
   try {
+    // Rate limiting check - 3 attempts per token
+    const rateLimitAllowed = await RateLimiter.checkMagicLinkVerification(token)
+    if (!rateLimitAllowed) {
+      console.warn('⚠️ Rate limit exceeded for magic link verification')
+      await AuditLogger.logRateLimitExceeded(token, 'magic_link_verify', {
+        token: token.substring(0, 8) + '...',
+        authType
+      })
+      return { success: false, error: 'Too many verification attempts. Please request a new magic link.' }
+    }
+
     // Find the magic link
     console.log('🔍 Looking up magic link in database...')
     const { data: magicLink, error: magicLinkError } = await supabase
@@ -103,11 +156,21 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
 
     if (magicLinkError) {
       console.error('❌ Magic link lookup error:', magicLinkError)
+      await AuditLogger.logMagicLinkVerification(null, false, {
+        token: token.substring(0, 8) + '...',
+        authType,
+        error_message: 'Database lookup error'
+      })
       return { success: false, error: 'Invalid or expired magic link' }
     }
 
     if (!magicLink) {
       console.log('❌ Magic link not found or already used')
+      await AuditLogger.logMagicLinkVerification(null, false, {
+        token: token.substring(0, 8) + '...',
+        authType,
+        error_message: 'Magic link not found or already used'
+      })
       return { success: false, error: 'Invalid or expired magic link' }
     }
 
@@ -125,19 +188,28 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
     
     if (expiresAt < now) {
       console.log('❌ Magic link expired')
-      return { success: false, error: 'Magic link has expired' }
+      return { success: false, error: 'Magic link has expired. Please request a new one.' }
     }
 
-    // Mark magic link as used
-    const { error: updateError } = await supabase
+    // Mark magic link as used with atomic update to prevent race condition
+    // This ensures only ONE request can mark it as used
+    const { data: updatedLink, error: updateError } = await supabase
       .from('magic_links')
-      .update({ used_at: now.toISOString() })
+      .update({ 
+        used_at: now.toISOString(),
+        updated_at: now.toISOString()
+      })
       .eq('id', magicLink.id)
+      .is('used_at', null) // Critical: Only update if still unused
+      .select()
+      .single()
 
-    if (updateError) {
-      console.error('❌ Error marking magic link as used:', updateError)
-      // Don't fail the verification if this fails
+    if (updateError || !updatedLink) {
+      console.error('❌ Magic link already used or update failed:', updateError)
+      return { success: false, error: 'Magic link already used or expired. Please request a new one.' }
     }
+    
+    console.log('✅ Magic link marked as used atomically')
 
     // Get or create user
     console.log('🔍 Getting or creating user...')
@@ -156,48 +228,33 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
 
     // If user doesn't exist and this is a signup, create them
     if (!user && magicLink.type === 'signup') {
-      console.log('👤 Creating new user...')
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert({
-          email: magicLink.email,
-          full_name: magicLink.metadata?.first_name || magicLink.email.split('@')[0],
-          user_type: authType,
-          is_verified: true,
-          is_active: true,
-          credits: 0,
-          package_type: 'free'
-        })
-        .select()
-        .single()
+      console.log('👤 Creating new user with Supabase Auth sync...')
+      
+      const createResult = await createUserWithSupabaseAuth({
+        email: magicLink.email,
+        full_name: magicLink.metadata?.first_name || magicLink.email.split('@')[0],
+        user_type: authType
+      })
 
-      if (createError) {
-        console.error('❌ Error creating user:', createError)
+      if (!createResult.success) {
+        console.error('❌ Error creating user with Supabase Auth sync:', createResult.error)
         return { success: false, error: 'Error creating user account' }
       }
 
-      finalUser = newUser
-      console.log('✅ New user created:', finalUser.id)
+      // Get the created user from database
+      const { data: newUser, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', createResult.user_id)
+        .single()
 
-      // Sync user to Supabase auth for dashboard visibility
-      console.log('🔄 Syncing new user to Supabase auth...')
-      const syncResult = await syncUserToSupabaseAuth({
-        email: finalUser.email,
-        full_name: finalUser.full_name,
-        user_type: finalUser.user_type,
-        phone: finalUser.phone,
-        metadata: {
-          custom_user_id: finalUser.id,
-          created_at: finalUser.created_at
-        }
-      })
-
-      if (syncResult.success) {
-        console.log('✅ User synced to Supabase auth:', syncResult.auth_user_id)
-      } else {
-        console.warn('⚠️ Failed to sync user to Supabase auth:', syncResult.error)
-        // Don't fail the entire login process if sync fails
+      if (fetchError || !newUser) {
+        console.error('❌ Error fetching newly created user:', fetchError)
+        return { success: false, error: 'Error accessing new user account' }
       }
+
+      finalUser = newUser
+      console.log('✅ New user created with Supabase Auth sync:', finalUser.id)
     } else if (!user && magicLink.type === 'login') {
       console.log('❌ User not found for login')
       return { success: false, error: 'User account not found. Please sign up first.' }
@@ -239,16 +296,34 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
 
     console.log('✅ Session created and stored in database')
 
-    // Update user's last login
+    // Update user's last login and mark as verified
     await supabase
       .from('users')
-      .update({ last_login_at: now.toISOString() })
+      .update({ 
+        last_login_at: now.toISOString(),
+        is_verified: true  // Mark user as verified after successful magic link verification
+      })
       .eq('id', finalUser.id)
+
+    // Audit log: Successful magic link verification
+    await AuditLogger.logMagicLinkVerification(finalUser.id, true, {
+      email: finalUser.email,
+      authType,
+      magicLinkType: magicLink.type
+    })
+
+    // Audit log: Login success
+    await AuditLogger.logLoginSuccess(finalUser.id, {
+      email: finalUser.email,
+      authType,
+      loginMethod: 'magic_link'
+    })
 
     return {
       success: true,
       user: {
         ...finalUser,
+        is_verified: true,  // Ensure the returned user object reflects verified status
         session_token: sessionToken
       }
     }

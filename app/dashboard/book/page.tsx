@@ -12,12 +12,13 @@ import BookingStep1 from "@/components/booking-step-1"
 import BookingStep2 from "@/components/booking-step-2"
 import BookingStep3 from "@/components/booking-step-3"
 import { usePatientData } from "@/hooks/usePatientData"
+import { useAuth } from "@/context/auth-context"
 
 // Types for the booking data
 interface PatientBiodata {
   firstName: string
   email: string
-  phone: string
+  phone?: string
   country: string
   complaints: string
   age: string
@@ -30,6 +31,7 @@ interface PatientBiodata {
 export default function DashboardBookingPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { user } = useAuth()
   const { biodata, loading, errors, refreshBiodata } = usePatientData()
   const [currentStep, setCurrentStep] = useState(1)
   const [patientData, setPatientData] = useState<PatientBiodata>({
@@ -45,6 +47,7 @@ export default function DashboardBookingPage() {
     therapistSpecializationPreference: "no-preference",
   })
   const [selectedTherapistId, setSelectedTherapistId] = useState<string>("")
+  const [selectedTherapistData, setSelectedTherapistData] = useState<any>(null)
   const [showBiodataPrompt, setShowBiodataPrompt] = useState(false)
 
   const stepLabels = ["Contact Info", "Select Therapist", "Payment"]
@@ -54,15 +57,26 @@ export default function DashboardBookingPage() {
     refreshBiodata()
   }, [refreshBiodata])
 
-  // Auto-fill patient data from biodata when available
+  // Auto-fill patient data from user signup data and biodata when available
   useEffect(() => {
+    // First, pre-fill with user's signup data (name and email)
+    if (user) {
+      setPatientData(prev => ({
+        ...prev,
+        firstName: user.full_name || "",
+        email: user.email || "",
+      }))
+    }
+
+    // Then, if biodata is available, use it to fill additional fields
     if (biodata) {
-      const hasContactInfo = biodata.firstName && biodata.email && biodata.phone && biodata.country
+      const hasContactInfo = biodata.firstName && biodata.email && biodata.country
       
       if (hasContactInfo) {
-        setPatientData({
-          firstName: biodata.firstName || "",
-          email: biodata.email || "",
+        setPatientData(prev => ({
+          ...prev,
+          firstName: biodata.firstName || prev.firstName,
+          email: biodata.email || prev.email,
           phone: biodata.phone || "",
           country: biodata.country || "",
           complaints: biodata.complaints || "",
@@ -74,36 +88,80 @@ export default function DashboardBookingPage() {
                         biodata.marital_status === 'widowed' ? 'Widowed' : 'Other',
           therapistGenderPreference: biodata.therapist_gender_preference || "no-preference",
           therapistSpecializationPreference: biodata.therapist_specialization_preference || "no-preference",
-        })
+        }))
         setShowBiodataPrompt(false)
       } else {
         setShowBiodataPrompt(true)
       }
     }
-  }, [biodata])
+  }, [user, biodata])
 
   const handleStep1Complete = (data: PatientBiodata) => {
     setPatientData(data)
     setCurrentStep(2)
   }
 
-  const handleStep2Complete = (therapistId: string) => {
+  const handleStep2Complete = (therapistId: string, therapistData?: any) => {
     setSelectedTherapistId(therapistId)
+    setSelectedTherapistData(therapistData)
     setCurrentStep(3)
   }
 
-  const handleStep3Complete = () => {
-    // Handle booking completion
-    console.log("Booking completed:", { patientData, selectedTherapistId })
-    
-    // Show success toast
-    toast({
-      title: "Booking Successful! 🎉",
-      description: "Your therapy session has been booked successfully. You'll receive a confirmation email shortly.",
-    })
-    
-    // Redirect back to dashboard
-    router.push("/dashboard")
+  const handleStep3Complete = async (selectedSlot: any) => {
+    try {
+      // Handle booking completion
+      console.log("Booking completed:", { patientData, selectedTherapistId, selectedSlot })
+      
+      // Check if booking was already completed in the BookingConfirmation component
+      if (selectedSlot.bookingAlreadyComplete) {
+        console.log("✅ Booking already completed in BookingConfirmation, skipping duplicate API call and redirecting...")
+        console.log("✅ Confirmation data:", selectedSlot.confirmation)
+        // Redirect to dashboard therapy page to see the new session
+        router.push("/dashboard/therapy")
+        return
+      }
+      
+      // Create the session record
+      const sessionData = {
+        therapist_id: selectedTherapistId,
+        session_date: selectedSlot.date,
+        start_time: selectedSlot.start_time,
+        duration: selectedSlot.session_duration || 60,
+        session_type: selectedSlot.session_type === 'individual' ? 'video' : selectedSlot.session_type || 'video',
+        notes: `Patient: ${patientData.firstName} (${patientData.email})${patientData.phone ? `, Phone: ${patientData.phone}` : ''}, Concerns: ${patientData.complaints || 'N/A'}`
+      }
+
+      // Call the booking API
+      const response = await fetch('/api/sessions/book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sessionData)
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // Show success toast
+        toast({
+          title: "Booking Successful! 🎉",
+          description: "Your therapy session has been booked successfully. You'll receive a confirmation email shortly.",
+        })
+        
+        // Redirect to dashboard therapy page to see the new session
+        router.push("/dashboard/therapy")
+      } else {
+        throw new Error(result.error || 'Failed to book session')
+      }
+    } catch (error) {
+      console.error('Error booking session:', error)
+      toast({
+        title: "Booking Failed",
+        description: "There was an error booking your session. Please try again.",
+        variant: "destructive"
+      })
+    }
   }
 
   const handleBack = () => {
@@ -121,6 +179,7 @@ export default function DashboardBookingPage() {
           <BookingStep1
             onNext={handleStep1Complete}
             initialData={patientData}
+            userData={user ? { full_name: user.full_name, email: user.email } : undefined}
           />
         )
       case 2:
@@ -137,6 +196,7 @@ export default function DashboardBookingPage() {
             onBack={() => setCurrentStep(2)}
             onNext={handleStep3Complete}
             selectedTherapistId={selectedTherapistId}
+            selectedTherapistData={selectedTherapistData}
           />
         )
       default:

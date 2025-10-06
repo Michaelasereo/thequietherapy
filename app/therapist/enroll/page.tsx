@@ -225,7 +225,7 @@ export default function TherapistEnrollmentPage() {
                       </div>
                     </div>
                     <div className="text-xs opacity-75">
-                      "Trpi has transformed my practice. I can help more people while maintaining work-life balance."
+                      "Quiet has transformed my practice. I can help more people while maintaining work-life balance."
                     </div>
                   </div>
                 </CardContent>
@@ -312,7 +312,7 @@ export default function TherapistEnrollmentPage() {
             </div>
             
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p>📧 Look for an email from Trpi</p>
+              <p>📧 Look for an email from Quiet</p>
               <p>🔗 Click the verification link in the email</p>
               <p>✅ Complete your account setup</p>
               <p>⏳ Your application will be reviewed by our admin team</p>

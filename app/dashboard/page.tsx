@@ -16,68 +16,25 @@ import BookingStep1 from "@/components/booking-step-1"
 import BookingStep2 from "@/components/booking-step-2"
 import BookingStep3 from "@/components/booking-step-3"
 import { useDashboard } from "@/context/dashboard-context"
-import { useNotificationState } from "@/hooks/useDashboardState"
 import { useCrossDashboardBroadcast } from '@/hooks/useCrossDashboardSync';
 import { useAuth } from '@/context/auth-context'
 import { usePatientData } from "@/hooks/usePatientData"
+// import { supabase } from "@/lib/supabase" // Removed - not used and causing WebSocket connection attempts
+// import { useRealtimeData } from "@/hooks/useRealtimeData" // Disabled - causing connection errors
 
 // Authentication check component
 function AuthCheck({ children }: { children: React.ReactNode }) {
-  const [authState, setAuthState] = useState<'loading' | 'authenticated' | 'error'>('loading')
+  const { loading, isAuthenticated } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/me', {
-          credentials: 'include', // Ensure cookies are sent
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            setAuthState('authenticated')
-            return
-          }
-        }
-        
-        // Add a small delay before redirect to avoid race conditions
-        setTimeout(() => {
-          router.push('/login')
-        }, 100)
-        
-      } catch (error) {
-        console.error('Auth check error:', error)
-        setAuthState('error')
-      }
+    if (!loading && !isAuthenticated) {
+      console.log('🔍 Dashboard: User not authenticated, redirecting to login')
+      router.push('/login')
     }
+  }, [loading, isAuthenticated, router])
 
-    // Add a longer delay to ensure cookie is set and server is ready
-    setTimeout(() => {
-      checkAuth()
-    }, 500)
-  }, [router])
-
-  if (authState === 'error') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">Authentication Error</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (authState === 'loading') {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -88,11 +45,11 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (authState === 'authenticated') {
-    return <>{children}</>
+  if (!isAuthenticated) {
+    return null // Will redirect via useEffect
   }
 
-  return null
+  return <>{children}</>
 }
 
 // Twitter-style verification badge component
@@ -163,11 +120,41 @@ function DashboardContent() {
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { state, fetchSessions } = useDashboard()
-  const { addSuccessNotification } = useNotificationState()
+  const { state, fetchSessions, refreshCredits, refreshStats } = useDashboard()
   const { user } = useAuth() // Get user from AuthContext instead of DashboardContext
   const { biodata, loading, refreshBiodata } = usePatientData()
   // const { broadcastEvent } = useCrossDashboardBroadcast();
+  
+  // SINGLE SOURCE OF TRUTH - Dashboard context handles all data fetching
+  // No duplicate API calls or state management
+
+  // Real-time data hooks disabled - causing connection errors
+  // const sessionsRealtime = useRealtimeData({
+  //   table: 'sessions',
+  //   filter: `user_id=eq.${user?.id}`,
+  //   onUpdate: (payload) => {
+  //     console.log('🔴 Dashboard sessions real-time update:', payload)
+  //     fetchFreshCredits()
+  //     fetchDashboardSessions()
+  //     refreshStats()
+  //   },
+  //   onError: (error) => {
+  //     console.error('❌ Dashboard sessions real-time error:', error)
+  //   }
+  // })
+
+  // const creditsRealtime = useRealtimeData({
+  //   table: 'user_credits',
+  //   filter: `user_id=eq.${user?.id}`,
+  //   onUpdate: (payload) => {
+  //     console.log('🔴 Dashboard credits real-time update:', payload)
+  //     fetchFreshCredits()
+  //     refreshStats()
+  //   },
+  //   onError: (error) => {
+  //     console.error('❌ Dashboard credits real-time error:', error)
+  //   }
+  // })
   
   // Booking state
   const [showBooking, setShowBooking] = useState(false)
@@ -199,29 +186,29 @@ function DashboardContent() {
 
   const defaultSessions: any[] = []
 
-  // Dashboard summary cards data
+  // Dashboard summary cards data - using SINGLE SOURCE OF TRUTH from dashboard context
   const dashboardSummaryCards = [
     {
       title: "Total Sessions",
-      value: (state.upcomingSessions?.length || 0) + (state.pastSessions?.length || 0),
+      value: state.stats.totalSessions,
       description: "All time sessions",
       icon: CheckCircle2,
     },
     {
-      title: "Upcoming Sessions",
-      value: state.upcomingSessions?.length || 0,
+      title: "Upcoming Sessions", 
+      value: state.stats.upcomingSessions,
       description: "Scheduled sessions",
       icon: Clock,
     },
     {
       title: "Progress Score",
-      value: `${Math.min(100, Math.max(0, (state.pastSessions?.length || 0) * 10))}%`,
-      description: "Your therapy progress",
+      value: `${state.stats.progressScore}%`,
+      description: "Your therapy progress", 
       icon: TrendingUp,
     },
     {
       title: "Available Credits",
-      value: state.user?.credits || 1,
+      value: state.stats.totalCredits,
       description: "Credits remaining",
       icon: CheckCircle,
     },
@@ -231,12 +218,12 @@ function DashboardContent() {
     // Check for success parameter from booking flow
     const success = searchParams.get('success')
     if (success === 'true') {
-      addSuccessNotification(
-        "Booking Successful! 🎉",
-        "Your therapy session has been booked successfully. You'll receive a confirmation email shortly."
-      )
+      toast({
+        title: "Booking Successful! 🎉",
+        description: "Your therapy session has been booked successfully. You'll receive a confirmation email shortly.",
+      })
     }
-  }, [searchParams, addSuccessNotification])
+  }, [searchParams, toast])
 
   // Check for payment status in URL params
   useEffect(() => {
@@ -386,10 +373,24 @@ function DashboardContent() {
                 </span>
               </div>
             </div>
-            <Button onClick={handleStartBooking}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              Book a Session
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={async () => {
+                  console.log('🔍 Manual refresh clicked - using dashboard context')
+                  await fetchSessions()
+                  await refreshStats()
+                  await refreshCredits()
+                }} 
+                variant="outline" 
+                size="sm"
+              >
+                🔄 Refresh Data
+              </Button>
+              <Button onClick={handleStartBooking}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Book a Session
+              </Button>
+            </div>
           </div>
 
           {/* Biodata Prompt */}
@@ -435,9 +436,9 @@ function DashboardContent() {
             <CardTitle>Upcoming Sessions</CardTitle>
           </CardHeader>
           <CardContent>
-            {(state.upcomingSessions || defaultSessions).length > 0 ? (
+            {state.upcomingSessions.length > 0 ? (
               <div className="space-y-4">
-                {(state.upcomingSessions || defaultSessions).map((session) => (
+                {state.upcomingSessions.map((session) => (
                   <div key={session.id} className="flex items-center gap-4 p-3 rounded-md bg-muted/50">
                     <CalendarIcon className="h-6 w-6 text-primary" />
                     <div className="grid gap-0.5">
@@ -449,16 +450,10 @@ function DashboardContent() {
                       </p>
                     </div>
                     <div className="ml-auto flex gap-2">
-                      {session.dailyRoomUrl && (
-                        <Button variant="outline" size="sm" className="bg-transparent" asChild>
-                          <a href={session.dailyRoomUrl} target="_blank" rel="noopener noreferrer">
-                            <VideoIcon className="mr-2 h-4 w-4" /> Join Video
-                          </a>
-                        </Button>
-                      )}
                       <Button variant="outline" size="sm" className="bg-transparent" asChild>
-                        <Link href={`/video-call?room=${session.id}&participant=${encodeURIComponent('User')}`}>
-                          <VideoIcon className="mr-2 h-4 w-4" /> Join Session
+                        <Link href={`/video-session/${session.id}`}>
+                          <VideoIcon className="mr-2 h-4 w-4" /> 
+                          {session.status === 'in_progress' ? 'Join Video Call' : 'View Session'}
                         </Link>
                       </Button>
                     </div>
@@ -466,7 +461,17 @@ function DashboardContent() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground">No upcoming sessions.</p>
+              <div className="text-center py-8">
+                <CalendarIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground mb-2">No upcoming sessions</p>
+                <p className="text-sm text-muted-foreground">Book your first session to get started</p>
+                <Button 
+                  onClick={() => router.push('/dashboard/book')}
+                  className="mt-4"
+                >
+                  Book Session
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -492,9 +497,9 @@ function DashboardContent() {
           <CardTitle>Session History</CardTitle>
         </CardHeader>
         <CardContent>
-          {(state.pastSessions || []).length > 0 ? (
+          {state.pastSessions.length > 0 ? (
             <div className="space-y-4">
-              {(state.pastSessions || []).map((session) => (
+              {state.pastSessions.map((session) => (
                 <div key={session.id} className="flex items-center gap-4 p-3 rounded-md bg-muted/30">
                   <CheckCircle className="h-6 w-6 text-green-500" />
                   <div className="grid gap-0.5">
@@ -512,7 +517,11 @@ function DashboardContent() {
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground">No past sessions found.</p>
+            <div className="text-center py-8">
+              <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground mb-2">No past sessions found</p>
+              <p className="text-sm text-muted-foreground">Complete your first session to see your history</p>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -524,15 +533,15 @@ function DashboardContent() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-muted-foreground">
-            {state.upcomingSessions && state.upcomingSessions.length > 0 ? (
+            {state.upcomingSessions.length > 0 ? (
               <p>• Reminder: Your next session is scheduled for {format(new Date(state.upcomingSessions[0].date), "PPP")}.</p>
             ) : (
               <p>• No upcoming sessions scheduled. Book your first session to get started!</p>
             )}
             <p>• New feature: Enhanced session notes are now available.</p>
             <p>• Platform update: Scheduled maintenance on October 5th, 2 AM - 4 AM UTC.</p>
-            {user && user.credits < 2 && (
-              <p>• Low credits alert: You have {user.credits} credits remaining. Consider purchasing more credits.</p>
+            {state.stats.totalCredits < 2 && (
+              <p>• Low credits alert: You have {state.stats.totalCredits} credits remaining. Consider purchasing more credits.</p>
             )}
           </div>
         </CardContent>

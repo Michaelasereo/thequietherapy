@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { rescheduleSession } from '@/lib/session-management'
+import { rescheduleSession } from '@/lib/session-management-server'
 import { getSession } from '@/lib/auth/session'
 
 export async function POST(req: NextRequest) {
@@ -46,8 +46,7 @@ export async function POST(req: NextRequest) {
       sessionId,
       newDate,
       newTime,
-      reason,
-      requestedBy || session.userType
+      reason
     )
 
     if (result.success) {

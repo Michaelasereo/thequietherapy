@@ -1,28 +1,22 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { cookies } from "next/headers"
+import { SessionManager } from '@/lib/session-manager'
+import { handleApiError, successResponse } from '@/lib/api-response'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    
-    // Check for therapist user cookie first
-    let therapistUserCookie = cookieStore.get("trpi_therapist_user")?.value
-    
-    // If no therapist cookie, check for individual user cookie (therapists are enrolled as individuals)
-    if (!therapistUserCookie) {
-      therapistUserCookie = cookieStore.get("trpi_individual_user")?.value
-    }
-    
-    if (!therapistUserCookie) {
-      return NextResponse.json({
-        success: false,
-        error: "Therapist not authenticated"
-      }, { status: 401 })
+    // SECURE Authentication Check - only therapists can access their profile
+    const session = await SessionManager.getSessionFromRequest(request)
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const therapistUser = JSON.parse(decodeURIComponent(therapistUserCookie))
-    const email = therapistUser.email
+    if (session.role !== 'therapist') {
+      return NextResponse.json({ error: 'Access denied. Therapist role required' }, { status: 403 })
+    }
+
+    const therapistUserId = session.id // This is now TRUSTED and verified
+    const email = session.email
 
     console.log('🔍 Therapist profile API: Looking for therapist with email:', email)
 
@@ -31,21 +25,32 @@ export async function GET() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Get therapist enrollment data
-    const { data: enrollment, error: enrollmentError } = await supabase
-      .from('therapist_enrollments')
+    // Get therapist profile data from the correct table
+    const { data: profile, error: profileError } = await supabase
+      .from('therapist_profiles')
       .select('*')
-      .eq('email', email)
+      .eq('user_id', therapistUserId)
       .single()
 
-    console.log('🔍 Enrollment data:', enrollment)
-    console.log('🔍 Enrollment error:', enrollmentError)
+    console.log('🔍 Profile data:', profile)
+    console.log('🔍 Profile error:', profileError)
 
-    if (enrollmentError || !enrollment) {
-      return NextResponse.json({
-        success: false,
-        error: "Therapist enrollment not found"
-      }, { status: 404 })
+    // If no profile found, try to get data from therapist_enrollments table
+    let enrollmentData = null
+    if (profileError || !profile) {
+      console.log('🔍 No profile found, checking therapist_enrollments table...')
+      const { data: enrollment, error: enrollmentError } = await supabase
+        .from('therapist_enrollments')
+        .select('*')
+        .eq('user_id', therapistUserId)
+        .single()
+      
+      console.log('🔍 Enrollment data:', enrollment)
+      console.log('🔍 Enrollment error:', enrollmentError)
+      
+      if (enrollment && !enrollmentError) {
+        enrollmentData = enrollment
+      }
     }
 
     // Get user account data
@@ -65,19 +70,98 @@ export async function GET() {
       }, { status: 404 })
     }
 
-    // Combine enrollment and user data
+    // If no profile or enrollment data found, return basic user data
+    if (!profile && !enrollmentData) {
+      console.log('⚠️ No profile or enrollment data found, returning basic user data')
+      
+      const basicTherapistData = {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name || user.name || 'Unknown',
+        specialization: [],
+        license_number: '',
+        is_verified: user.is_verified,
+        is_active: user.is_active,
+        availability_approved: false, // No enrollment data means not approved
+        rating: 4.8,
+        total_sessions: 0,
+        total_clients: 0,
+        hourly_rate: 5000,
+        availability: {
+          monday: true,
+          tuesday: true,
+          wednesday: true,
+          thursday: true,
+          friday: true,
+          saturday: false,
+          sunday: false
+        },
+        phone: '',
+        languages: ["English"],
+        bio: '',
+        status: 'pending',
+        experience_years: 0,
+        gender: '',
+        maritalStatus: '',
+        age: '',
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      }
+
+      return successResponse({
+        therapist: basicTherapistData
+      })
+    }
+
+    // Use profile data if available, otherwise fall back to enrollment data
+    const dataSource = profile || enrollmentData
+    
+    console.log('🔍 Data source being used:', dataSource)
+    console.log('🔍 Enrollment data for approval status:', enrollmentData)
+    console.log('🔍 Specialization raw data:', dataSource?.specialization)
+    console.log('🔍 Languages raw data:', dataSource?.languages)
+    
+    // Parse specialization data
+    let parsedSpecialization = []
+    if (dataSource?.specialization) {
+      if (typeof dataSource.specialization === 'string') {
+        parsedSpecialization = dataSource.specialization.split(', ').filter(Boolean)
+      } else if (Array.isArray(dataSource.specialization)) {
+        parsedSpecialization = dataSource.specialization
+      }
+    }
+    console.log('🔍 Parsed specialization:', parsedSpecialization)
+    
+    // Parse languages data
+    let parsedLanguages = ["English"] // Default fallback
+    if (dataSource?.languages) {
+      try {
+        if (typeof dataSource.languages === 'string') {
+          parsedLanguages = JSON.parse(dataSource.languages)
+        } else if (Array.isArray(dataSource.languages)) {
+          parsedLanguages = dataSource.languages
+        }
+      } catch (error) {
+        console.error('🔍 Error parsing languages JSON:', error)
+        parsedLanguages = ["English"]
+      }
+    }
+    console.log('🔍 Parsed languages:', parsedLanguages)
+    
+    // Combine profile and user data
     const therapistData = {
       id: user.id,
       email: user.email,
-      full_name: enrollment.full_name,
-      specialization: enrollment.specialization || [],
-      license_number: enrollment.mdcn_code,
+      full_name: user.full_name || user.name,
+      specialization: parsedSpecialization,
+      license_number: dataSource?.mdcn_code || '',
       is_verified: user.is_verified,
       is_active: user.is_active,
+      availability_approved: user.is_verified && user.is_active, // Use user verification status for availability approval
       rating: 4.8, // Default rating
       total_sessions: 0, // Will be calculated from sessions table
       total_clients: 0, // Will be calculated from clients table
-      hourly_rate: enrollment.hourly_rate || 5000,
+      hourly_rate: dataSource?.hourly_rate || 5000,
       availability: {
         monday: true,
         tuesday: true,
@@ -87,24 +171,26 @@ export async function GET() {
         saturday: false,
         sunday: false
       },
-      phone: enrollment.phone,
-      languages: enrollment.languages || [],
-      bio: enrollment.bio,
-      status: enrollment.status
+      phone: dataSource?.phone || '',
+      languages: parsedLanguages,
+      bio: dataSource?.bio || '',
+      status: dataSource?.verification_status || 'pending',
+      experience_years: dataSource?.experience_years || 0,
+      profile_image: dataSource?.profile_image_url || null,
+      gender: dataSource?.gender || '',
+      maritalStatus: dataSource?.marital_status || '',
+      age: dataSource?.age || '',
+      created_at: dataSource?.created_at || new Date().toISOString(),
+      updated_at: dataSource?.updated_at || new Date().toISOString()
     }
 
     console.log('🔍 Returning therapist data:', therapistData)
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       therapist: therapistData
     })
 
   } catch (error) {
-    console.error('Error fetching therapist profile:', error)
-    return NextResponse.json({
-      success: false,
-      error: "Failed to fetch therapist profile"
-    }, { status: 500 })
+    return handleApiError(error)
   }
 }

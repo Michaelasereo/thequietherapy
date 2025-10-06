@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         session_token: result.user.session_token
       }
       
-      cookieStore.set('trpi_therapist_user', JSON.stringify(userData), {
+      cookieStore.set('quiet_therapist_user', JSON.stringify(userData), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 7, // 1 week

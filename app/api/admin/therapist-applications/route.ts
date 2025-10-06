@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireApiAuth } from '@/lib/server-auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,14 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   try {
+    // SECURE Authentication Check - only admins can access therapist applications
+    const authResult = await requireApiAuth(['admin'])
+    if ('error' in authResult) {
+      return authResult.error
+    }
+
+    const { session } = authResult
+    console.log('🔍 Therapist applications accessed by admin:', session.user.email)
     // Fetch all therapist applications from therapist_enrollments table
     const { data: applications, error } = await supabase
       .from('therapist_enrollments')

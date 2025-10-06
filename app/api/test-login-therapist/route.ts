@@ -56,7 +56,7 @@ export async function GET() {
     })
 
     // Set the therapist session cookie
-    response.cookies.set("trpi_therapist_user", JSON.stringify({
+    response.cookies.set("quiet_therapist_user", JSON.stringify({
       id: user.id,
       name: "Michael Asere",
       email: user.email,

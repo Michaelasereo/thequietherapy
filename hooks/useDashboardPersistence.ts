@@ -5,11 +5,11 @@ import { useDashboard } from '@/context/dashboard-context'
 
 // Storage keys
 const STORAGE_KEYS = {
-  DASHBOARD_STATE: 'trpi_dashboard_state',
-  USER_PREFERENCES: 'trpi_user_preferences',
-  SIDEBAR_STATE: 'trpi_sidebar_state',
-  NOTIFICATIONS: 'trpi_notifications',
-  SESSION_CACHE: 'trpi_session_cache'
+  DASHBOARD_STATE: 'quiet_dashboard_state',
+  USER_PREFERENCES: 'quiet_user_preferences',
+  SIDEBAR_STATE: 'quiet_sidebar_state',
+  NOTIFICATIONS: 'quiet_notifications',
+  SESSION_CACHE: 'quiet_session_cache'
 } as const
 
 // User preferences interface

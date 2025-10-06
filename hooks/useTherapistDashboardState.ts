@@ -377,7 +377,7 @@ export function useTherapistData() {
 
   const therapistInfo = useMemo(() => {
     if (!state.therapist) return null
-    return {
+    const info = {
       id: state.therapist.id,
       name: state.therapist.full_name,
       email: state.therapist.email,
@@ -386,12 +386,16 @@ export function useTherapistData() {
       isVerified: state.therapist.is_verified,
       isApproved: state.therapist.is_verified,
       isActive: state.therapist.is_active,
+      availability_approved: state.therapist.availability_approved,
       rating: state.therapist.rating,
       totalSessions: state.therapist.total_sessions,
       totalClients: state.therapist.total_clients,
       hourlyRate: state.therapist.hourly_rate,
       availability: state.therapist.availability
     }
+    console.log('🔍 Hook: therapistInfo computed:', info)
+    console.log('🔍 Hook: availability_approved from state:', state.therapist.availability_approved)
+    return info
   }, [state.therapist])
 
   const sessionStats = useMemo(() => {

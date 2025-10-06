@@ -14,7 +14,7 @@ export function useCrossDashboardSync(dashboardType: 'user' | 'therapist' | 'par
     return () => {
       globalState.disconnectDashboard(dashboardType)
     }
-  }, [dashboardType]) // Remove globalState from dependencies to prevent infinite loops
+  }, [dashboardType, globalState.connectDashboard, globalState.disconnectDashboard])
 
   // Process unprocessed events for this dashboard - disabled to prevent infinite loops
   // useEffect(() => {

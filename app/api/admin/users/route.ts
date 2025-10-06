@@ -1,38 +1,65 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { requireApiAuth } from '@/lib/server-auth';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Fetch all users with their details
+    console.log('🔍 Admin Users API called');
+
+    // 1. SECURE Authentication Check - allow both admin and therapist
+    const authResult = await requireApiAuth(['admin', 'therapist']);
+    if ('error' in authResult) {
+      return NextResponse.json(authResult.error, { status: 401 });
+    }
+
+    const { session } = authResult;
+    const { searchParams } = new URL(request.url);
+    const userType = searchParams.get('user_type') || 'individual';
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ Missing environment variables');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('✅ Supabase client initialized');
+
+    // Fetch users based on type
     const { data: users, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, full_name, user_type, is_active, is_verified, created_at')
+      .eq('user_type', userType)
+      .eq('is_active', true)
       .order('created_at', { ascending: false })
+      .limit(limit);
 
-    if (error) throw error
+    if (error) {
+      console.error('❌ Users fetch error:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch users' },
+        { status: 500 }
+      );
+    }
 
-    // Transform the data to match the expected interface
-    const transformedUsers = users?.map(user => ({
-      id: user.id,
-      full_name: user.full_name || 'Unknown User',
-      email: user.email,
-      user_type: user.user_type || 'individual',
-      is_active: user.is_active || false,
-      is_verified: user.is_verified || false,
-      status: user.is_active ? 'active' : 'inactive',
-      created_at: user.created_at,
-      last_activity: user.last_login_at || user.updated_at,
-      phone: user.phone || null
-    })) || []
+    console.log('✅ Users fetched successfully:', users?.length || 0);
 
-    return NextResponse.json(transformedUsers)
+    return NextResponse.json({
+      success: true,
+      users: users || []
+    });
+
   } catch (error) {
-    console.error('Error fetching users:', error)
-    return NextResponse.json([], { status: 500 })
+    console.error('Admin Users API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

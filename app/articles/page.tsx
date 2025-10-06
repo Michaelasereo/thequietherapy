@@ -95,10 +95,10 @@ export default function ArticlesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Mental Health & Wellness Articles
+              Mental Health Articles & Therapy Resources
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Expert insights, practical advice, and evidence-based strategies for your mental health journey
+              Expert mental health insights, therapy guides, and evidence-based strategies for anxiety, depression, and overall wellness
             </p>
           </div>
         </div>

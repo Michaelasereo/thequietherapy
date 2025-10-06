@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
     // Step 7: Redirect to dashboard with session cookie
     const response = NextResponse.redirect(new URL('/dashboard', request.url))
     
-    response.cookies.set("trpi_user", JSON.stringify({
+    response.cookies.set("quiet_user", JSON.stringify({
       id: userData.id,
       email: userData.email,
       name: userData.full_name,

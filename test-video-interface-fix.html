@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Interface Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎥 Video Interface Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>✅ Issues Fixed</h2>
+        <ul>
+            <li class="success">✅ "Contact Owner" blocked message - Fixed by creating proper video session page</li>
+            <li class="success">✅ No navigation back to dashboard - Added navigation header with back button</li>
+            <li class="success">✅ Video opening in new window - Fixed by redirecting to dedicated video session page</li>
+            <li class="success">✅ Old session routes - Updated all routes to use new video-session page</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Changes Made</h2>
+        <ol>
+            <li><strong>Created new video session page:</strong> <code>/app/video-session/[sessionId]/page.tsx</code></li>
+            <li><strong>Updated session routing:</strong> All join session buttons now navigate to <code>/video-session/[id]</code></li>
+            <li><strong>Added navigation:</strong> Video session page includes back button and home button</li>
+            <li><strong>Fixed old routes:</strong> Updated all references from <code>/session/[id]</code> to <code>/video-session/[id]</code></li>
+            <li><strong>Added redirect:</strong> Old session page now redirects to new video session page</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Test Instructions</h2>
+        <ol>
+            <li><strong>Login to the application</strong></li>
+            <li><strong>Navigate to dashboard</strong></li>
+            <li><strong>Click "Join Session" on any available session</strong></li>
+            <li><strong>Verify:</strong>
+                <ul>
+                    <li>✅ Video session opens in same tab (not new window)</li>
+                    <li>✅ Navigation header is visible with back button</li>
+                    <li>✅ No "contact owner" blocked message</li>
+                    <li>✅ Video interface loads properly</li>
+                    <li>✅ Can navigate back to dashboard</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Files Modified</h2>
+        <ul>
+            <li><code>app/video-session/[sessionId]/page.tsx</code> - New video session page</li>
+            <li><code>app/session/[id]/page.tsx</code> - Updated to redirect to new page</li>
+            <li><code>app/dashboard/sessions/page.tsx</code> - Updated routing</li>
+            <li><code>app/therapist/dashboard/client-sessions/page.tsx</code> - Updated routing</li>
+            <li><code>app/dashboard/page.tsx</code> - Updated routing</li>
+            <li><code>app/therapist/dashboard/optimized-page.tsx</code> - Updated routing</li>
+            <li><code>app/api/sessions/[sessionId]/route.ts</code> - New API endpoint</li>
+            <li><code>app/api/sessions/[sessionId]/join/route.ts</code> - New API endpoint</li>
+            <li><code>app/api/sessions/[sessionId]/leave/route.ts</code> - New API endpoint</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Expected Behavior</h2>
+        <p class="info">When you click "Join Session" now:</p>
+        <ol>
+            <li>✅ Page navigates to <code>/video-session/[sessionId]</code></li>
+            <li>✅ Video interface loads in the same tab</li>
+            <li>✅ Navigation header shows with back button</li>
+            <li>✅ No "contact owner" message appears</li>
+            <li>✅ Video call interface works properly</li>
+            <li>✅ Can easily navigate back to dashboard</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>🚀 Ready to Test!</h2>
+        <p>The video interface issues have been resolved. Please test the functionality by:</p>
+        <ol>
+            <li>Logging into the application</li>
+            <li>Finding an available session</li>
+            <li>Clicking "Join Session"</li>
+            <li>Verifying the new video interface works correctly</li>
+        </ol>
+    </div>
+</body>
+</html>

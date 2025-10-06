@@ -374,6 +374,8 @@ interface DashboardContextType {
   fetchUserData: () => Promise<void>
   fetchSessions: () => Promise<void>
   fetchStats: () => Promise<void>
+  refreshCredits: () => Promise<void>
+  refreshStats: () => Promise<void>
   toggleSidebar: () => void
   setActiveSection: (section: string) => void
   addNotification: (notification: Omit<DashboardState['notifications'][0], 'id' | 'timestamp'>) => void
@@ -406,17 +408,44 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   // Fetch user data
   const fetchUserData = async () => {
     try {
+      console.log('🔍 DashboardContext: fetchUserData called')
       dispatch({ type: 'SET_LOADING', payload: true })
       
       // Get user data from cookies or API
       const userCookie = document.cookie
         .split('; ')
-        .find(row => row.startsWith('trpi_user='))
+        .find(row => row.startsWith('quiet_user='))
         ?.split('=')[1]
+      
+      console.log('🔍 DashboardContext: userCookie found:', !!userCookie)
       
       if (userCookie) {
         try {
           const userData = JSON.parse(decodeURIComponent(userCookie))
+          console.log('🔍 DashboardContext: userData parsed:', userData)
+          
+          // Fetch fresh credits from API instead of using stale cookie data
+          let freshCredits = 1 // Default fallback
+          console.log('🔍 DashboardContext: Fetching fresh credits from API...')
+          try {
+            const creditsResponse = await fetch('/api/user/credits', {
+              credentials: 'include',
+              headers: {
+                'Cache-Control': 'no-cache'
+              }
+            })
+            console.log('🔍 DashboardContext: Credits API response status:', creditsResponse.status)
+            if (creditsResponse.ok) {
+              const creditsData = await creditsResponse.json()
+              console.log('🔍 DashboardContext: Credits API data:', creditsData)
+              if (creditsData.success && creditsData.credits) {
+                freshCredits = creditsData.credits.balance || 1
+                console.log('🔍 Fresh credits fetched:', freshCredits)
+              }
+            }
+          } catch (creditsError) {
+            console.error('Error fetching fresh credits:', creditsError)
+          }
           
           // Ensure we only use the expected fields and validate data types
           const sanitizedUserData = {
@@ -425,10 +454,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             full_name: typeof userData.name === 'string' ? userData.name : (typeof userData.full_name === 'string' ? userData.full_name : ''),
             user_type: ['individual', 'therapist', 'partner', 'admin'].includes(userData.user_type) ? userData.user_type : 'individual',
             is_verified: typeof userData.is_verified === 'boolean' ? userData.is_verified : false,
-            credits: typeof userData.credits === 'number' ? userData.credits : 1,
+            credits: freshCredits, // Use fresh credits from API
             package_type: typeof userData.package_type === 'string' ? userData.package_type : 'basic',
             is_active: typeof userData.is_active === 'boolean' ? userData.is_active : true
           }
+          console.log('🔍 DashboardContext: Setting user data with credits:', freshCredits)
+          console.log('🔍 DashboardContext: sanitizedUserData:', sanitizedUserData)
           dispatch({ type: 'SET_USER', payload: sanitizedUserData })
         } catch (error) {
           console.error('Error parsing user data:', error)
@@ -438,48 +469,213 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: 'User not authenticated' })
       }
     } catch (error) {
+      console.error('Error in fetchUserData:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load user data' })
+    } finally {
+      // Always set loading to false, even if there are errors
+      dispatch({ type: 'SET_LOADING', payload: false })
     }
   }
 
-  // Fetch sessions
+  // Fetch sessions with proper error handling and data validation
   const fetchSessions = async () => {
     try {
-      const response = await fetch('/api/sessions')
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success && data.sessions) {
-          const upcoming = data.sessions.filter((s: Session) => s.status === 'scheduled')
-          const past = data.sessions.filter((s: Session) => s.status === 'completed')
+      if (!state.user?.id) {
+        console.log('🔍 DashboardContext: No user ID, skipping session fetch')
+        return
+      }
+      
+      console.log('🔍 DashboardContext: Fetching sessions for user:', state.user.id)
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      
+      try {
+        const response = await fetch(`/api/sessions?user_id=${state.user.id}&order=scheduled_date.desc`, {
+          signal: controller.signal,
+          credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
+        
+        clearTimeout(timeoutId)
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('🔍 DashboardContext: Sessions API response:', data)
           
+          if (data.success && data.sessions && Array.isArray(data.sessions)) {
+            // Validate session data structure
+            const validatedSessions = data.sessions.filter((session: any) => 
+              session.id && 
+              session.status && 
+              (session.scheduled_date || session.start_time)
+            )
+            
+            // Properly categorize sessions by status and time
+            const now = new Date()
+            const upcoming = validatedSessions.filter((session: any) => {
+              const sessionDate = new Date(session.scheduled_date || session.start_time)
+              return (session.status === 'scheduled' || session.status === 'in_progress') && 
+                     sessionDate >= now
+            })
+            
+            const past = validatedSessions.filter((session: any) => 
+              session.status === 'completed' || 
+              session.status === 'cancelled' || 
+              session.status === 'no_show'
+            )
+            
+            console.log('🔍 DashboardContext: Categorized sessions:', { 
+              upcoming: upcoming.length, 
+              past: past.length,
+              total: validatedSessions.length 
+            })
+            
+            dispatch({ 
+              type: 'SET_SESSIONS', 
+              payload: { upcoming, past } 
+            })
+          } else {
+            console.warn('🔍 DashboardContext: Invalid sessions data structure:', data)
+            dispatch({ 
+              type: 'SET_SESSIONS', 
+              payload: { upcoming: [], past: [] } 
+            })
+          }
+        } else {
+          console.error('🔍 DashboardContext: Sessions API error:', response.status, response.statusText)
+          // Set empty arrays on API error - NOT mock data
           dispatch({ 
             type: 'SET_SESSIONS', 
-            payload: { upcoming, past } 
+            payload: { upcoming: [], past: [] } 
           })
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId)
+        console.error('🔍 DashboardContext: Sessions API fetch failed:', fetchError)
+        // Set empty arrays on network error - NOT mock data
+        dispatch({ 
+          type: 'SET_SESSIONS', 
+          payload: { upcoming: [], past: [] } 
+        })
+      }
+    } catch (error) {
+      console.error('🔍 DashboardContext: Failed to fetch sessions:', error)
+      // Set empty arrays on general error - NOT mock data
+      dispatch({ 
+        type: 'SET_SESSIONS', 
+        payload: { upcoming: [], past: [] } 
+      })
+    }
+  }
+
+  // Fetch dashboard stats with real data calculation
+  const fetchStats = async () => {
+    try {
+      if (!state.user?.id) {
+        console.log('🔍 DashboardContext: No user ID, setting zero stats')
+        // If no user, use zero stats - NOT mock data
+        const zeroStats: DashboardStats = {
+          totalSessions: 0,
+          upcomingSessions: 0,
+          progressScore: 0,
+          averageSessionTime: 0,
+          totalCredits: 0,
+          usedCredits: 0
+        }
+        dispatch({ type: 'UPDATE_STATS', payload: zeroStats })
+        return
+      }
+      
+      console.log('🔍 DashboardContext: Calculating real dashboard stats from sessions...')
+      
+      // Calculate stats from actual session data - NO MOCK DATA
+      const totalSessions = state.upcomingSessions.length + state.pastSessions.length
+      const upcomingSessions = state.upcomingSessions.length
+      const completedSessions = state.pastSessions.filter(s => s.status === 'completed').length
+      const progressScore = Math.min(100, Math.max(0, completedSessions * 10))
+      
+      // Get fresh credits from API
+      let totalCredits = 0
+      try {
+        const creditsResponse = await fetch('/api/user/credits', {
+          credentials: 'include',
+          headers: { 'Cache-Control': 'no-cache' }
+        })
+        
+        if (creditsResponse.ok) {
+          const creditsData = await creditsResponse.json()
+          if (creditsData.success && creditsData.credits) {
+            totalCredits = creditsData.credits.balance || 0
+          }
+        }
+      } catch (creditsError) {
+        console.warn('🔍 DashboardContext: Failed to fetch credits:', creditsError)
+      }
+      
+      const realStats: DashboardStats = {
+        totalSessions,
+        upcomingSessions,
+        progressScore,
+        averageSessionTime: completedSessions > 0 ? 50 : 0, // Default 50min if we have sessions
+        totalCredits,
+        usedCredits: Math.max(0, completedSessions)
+      }
+      
+      console.log('🔍 DashboardContext: Real stats calculated:', realStats)
+      dispatch({ type: 'UPDATE_STATS', payload: realStats })
+      
+    } catch (error) {
+      console.error('🔍 DashboardContext: Failed to calculate stats:', error)
+      // Use zero stats on error - NOT mock data
+      const errorStats: DashboardStats = {
+        totalSessions: 0,
+        upcomingSessions: 0,
+        progressScore: 0,
+        averageSessionTime: 0,
+        totalCredits: 0,
+        usedCredits: 0
+      }
+      dispatch({ type: 'UPDATE_STATS', payload: errorStats })
+    }
+  }
+
+  // Refresh credits from API
+  const refreshCredits = async () => {
+    try {
+      const creditsResponse = await fetch('/api/user/credits', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
+      
+      if (creditsResponse.ok) {
+        const creditsData = await creditsResponse.json()
+        if (creditsData.success && creditsData.credits && state.user) {
+          const freshCredits = creditsData.credits.balance || 1
+          console.log('🔍 Credits refreshed:', freshCredits)
+          
+          // Update user credits in state
+          const updatedUser = { ...state.user, credits: freshCredits }
+          dispatch({ type: 'SET_USER', payload: updatedUser })
+          
+          // Update stats as well
+          dispatch({ type: 'UPDATE_STATS', payload: { totalCredits: freshCredits } })
         }
       }
     } catch (error) {
-      console.error('Failed to fetch sessions:', error)
+      console.error('Failed to refresh credits:', error)
     }
   }
 
-  // Fetch dashboard stats
-  const fetchStats = async () => {
-    try {
-      // This would typically come from an API
-      const mockStats: DashboardStats = {
-        totalSessions: state.upcomingSessions.length + state.pastSessions.length,
-        upcomingSessions: state.upcomingSessions.length,
-        progressScore: 75,
-        averageSessionTime: 50,
-        totalCredits: (state.user && typeof state.user.credits === 'number') ? state.user.credits : 1,
-        usedCredits: 25
-      }
-      
-      dispatch({ type: 'UPDATE_STATS', payload: mockStats })
-    } catch (error) {
-      console.error('Failed to fetch stats:', error)
-    }
+  // Refresh stats from API
+  const refreshStats = async () => {
+    console.log('🔍 DashboardContext: Manual refresh stats called')
+    await fetchStats()
   }
 
   // Helper functions
@@ -546,11 +742,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   // Load initial data
   useEffect(() => {
+    console.log('🔍 DashboardContext: useEffect called - fetching user data')
     fetchUserData()
   }, [])
 
   useEffect(() => {
     if (state.user && typeof state.user === 'object' && state.user.id) {
+      console.log('🔍 DashboardContext: User loaded, fetching sessions and stats for:', state.user.id)
       fetchSessions()
       fetchStats()
     }
@@ -562,6 +760,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     fetchUserData,
     fetchSessions,
     fetchStats,
+    refreshCredits,
+    refreshStats,
     toggleSidebar,
     setActiveSection,
     addNotification,

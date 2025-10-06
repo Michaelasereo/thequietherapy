@@ -1,229 +1,134 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight, Building2, Users, DollarSign, ChartBar, ArrowLeft } from "lucide-react"
-import { Logo } from "@/components/ui/logo"
-import { useToast } from "@/components/ui/use-toast"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-
-const formSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
-})
-
-type LoginFormValues = z.infer<typeof formSchema>
+import { useState } from 'react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Mail, ArrowLeft, Building } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 
 export default function PartnerLoginPage() {
-  const { toast } = useToast()
+  const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-    },
-  })
-
-  const handleSubmit = async (values: LoginFormValues) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setIsLoading(true)
+    setError('')
+    setMessage('')
+
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/send-magic-link', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: values.email, userType: 'partner' }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          user_type: 'partner',
+          type: 'login'
+        }),
       })
-      
+
       const data = await response.json()
-      
-      if (response.ok && data.success) {
-        toast({
-          title: "Magic Link Sent!",
-          description: "Please check your email for the login link.",
-        })
+
+      if (data.success) {
+        setMessage('Magic link sent! Please check your email and click the link to sign in.')
       } else {
-        toast({
-          title: "Login Failed",
-          description: data.error || "Something went wrong. Please try again.",
-          variant: "destructive",
-        })
+        setError(data.error || 'Failed to send magic link')
       }
     } catch (error) {
-      console.error('Login error:', error)
-      toast({
-        title: "Login Failed",
-        description: "Network error. Please check your connection and try again.",
-        variant: "destructive",
-      })
+      setError('Network error. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Back Button */}
-      <div className="absolute top-6 right-6 z-20">
-        <Button asChild variant="ghost" className="text-white hover:text-gray-300 hover:bg-white/10">
-          <Link href="/">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Link>
-        </Button>
-      </div>
-
-      {/* Left Section - Black Background with Partner Features */}
-      <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-br from-gray-900 to-black relative overflow-hidden">
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-between h-full p-8">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <Link href="/">
-              <Logo size="sm" variant="light" />
-            </Link>
-          </div>
-
-          {/* Partner Dashboard Demo */}
-          <div className="flex-1 flex items-center justify-center">
-            <div className="space-y-4 w-full max-w-sm">
-              {/* Organization Stats Card */}
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                <CardContent className="p-4">
-                  <div className="text-white">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm font-medium">Organization Stats</span>
-                      <Building2 className="h-4 w-4 text-blue-300" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-green-300" />
-                        <span className="text-sm">Active Members: 156</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-green-300" />
-                        <span className="text-sm">Monthly Spend: ₦2.4M</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <ChartBar className="h-4 w-4 text-blue-300" />
-                        <span className="text-sm">Sessions: 89 this month</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity Card */}
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                <CardContent className="p-4">
-                  <div className="text-white">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm font-medium">Recent Activity</span>
-                      <span className="text-xs opacity-75">Today</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                        <span className="text-sm">New member enrolled</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
-                        <span className="text-sm">3 sessions completed</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-yellow-300 rounded-full"></div>
-                        <span className="text-sm">Payment processed</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-white/60 text-sm">
-            <p>Partner organizations trust Trpi for their mental health needs</p>
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <Logo className="mx-auto h-12 w-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Partner Portal</h1>
+          <p className="text-gray-600">Access your partner dashboard</p>
+          <p className="text-sm text-blue-600 mt-1">Organization Login</p>
         </div>
-      </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Building className="h-5 w-5 mr-2 text-blue-600" />
+              Partner Access
+            </CardTitle>
+            <CardDescription>
+              Enter your email address and we'll send you a secure login link
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="partner@organization.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
 
-      {/* Right Section - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-8">
-          {/* Header */}
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Building2 className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold">Partner Login</h1>
-            </div>
-            <p className="text-muted-foreground">
-              Access your organization's therapy management dashboard
-            </p>
-          </div>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-          {/* Login Form */}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="email"
-                        placeholder="Enter your organization email"
-                        className="h-12"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {message && (
+                <Alert>
+                  <Mail className="h-4 w-4" />
+                  <AlertDescription>{message}</AlertDescription>
+                </Alert>
+              )}
 
-              <Button
-                type="submit"
-                className="w-full h-12"
-                disabled={isLoading}
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700" 
+                disabled={isLoading || !email.trim()}
               >
-                {isLoading ? (
-                  "Sending Magic Link..."
-                ) : (
-                  <>
-                    Send Magic Link
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
+                {isLoading ? 'Sending...' : 'Send Magic Link'}
               </Button>
             </form>
-          </Form>
 
-          {/* Footer Links */}
-          <div className="text-center space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Don't have a partner account?{" "}
-              <Link href="/partner/onboarding" className="text-primary hover:underline">
-                Contact us to get started
-              </Link>
-            </p>
-            
-            <div className="flex justify-center space-x-4 text-sm">
-              <Link href="/login" className="text-muted-foreground hover:text-foreground">
-                Individual Login
-              </Link>
-              <Link href="/therapist/login" className="text-muted-foreground hover:text-foreground">
-                Therapist Login
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-500">
+                Not a partner yet?{' '}
+                <Link 
+                  href="/partner/enroll" 
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Apply to become a partner
+                </Link>
+              </p>
+            </div>
+
+            <div className="mt-4 text-center">
+              <Link 
+                href="/" 
+                className="text-sm text-gray-500 hover:text-gray-800 flex items-center justify-center"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back to Home
               </Link>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

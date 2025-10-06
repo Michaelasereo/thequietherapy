@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // If approved, create a user account for the therapist
+    // If approved, create/update user account and therapist profile
     if (action === 'approve') {
       // Check if user already exists
       const { data: existingUser } = await supabase
@@ -68,9 +68,11 @@ export async function POST(request: NextRequest) {
         .eq('email', enrollment.email)
         .single()
 
+      let userId = existingUser?.id
+
       if (!existingUser) {
         // Create new user account
-        const { error: userError } = await supabase
+        const { data: newUser, error: userError } = await supabase
           .from('users')
           .insert({
             email: enrollment.email,
@@ -80,10 +82,47 @@ export async function POST(request: NextRequest) {
             is_active: true,
             credits: 0
           })
+          .select('id')
+          .single()
 
         if (userError) {
           console.error('Error creating user account:', userError)
+          return NextResponse.json(
+            { success: false, error: 'Failed to create user account' },
+            { status: 500 }
+          )
+        }
+        userId = newUser.id
+      } else {
+        // Update existing user to verified status
+        const { error: updateUserError } = await supabase
+          .from('users')
+          .update({
+            is_verified: true,
+            is_active: true
+          })
+          .eq('id', existingUser.id)
+
+        if (updateUserError) {
+          console.error('Error updating user verification:', updateUserError)
+        }
+      }
+
+      // Update therapist profile verification status
+      if (userId) {
+        const { error: profileError } = await supabase
+          .from('therapist_profiles')
+          .update({
+            is_verified: true,
+            verification_status: 'approved'
+          })
+          .eq('user_id', userId)
+
+        if (profileError) {
+          console.error('Error updating therapist profile verification:', profileError)
           // Don't fail the approval, just log the error
+        } else {
+          console.log('✅ Updated therapist profile verification status for user:', userId)
         }
       }
     }

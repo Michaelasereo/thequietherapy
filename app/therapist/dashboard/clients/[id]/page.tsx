@@ -15,21 +15,30 @@ function formatDate(input: string) {
   return new Date(input).toLocaleDateString()
 }
 
-export default async function TherapistClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default function TherapistClientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { therapistUser } = useTherapistUser()
+  const [clientId, setClientId] = useState<string | null>(null)
   const [clientData, setClientData] = useState<any>(null)
   const [sessions, setSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Handle async params
+  useEffect(() => {
+    const resolveParams = async () => {
+      const resolvedParams = await params
+      setClientId(resolvedParams.id)
+    }
+    resolveParams()
+  }, [params])
+
   // Fetch client data
   useEffect(() => {
     const fetchClientData = async () => {
-      if (!therapistUser?.id || !id) return
+      if (!therapistUser?.id || !clientId) return
 
       try {
         setLoading(true)
-        const response = await fetch(`/api/therapist/clients?therapistId=${therapistUser.id}&clientId=${id}`)
+        const response = await fetch(`/api/therapist/clients?therapistId=${therapistUser.id}&clientId=${clientId}`)
         const data = await response.json()
         
         if (data.client) {
@@ -44,7 +53,7 @@ export default async function TherapistClientDetailsPage({ params }: { params: P
     }
 
     fetchClientData()
-  }, [therapistUser?.id, id])
+  }, [therapistUser?.id, clientId])
 
   if (loading) {
     return (

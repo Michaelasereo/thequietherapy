@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       console.error(`Payment verification failed after ${retryCount} attempts:`, result.error);
       
       // Redirect to failure page
-      const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?payment=failed&reference=${paymentReference}&error=${encodeURIComponent(result.error || 'Verification failed')}`;
+      const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/dashboard?payment=failed&reference=${paymentReference}&error=${encodeURIComponent(result.error || 'Verification failed')}`;
       return NextResponse.redirect(redirectUrl);
     }
 
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     // Determine redirect URL based on payment type
     let redirectUrl;
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
     
     if (paymentData.status === 'success') {
       const metadata = paymentData.metadata || {};
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Payment verification error:', error);
     
-    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?payment=error&error=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`;
+    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/dashboard?payment=error&error=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`;
     return NextResponse.redirect(redirectUrl);
   }
 }

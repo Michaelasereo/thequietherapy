@@ -175,13 +175,20 @@ export async function verifyPayment(reference: string, retryCount: number = 0): 
     const response = await paystack.transaction.verify(reference);
     const paymentData = response.data;
 
-    // Update payment transaction status
-    await updatePaymentTransaction(reference, {
-      status: paymentData.status,
-      paystack_transaction_id: paymentData.id?.toString(),
-      gateway_response: JSON.stringify(paymentData),
-      updated_at: new Date().toISOString()
-    });
+    // Check if paymentData exists and has required properties
+    if (!paymentData) {
+      throw new Error('No payment data received from Paystack');
+    }
+
+    // Update payment transaction status (only if we have valid data)
+    if (paymentData.status) {
+      await updatePaymentTransaction(reference, {
+        status: paymentData.status,
+        paystack_transaction_id: paymentData.id?.toString(),
+        gateway_response: JSON.stringify(paymentData),
+        updated_at: new Date().toISOString()
+      });
+    }
 
     if (paymentData.status === 'success') {
       // Process successful payment

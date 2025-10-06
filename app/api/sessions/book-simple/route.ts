@@ -1,108 +1,102 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { bookSession, checkTherapistAvailability, getAvailableSlots } from '@/lib/session-management'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      userId, 
-      therapistId, 
-      sessionDate, 
-      sessionTime, 
-      sessionDuration = 60,
-      sessionType = 'video',
-      notes = ''
+    const {
+      user_id,
+      therapist_id,
+      therapist_email,
+      therapist_name,
+      session_date,
+      start_time,
+      end_time,
+      duration = 60,
+      session_type = 'individual',
+      status = 'scheduled',
+      patient_name,
+      patient_email,
+      patient_phone,
+      complaints
     } = await request.json()
 
-    if (!userId || !therapistId || !sessionDate || !sessionTime) {
+    if (!therapist_id || !session_date || !start_time || !patient_email) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    // Create session data
-    const sessionDateTime = new Date(`${sessionDate}T${sessionTime}`)
-    const sessionEndTime = new Date(sessionDateTime.getTime() + sessionDuration * 60000)
+    console.log('📅 Creating session booking:', {
+      therapist_id,
+      therapist_email,
+      session_date,
+      start_time,
+      patient_email
+    })
 
-    const sessionData = {
-      user_id: userId,
-      therapist_id: therapistId,
-      start_time: sessionDateTime.toISOString(),
-      end_time: sessionEndTime.toISOString(),
-      duration: sessionDuration,
-      session_type: sessionType,
-      notes: notes,
-      scheduled_date: sessionDate,
-      scheduled_time: sessionTime
-    }
+    // Create session with combined date and time
+    const sessionDateTime = new Date(`${session_date}T${start_time}`)
+    const sessionEndTime = end_time 
+      ? new Date(`${session_date}T${end_time}`)
+      : new Date(sessionDateTime.getTime() + duration * 60000)
 
-    // Book the session using simplified logic
-    const result = await bookSession(sessionData)
+    // Generate a unique session ID
+    const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
-    if (result.success) {
-      return NextResponse.json({
-        success: true,
-        session: result.session,
-        message: 'Session booked successfully'
+    // Create the session record (matching actual schema)
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .insert({
+        id: sessionId,
+        user_id: user_id || patient_email, // Use email as fallback user ID
+        therapist_id: therapist_id,
+        start_time: sessionDateTime.toISOString(),
+        end_time: sessionEndTime.toISOString(),
+        duration: duration,
+        session_type: session_type,
+        status: status,
+        notes: `Patient: ${patient_name} (${patient_email}), Phone: ${patient_phone || 'N/A'}, Concerns: ${complaints || 'N/A'}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
-    } else {
+      .select()
+      .single()
+
+    if (sessionError) {
+      console.error('❌ Error creating session:', sessionError)
       return NextResponse.json(
-        { success: false, error: result.error || 'Failed to book session' },
-        { status: 400 }
+        { success: false, error: 'Failed to create session', details: sessionError.message },
+        { status: 500 }
       )
     }
 
-  } catch (error) {
-    console.error('Error in book session API:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+    console.log('✅ Session created successfully:', session.id)
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const therapistId = searchParams.get('therapistId')
-    const status = searchParams.get('status')
-    const date = searchParams.get('date')
-    const duration = parseInt(searchParams.get('duration') || '60')
-
-    // If requesting available slots
-    if (therapistId && date) {
-      const availableSlots = await getAvailableSlots(
-        therapistId,
-        new Date(date),
-        duration
-      )
-      
-      return NextResponse.json({
-        success: true,
-        availableSlots
-      })
-    }
-
-    // If requesting sessions
-    const sessions = await getSessions(userId || undefined, therapistId || undefined, status || undefined)
+    // TODO: Send confirmation emails to both patient and therapist
+    // TODO: Create Daily.co room for the session
+    // TODO: Add session to therapist's calendar
 
     return NextResponse.json({
       success: true,
-      sessions
+      session: session,
+      message: 'Session booked successfully'
     })
 
   } catch (error) {
-    console.error('Error in sessions GET API:', error)
+    console.error('💥 Error in book-simple API:', error)
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { 
+        success: false, 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
-}
-
-// Helper function to get sessions (imported from session-management)
-async function getSessions(userId?: string, therapistId?: string, status?: string) {
-  const { getSessions } = await import('@/lib/session-management')
-  return getSessions(userId, therapistId, status)
 }

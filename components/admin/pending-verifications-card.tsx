@@ -133,6 +133,33 @@ export default function PendingVerificationsCard({ className }: PendingVerificat
     }
   }
 
+  const handleAvailabilityApprove = async (verification: PendingVerification) => {
+    try {
+      const response = await fetch(`/api/admin/approve-verification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: verification.id,
+          type: verification.type,
+          action: 'approve',
+          approvalType: 'availability'
+        }),
+      })
+
+      if (response.ok) {
+        toast.success(`Therapist availability approved successfully`)
+        fetchPendingVerifications() // Refresh the list
+      } else {
+        toast.error('Failed to approve availability')
+      }
+    } catch (error) {
+      console.error('Error approving availability:', error)
+      toast.error('Error approving availability')
+    }
+  }
+
   const filteredVerifications = pendingVerifications.filter(verification => {
     if (filter === 'all') return true
     return verification.type === filter
@@ -302,6 +329,15 @@ export default function PendingVerificationsCard({ className }: PendingVerificat
                   >
                     <CheckCircle className="h-3 w-3" />
                     Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleAvailabilityApprove(verification)}
+                    className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                  >
+                    <CheckCircle className="h-3 w-3" />
+                    Approve Availability
                   </Button>
                   <Button
                     size="sm"

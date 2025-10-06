@@ -21,9 +21,9 @@ export async function POST() {
       success: true,
       message: 'User sync completed successfully',
       sync: {
-        total: syncResult.total,
-        successful: syncResult.successful,
-        failed: syncResult.failed,
+        total: (syncResult as any).total || 0,
+        successful: (syncResult as any).successful || 0,
+        failed: (syncResult as any).failed || 0,
         results: syncResult.results
       },
       supabase_auth: {

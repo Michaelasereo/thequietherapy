@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send the magic link email
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/verify-admin-magic-link?token=${token}`
+    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/auth/verify-admin-magic-link?token=${token}`
     
     console.log('📧 Sending magic link email...')
     const emailResult = await sendMagicLinkEmail(email, verificationUrl, 'login', { auth_type: 'admin' })

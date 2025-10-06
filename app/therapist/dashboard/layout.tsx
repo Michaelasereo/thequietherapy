@@ -13,28 +13,28 @@ import { TherapistDashboardProvider } from "@/context/therapist-dashboard-contex
 import { GlobalStateProvider } from '@/context/global-state-context';
 import { useCrossDashboardSync } from '@/hooks/useCrossDashboardSync';
 import { DebugToggle } from "@/components/ui/debug-panel"
-import { NotificationBell } from '@/components/notifications/notification-bell'
-import { getSession } from '@/lib/auth/session'
+import { DevSessionSetup } from "@/components/dev-session-setup"
+import { cookies } from 'next/headers'
 
 async function TherapistDashboardLayoutContent({ children }: { children: React.ReactNode }) {
   console.log('🔍 TherapistDashboardLayout: Rendering layout content')
   
-  // Get session and validate authentication
-  const session = await getSession();
-  if (!session) {
-    redirect('/therapist/login');
-  }
+  // Use unified SessionManager to get session
+  const { SessionManager } = await import('@/lib/session-manager')
+  const session = await SessionManager.getSession()
   
-  // Ensure user is a therapist
-  if (session.userType !== 'therapist') {
-    redirect('/login?error=invalid_user_type');
+  if (!session || session.role !== 'therapist') {
+    console.log('❌ No therapist session found, redirecting to login')
+    redirect('/therapist/login')
   }
+
+  console.log('✅ Therapist session found:', session.email)
   
   const user = { 
-    id: session.userId,
-    name: session.email.split('@')[0], 
+    id: session.id,
+    name: session.name, 
     email: session.email,
-    user_type: session.userType
+    user_type: session.role
   }
   
   return (
@@ -58,7 +58,6 @@ async function TherapistDashboardLayoutContent({ children }: { children: React.R
                   />
                 </div>
               </form>
-              <NotificationBell userId={user?.id || ''} userType={user?.user_type as any || "therapist"} />
               <Avatar>
                 <AvatarImage src="/placeholder-user.jpg" />
                 <AvatarFallback>TH</AvatarFallback>
@@ -73,6 +72,7 @@ async function TherapistDashboardLayoutContent({ children }: { children: React.R
         </SidebarInset>
       </div>
       <DebugToggle dashboardType="therapist" />
+      <DevSessionSetup />
     </SidebarProvider>
   );
 }

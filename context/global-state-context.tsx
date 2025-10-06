@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback, useMemo } from 'react'
 
 // Global state interfaces
 export interface GlobalUser {
@@ -143,7 +143,7 @@ const initialState: GlobalState = {
     admin: false
   },
   realTimeUpdates: {
-    enabled: true,
+    enabled: false, // Disabled by default to prevent constant reloading
     lastUpdate: new Date().toISOString(),
     updateInterval: 30000 // 30 seconds
   },
@@ -310,8 +310,8 @@ const GlobalStateContext = createContext<{
 export function GlobalStateProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(globalStateReducer, initialState)
 
-  // Data fetching functions
-  const fetchActiveUsers = async () => {
+  // Data fetching functions - memoized with useCallback
+  const fetchActiveUsers = useCallback(async () => {
     try {
       // Mock data for now - replace with actual API call
       const mockActiveUsers: GlobalUser[] = [
@@ -341,9 +341,9 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching active users:', error)
     }
-  }
+  }, [])
 
-  const fetchActiveSessions = async () => {
+  const fetchActiveSessions = useCallback(async () => {
     try {
       // Mock data for now - replace with actual API call
       const mockActiveSessions: GlobalSession[] = [
@@ -364,9 +364,9 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching active sessions:', error)
     }
-  }
+  }, [])
 
-  const fetchSystemMetrics = async () => {
+  const fetchSystemMetrics = useCallback(async () => {
     try {
       // Mock data for now - replace with actual API call
       const mockSystemMetrics: SystemMetrics = {
@@ -382,34 +382,34 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching system metrics:', error)
     }
-  }
+  }, [])
 
-  // User management
-  const updateUserStatus = (userId: string, status: GlobalUser['online_status']) => {
+  // User management - memoized with useCallback
+  const updateUserStatus = useCallback((userId: string, status: GlobalUser['online_status']) => {
     dispatch({ type: 'UPDATE_USER_STATUS', payload: { userId, status } })
-  }
+  }, [])
 
-  // Session management
-  const updateSessionStatus = (sessionId: string, status: GlobalSession['status']) => {
+  // Session management - memoized with useCallback
+  const updateSessionStatus = useCallback((sessionId: string, status: GlobalSession['status']) => {
     dispatch({ type: 'UPDATE_SESSION_STATUS', payload: { sessionId, status } })
-  }
+  }, [])
 
-  // Notifications
-  const addGlobalNotification = (notification: Omit<GlobalNotification, 'id' | 'created_at'>) => {
+  // Notifications - memoized with useCallback
+  const addGlobalNotification = useCallback((notification: Omit<GlobalNotification, 'id' | 'created_at'>) => {
     const newNotification: GlobalNotification = {
       ...notification,
       id: `notification-${Date.now()}`,
       created_at: new Date().toISOString()
     }
     dispatch({ type: 'ADD_GLOBAL_NOTIFICATION', payload: newNotification })
-  }
+  }, [])
 
-  const markNotificationRead = (notificationId: string, userId: string) => {
+  const markNotificationRead = useCallback((notificationId: string, userId: string) => {
     dispatch({ type: 'MARK_NOTIFICATION_READ', payload: { notificationId, userId } })
-  }
+  }, [])
 
-  // Cross-dashboard events
-  const broadcastEvent = (event: Omit<CrossDashboardEvent, 'id' | 'timestamp' | 'processed_by'>) => {
+  // Cross-dashboard events - memoized with useCallback
+  const broadcastEvent = useCallback((event: Omit<CrossDashboardEvent, 'id' | 'timestamp' | 'processed_by'>) => {
     const newEvent: CrossDashboardEvent = {
       ...event,
       id: `event-${Date.now()}`,
@@ -417,41 +417,41 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       processed_by: []
     }
     dispatch({ type: 'ADD_CROSS_DASHBOARD_EVENT', payload: newEvent })
-  }
+  }, [])
 
-  const markEventProcessed = (eventId: string, dashboard: string) => {
+  const markEventProcessed = useCallback((eventId: string, dashboard: string) => {
     dispatch({ type: 'MARK_EVENT_PROCESSED', payload: { eventId, dashboard } })
-  }
+  }, [])
 
-  // System management
-  const setSystemHealth = (healthy: boolean) => {
+  // System management - memoized with useCallback
+  const setSystemHealth = useCallback((healthy: boolean) => {
     dispatch({ type: 'SET_SYSTEM_HEALTH', payload: healthy })
-  }
+  }, [])
 
-  const setMaintenanceMode = (enabled: boolean) => {
+  const setMaintenanceMode = useCallback((enabled: boolean) => {
     dispatch({ type: 'SET_MAINTENANCE_MODE', payload: enabled })
-  }
+  }, [])
 
-  // Dashboard connections
-  const connectDashboard = (dashboard: keyof GlobalState['connectedDashboards']) => {
+  // Dashboard connections - memoized with useCallback
+  const connectDashboard = useCallback((dashboard: keyof GlobalState['connectedDashboards']) => {
     dispatch({ type: 'SET_DASHBOARD_CONNECTION', payload: { dashboard, connected: true } })
-  }
+  }, [])
 
-  const disconnectDashboard = (dashboard: keyof GlobalState['connectedDashboards']) => {
+  const disconnectDashboard = useCallback((dashboard: keyof GlobalState['connectedDashboards']) => {
     dispatch({ type: 'SET_DASHBOARD_CONNECTION', payload: { dashboard, connected: false } })
-  }
+  }, [])
 
-  // Real-time updates
-  const enableRealTimeUpdates = (interval?: number) => {
+  // Real-time updates - memoized with useCallback
+  const enableRealTimeUpdates = useCallback((interval?: number) => {
     dispatch({ type: 'SET_REAL_TIME_UPDATES', payload: { enabled: true, interval } })
-  }
+  }, [])
 
-  const disableRealTimeUpdates = () => {
+  const disableRealTimeUpdates = useCallback(() => {
     dispatch({ type: 'SET_REAL_TIME_UPDATES', payload: { enabled: false } })
-  }
+  }, [])
 
-  // Data synchronization
-  const syncData = async () => {
+  // Data synchronization - memoized with useCallback
+  const syncData = useCallback(async () => {
     dispatch({ type: 'UPDATE_SYNC_STATE', payload: { isSyncing: true } })
     try {
       await fetchActiveUsers()
@@ -468,17 +468,17 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
         syncErrors: [...state.syncState.syncErrors, error as string]
       } })
     }
-  }
+  }, [fetchActiveUsers, fetchActiveSessions, fetchSystemMetrics, state.syncState.syncErrors])
 
-  // Helper functions
-  const getUnprocessedEvents = (dashboard: string): CrossDashboardEvent[] => {
+  // Helper functions - memoized with useCallback
+  const getUnprocessedEvents = useCallback((dashboard: string): CrossDashboardEvent[] => {
     return state.events.filter(event => 
       event.target_dashboards.includes(dashboard as any) && 
       !event.processed_by.includes(dashboard)
     )
-  }
+  }, [state.events])
 
-  const getNotificationsForUser = (userType: string, userId?: string): GlobalNotification[] => {
+  const getNotificationsForUser = useCallback((userType: string, userId?: string): GlobalNotification[] => {
     return state.notifications.filter(notification => {
       const isTargetUserType = notification.target_user_types.includes(userType as any)
       const isTargetUser = !notification.target_user_ids || 
@@ -487,15 +487,17 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       
       return isTargetUserType && isTargetUser && isNotRead
     })
-  }
+  }, [state.notifications])
 
-  // Load initial data and set up real-time updates
+  // Load initial data only once on mount
   useEffect(() => {
     fetchActiveUsers()
     fetchActiveSessions()
     fetchSystemMetrics()
+  }, [fetchActiveUsers, fetchActiveSessions, fetchSystemMetrics])
 
-    // Set up real-time updates
+  // Set up real-time updates with proper dependencies
+  useEffect(() => {
     if (state.realTimeUpdates.enabled) {
       const interval = setInterval(() => {
         syncData()
@@ -503,9 +505,10 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
 
       return () => clearInterval(interval)
     }
-  }, [state.realTimeUpdates.enabled, state.realTimeUpdates.updateInterval])
+  }, [state.realTimeUpdates.enabled, state.realTimeUpdates.updateInterval, syncData])
 
-  const contextValue = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
     state,
     dispatch,
     fetchActiveUsers,
@@ -526,7 +529,27 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
     syncData,
     getUnprocessedEvents,
     getNotificationsForUser
-  }
+  }), [
+    state,
+    fetchActiveUsers,
+    fetchActiveSessions,
+    fetchSystemMetrics,
+    updateUserStatus,
+    updateSessionStatus,
+    addGlobalNotification,
+    markNotificationRead,
+    broadcastEvent,
+    markEventProcessed,
+    setSystemHealth,
+    setMaintenanceMode,
+    connectDashboard,
+    disconnectDashboard,
+    enableRealTimeUpdates,
+    disableRealTimeUpdates,
+    syncData,
+    getUnprocessedEvents,
+    getNotificationsForUser
+  ])
 
   return (
     <GlobalStateContext.Provider value={contextValue}>

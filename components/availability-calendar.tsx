@@ -131,7 +131,7 @@ export function AvailabilityCalendar() {
           {
             id: `slot-${day.date}-1`,
             start_time: "09:00",
-            end_time: "10:00",
+            end_time: "10:00", // Will be calculated correctly when component loads
             session_duration: 60,
             max_sessions: 1,
             session_title: "Individual Therapy Session",
@@ -141,7 +141,7 @@ export function AvailabilityCalendar() {
           {
             id: `slot-${day.date}-2`,
             start_time: "10:30",
-            end_time: "11:30",
+            end_time: "11:30", // Will be calculated correctly when component loads
             session_duration: 60,
             max_sessions: 1,
             session_title: "Individual Therapy Session",
@@ -151,7 +151,7 @@ export function AvailabilityCalendar() {
           {
             id: `slot-${day.date}-3`,
             start_time: "14:00",
-            end_time: "15:00",
+            end_time: "15:00", // Will be calculated correctly when component loads
             session_duration: 60,
             max_sessions: 1,
             session_title: "Individual Therapy Session",
@@ -181,11 +181,13 @@ export function AvailabilityCalendar() {
 
   const handleAddTimeSlot = (date: string) => {
     setSaved(false) // Reset saved state when making changes
+    const startTime = "09:00"
+    const duration = 60
     const newSlot: TimeSlot = {
       id: `slot-${date}-${Date.now()}`,
-      start_time: "09:00",
-      end_time: "10:00",
-      session_duration: 60,
+      start_time: startTime,
+      end_time: calculateEndTime(startTime, duration),
+      session_duration: duration,
       max_sessions: 1,
       session_title: "Individual Therapy Session",
       session_type: 'individual',
@@ -212,15 +214,38 @@ export function AvailabilityCalendar() {
     }))
   }
 
+  const calculateEndTime = (startTime: string, durationMinutes: number): string => {
+    const [hours, minutes] = startTime.split(':').map(Number)
+    const startDate = new Date()
+    startDate.setHours(hours, minutes, 0, 0)
+    
+    const endDate = new Date(startDate.getTime() + durationMinutes * 60000)
+    
+    return endDate.toTimeString().slice(0, 5) // Format as HH:MM
+  }
+
   const handleUpdateTimeSlot = (date: string, slotId: string, updates: Partial<TimeSlot>) => {
     setSaved(false) // Reset saved state when making changes
+    
     setWeeklyAvailability(prev => ({
       ...prev,
       [date]: {
         ...prev[date],
-        time_slots: prev[date].time_slots.map(slot => 
-          slot.id === slotId ? { ...slot, ...updates } : slot
-        )
+        time_slots: prev[date].time_slots.map(slot => {
+          if (slot.id === slotId) {
+            const updatedSlot = { ...slot, ...updates }
+            
+            // Auto-calculate end time when session duration or start time changes
+            if ('session_duration' in updates || 'start_time' in updates) {
+              const startTime = updates.start_time || slot.start_time
+              const duration = updates.session_duration || slot.session_duration
+              updatedSlot.end_time = calculateEndTime(startTime, duration)
+            }
+            
+            return updatedSlot
+          }
+          return slot
+        })
       }
     }))
   }
@@ -530,12 +555,18 @@ export function AvailabilityCalendar() {
                           />
                         </div>
                         <div>
-                          <Label className="text-sm font-medium">End Time</Label>
+                          <Label className="text-sm font-medium flex items-center gap-2">
+                            End Time 
+                            <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
+                              Auto-calculated
+                            </span>
+                          </Label>
                           <Input
                             type="time"
                             value={slot.end_time}
                             onChange={(e) => handleUpdateTimeSlot(selectedDate, slot.id, { end_time: e.target.value })}
-                            className="text-sm mt-1"
+                            className="text-sm mt-1 bg-gray-50"
+                            title="End time is automatically calculated based on start time and session duration"
                           />
                         </div>
                       </div>

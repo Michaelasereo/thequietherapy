@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         console.log('Brevo SMTP credentials not available, skipping email');
       } else {
         const { sendMagicLinkEmail } = await import('@/lib/email');
-        const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${magicLinkToken}`;
+        const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${magicLinkToken}`;
         await sendMagicLinkEmail(email, verificationUrl, 'signup', {
           first_name: fullName,
           user_type: 'individual'

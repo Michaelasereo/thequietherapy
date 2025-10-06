@@ -1,0 +1,70 @@
+{
+  "node": {
+    "00343d46cbd04fe57e53425b71107261c60da0bd27": {
+      "workers": {
+        "app/therapist/dashboard/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fmacbook%2FDesktop%2Ftrpi-app%2Factions%2Ftherapist-auth.ts%22%2C%5B%7B%22id%22%3A%2200343d46cbd04fe57e53425b71107261c60da0bd27%22%2C%22exportedName%22%3A%22therapistLogoutAction%22%7D%2C%7B%22id%22%3A%22404ed65606bdc5c4274f9313946dc30c3ce79f9b52%22%2C%22exportedName%22%3A%22therapistVerifyMagicLinkAction%22%7D%2C%7B%22id%22%3A%2260c35f9ee4402dc2621907c511b8f54a76cf8cae7d%22%2C%22exportedName%22%3A%22therapistEnrollAction%22%7D%2C%7B%22id%22%3A%2260ec4ba439c68471203b06f0f6142b5acaedd671a6%22%2C%22exportedName%22%3A%22therapistMagicLinkAction%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/therapist/dashboard/availability/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fmacbook%2FDesktop%2Ftrpi-app%2Factions%2Ftherapist-auth.ts%22%2C%5B%7B%22id%22%3A%2200343d46cbd04fe57e53425b71107261c60da0bd27%22%2C%22exportedName%22%3A%22therapistLogoutAction%22%7D%2C%7B%22id%22%3A%22404ed65606bdc5c4274f9313946dc30c3ce79f9b52%22%2C%22exportedName%22%3A%22therapistVerifyMagicLinkAction%22%7D%2C%7B%22id%22%3A%2260c35f9ee4402dc2621907c511b8f54a76cf8cae7d%22%2C%22exportedName%22%3A%22therapistEnrollAction%22%7D%2C%7B%22id%22%3A%2260ec4ba439c68471203b06f0f6142b5acaedd671a6%22%2C%22exportedName%22%3A%22therapistMagicLinkAction%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/therapist/dashboard/page": "action-browser",
+        "app/therapist/dashboard/availability/page": "action-browser"
+      }
+    },
+    "404ed65606bdc5c4274f9313946dc30c3ce79f9b52": {
+      "workers": {
+        "app/therapist/dashboard/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fmacbook%2FDesktop%2Ftrpi-app%2Factions%2Ftherapist-auth.ts%22%2C%5B%7B%22id%22%3A%2200343d46cbd04fe57e53425b71107261c60da0bd27%22%2C%22exportedName%22%3A%22therapistLogoutAction%22%7D%2C%7B%22id%22%3A%22404ed65606bdc5c4274f9313946dc30c3ce79f9b52%22%2C%22exportedName%22%3A%22therapistVerifyMagicLinkAction%22%7D%2C%7B%22id%22%3A%2260c35f9ee4402dc2621907c511b8f54a76cf8cae7d%22%2C%22exportedName%22%3A%22therapistEnrollAction%22%7D%2C%7B%22id%22%3A%2260ec4ba439c68471203b06f0f6142b5acaedd671a6%22%2C%22exportedName%22%3A%22therapistMagicLinkAction%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/therapist/dashboard/availability/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fmacbook%2FDesktop%2Ftrpi-app%2Factions%2Ftherapist-auth.ts%22%2C%5B%7B%22id%22%3A%2200343d46cbd04fe57e53425b71107261c60da0bd27%22%2C%22exportedName%22%3A%22therapistLogoutAction%22%7D%2C%7B%22id%22%3A%22404ed65606bdc5c4274f9313946dc30c3ce79f9b52%22%2C%22exportedName%22%3A%22therapistVerifyMagicLinkAction%22%7D%2C%7B%22id%22%3A%2260c35f9ee4402dc2621907c511b8f54a76cf8cae7d%22%2C%22exportedName%22%3A%22therapistEnrollAction%22%7D%2C%7B%22id%22%3A%2260ec4ba439c68471203b06f0f6142b5acaedd671a6%22%2C%22exportedName%22%3A%22therapistMagicLinkAction%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/therapist/dashboard/page": "action-browser",
+        "app/therapist/dashboard/availability/page": "action-browser"
+      }
+    },
+    "60c35f9ee4402dc2621907c511b8f54a76cf8cae7d": {
+      "workers": {
+        "app/therapist/dashboard/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fmacbook%2FDesktop%2Ftrpi-app%2Factions%2Ftherapist-auth.ts%22%2C%5B%7B%22id%22%3A%2200343d46cbd04fe57e53425b71107261c60da0bd27%22%2C%22exportedName%22%3A%22therapistLogoutAction%22%7D%2C%7B%22id%22%3A%22404ed65606bdc5c4274f9313946dc30c3ce79f9b52%22%2C%22exportedName%22%3A%22therapistVerifyMagicLinkAction%22%7D%2C%7B%22id%22%3A%2260c35f9ee4402dc2621907c511b8f54a76cf8cae7d%22%2C%22exportedName%22%3A%22therapistEnrollAction%22%7D%2C%7B%22id%22%3A%2260ec4ba439c68471203b06f0f6142b5acaedd671a6%22%2C%22exportedName%22%3A%22therapistMagicLinkAction%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/therapist/dashboard/availability/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fmacbook%2FDesktop%2Ftrpi-app%2Factions%2Ftherapist-auth.ts%22%2C%5B%7B%22id%22%3A%2200343d46cbd04fe57e53425b71107261c60da0bd27%22%2C%22exportedName%22%3A%22therapistLogoutAction%22%7D%2C%7B%22id%22%3A%22404ed65606bdc5c4274f9313946dc30c3ce79f9b52%22%2C%22exportedName%22%3A%22therapistVerifyMagicLinkAction%22%7D%2C%7B%22id%22%3A%2260c35f9ee4402dc2621907c511b8f54a76cf8cae7d%22%2C%22exportedName%22%3A%22therapistEnrollAction%22%7D%2C%7B%22id%22%3A%2260ec4ba439c68471203b06f0f6142b5acaedd671a6%22%2C%22exportedName%22%3A%22therapistMagicLinkAction%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/therapist/dashboard/page": "action-browser",
+        "app/therapist/dashboard/availability/page": "action-browser"
+      }
+    },
+    "60ec4ba439c68471203b06f0f6142b5acaedd671a6": {
+      "workers": {
+        "app/therapist/dashboard/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fmacbook%2FDesktop%2Ftrpi-app%2Factions%2Ftherapist-auth.ts%22%2C%5B%7B%22id%22%3A%2200343d46cbd04fe57e53425b71107261c60da0bd27%22%2C%22exportedName%22%3A%22therapistLogoutAction%22%7D%2C%7B%22id%22%3A%22404ed65606bdc5c4274f9313946dc30c3ce79f9b52%22%2C%22exportedName%22%3A%22therapistVerifyMagicLinkAction%22%7D%2C%7B%22id%22%3A%2260c35f9ee4402dc2621907c511b8f54a76cf8cae7d%22%2C%22exportedName%22%3A%22therapistEnrollAction%22%7D%2C%7B%22id%22%3A%2260ec4ba439c68471203b06f0f6142b5acaedd671a6%22%2C%22exportedName%22%3A%22therapistMagicLinkAction%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/therapist/dashboard/availability/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fmacbook%2FDesktop%2Ftrpi-app%2Factions%2Ftherapist-auth.ts%22%2C%5B%7B%22id%22%3A%2200343d46cbd04fe57e53425b71107261c60da0bd27%22%2C%22exportedName%22%3A%22therapistLogoutAction%22%7D%2C%7B%22id%22%3A%22404ed65606bdc5c4274f9313946dc30c3ce79f9b52%22%2C%22exportedName%22%3A%22therapistVerifyMagicLinkAction%22%7D%2C%7B%22id%22%3A%2260c35f9ee4402dc2621907c511b8f54a76cf8cae7d%22%2C%22exportedName%22%3A%22therapistEnrollAction%22%7D%2C%7B%22id%22%3A%2260ec4ba439c68471203b06f0f6142b5acaedd671a6%22%2C%22exportedName%22%3A%22therapistMagicLinkAction%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/therapist/dashboard/page": "action-browser",
+        "app/therapist/dashboard/availability/page": "action-browser"
+      }
+    }
+  },
+  "edge": {},
+  "encryptionKey": "ZdVbdzHTarS4kofCJxfW86Rz8bMaT6aZKFtcqrK/1Pg="
+}

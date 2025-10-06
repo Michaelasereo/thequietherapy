@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useToast } from "@/components/ui/use-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,8 @@ export default function TherapistVerificationPage() {
   const { therapistUser } = useTherapistUser()
   const [verificationData, setVerificationData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState<string | null>(null)
+  const { toast } = useToast()
 
   // Fetch verification status
   useEffect(() => {
@@ -35,6 +38,56 @@ export default function TherapistVerificationPage() {
 
     fetchVerificationStatus()
   }, [therapistUser?.id])
+
+  const handleDocumentUpload = async (documentType: 'license' | 'id', file: File) => {
+    if (!therapistUser?.id) {
+      toast({
+        title: "Error",
+        description: "No therapist user found. Please log in again.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setUploading(documentType)
+      console.log('Uploading document:', { documentType, fileName: file.name })
+
+      const formData = new FormData()
+      formData.append('documentType', documentType)
+      formData.append('file', file)
+
+      const response = await fetch('/api/therapist/upload-document', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        toast({
+          title: "Success",
+          description: `${documentType === 'license' ? 'License' : 'ID'} document uploaded successfully!`,
+        })
+        
+        // Refresh verification data
+        const statusResponse = await fetch(`/api/therapist/verification-status?therapistId=${therapistUser.id}`)
+        const statusData = await statusResponse.json()
+        setVerificationData(statusData)
+      } else {
+        throw new Error(data.error || 'Failed to upload document')
+      }
+    } catch (error) {
+      console.error('Error uploading document:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to upload document",
+        variant: "destructive",
+      })
+    } finally {
+      setUploading(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -82,10 +135,25 @@ export default function TherapistVerificationPage() {
                 type="file" 
                 accept=".pdf,.jpg,.jpeg,.png" 
                 placeholder="Upload license document"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    handleDocumentUpload('license', file)
+                  }
+                }}
+                disabled={uploading === 'license'}
               />
-              <Button variant="outline" className="w-full">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                disabled={uploading === 'license'}
+                onClick={() => {
+                  const input = document.querySelector('input[type="file"]') as HTMLInputElement
+                  input?.click()
+                }}
+              >
                 <Upload className="mr-2 h-4 w-4" />
-                Upload License Document
+                {uploading === 'license' ? 'Uploading...' : 'Upload License Document'}
               </Button>
             </div>
           )}
@@ -131,10 +199,26 @@ export default function TherapistVerificationPage() {
                 type="file" 
                 accept=".pdf,.jpg,.jpeg,.png" 
                 placeholder="Upload ID document"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    handleDocumentUpload('id', file)
+                  }
+                }}
+                disabled={uploading === 'id'}
               />
-              <Button variant="outline" className="w-full">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                disabled={uploading === 'id'}
+                onClick={() => {
+                  const inputs = document.querySelectorAll('input[type="file"]')
+                  const idInput = inputs[1] as HTMLInputElement
+                  idInput?.click()
+                }}
+              >
                 <Upload className="mr-2 h-4 w-4" />
-                Upload ID Document
+                {uploading === 'id' ? 'Uploading...' : 'Upload ID Document'}
               </Button>
             </div>
           )}

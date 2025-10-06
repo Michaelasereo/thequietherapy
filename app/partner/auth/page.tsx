@@ -1,182 +1,114 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
-import { Building2, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Building2, ArrowLeft, ArrowRight } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 
 export default function PartnerAuthPage() {
-  const { toast } = useToast()
-  const [isNewPartner, setIsNewPartner] = useState<boolean | null>(null)
-  const [email, setEmail] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleExistingLogin = async () => {
-    if (!email.trim()) {
-      toast({
-        title: "Missing email",
-        description: "Please enter your email address.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      const response = await fetch('/api/partner/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        toast({
-          title: "Magic Link Sent!",
-          description: data.message,
-        })
-        setEmail("") // Clear email after successful submission
-      } else {
-        toast({
-          title: "Login Failed",
-          description: data.error || "Failed to send magic link. Please try again.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error('Error sending magic link:', error)
-      toast({
-        title: "Login Failed",
-        description: "An error occurred. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Building2 className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold">Partner Portal</h1>
+    <div className="min-h-screen flex">
+      {/* Left Section - Black Background with Partner Features */}
+      <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-br from-gray-900 to-black relative overflow-hidden">
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-between h-full p-8">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <Link href="/">
+              <Logo size="sm" variant="light" />
+            </Link>
           </div>
-          <p className="text-muted-foreground">Access your organization's therapy management dashboard</p>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {isNewPartner === null ? (
-            // Choose new or existing
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold mb-2">Welcome to Trpi Partner Portal</h2>
-                <p className="text-muted-foreground">Are you a new or existing partner?</p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button 
-                  variant="outline" 
-                  className="h-24 flex flex-col gap-2"
-                  onClick={() => setIsNewPartner(true)}
-                >
-                  <Building2 className="h-6 w-6" />
-                  <span className="font-medium">New Partner</span>
-                  <span className="text-sm text-muted-foreground">Join our network</span>
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="h-24 flex flex-col gap-2"
-                  onClick={() => setIsNewPartner(false)}
-                >
-                  <ArrowRight className="h-6 w-6" />
-                  <span className="font-medium">Existing Partner</span>
-                  <span className="text-sm text-muted-foreground">Sign in to dashboard</span>
-                </Button>
+
+          {/* Partner Features */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="space-y-4 w-full max-w-sm">
+              <div className="text-white">
+                <h2 className="text-2xl font-bold mb-4">Partner Portal</h2>
+                <p className="text-gray-300 mb-6">
+                  Manage your organization's therapy services with our comprehensive partner dashboard.
+                </p>
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span>Bulk member management</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span>Credit tracking and assignment</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span>Session analytics and reporting</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span>Payment and billing management</span>
+                  </li>
+                </ul>
               </div>
             </div>
-          ) : isNewPartner ? (
-            // New partner - redirect to onboarding
-            <div className="text-center space-y-4">
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">Welcome New Partner!</h2>
-                <p className="text-muted-foreground">Let's get your organization set up with Trpi</p>
-              </div>
-              
-              <Button asChild className="w-full">
-                <Link href="/partner/onboarding">
-                  Start Onboarding Process
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+          </div>
+
+          {/* Footer */}
+          <div className="text-white/60 text-sm">
+            <p>Trusted by 500+ organizations worldwide</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Section - Auth Options */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-8">
+          {/* Header */}
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Building2 className="h-8 w-8 text-primary" />
+              <h1 className="text-3xl font-bold">Partner Portal</h1>
+            </div>
+            <p className="text-muted-foreground">
+              Access your organization's therapy management dashboard
+            </p>
+          </div>
+
+          {/* Auth Options */}
+          <div className="space-y-4">
+            <Link href="/partner/login" className="block">
+              <Button className="w-full h-12">
+                Login to Partner Portal
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              
-              <Button 
-                variant="ghost" 
-                onClick={() => setIsNewPartner(null)}
-                className="w-full"
-              >
-                Back to Selection
+            </Link>
+            
+            <Link href="/partner/onboarding" className="block">
+              <Button variant="outline" className="w-full h-12">
+                Become a Partner
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
+            </Link>
+          </div>
+
+          {/* Footer Links */}
+          <div className="text-center space-y-4">
+            <div className="flex justify-center space-x-4 text-sm">
+              <Link href="/login" className="text-muted-foreground hover:text-foreground">
+                Individual Login
+              </Link>
+              <Link href="/therapist/login" className="text-muted-foreground hover:text-foreground">
+                Therapist Login
+              </Link>
             </div>
-          ) : (
-            // Existing partner login
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold mb-2">Partner Login</h2>
-                <p className="text-muted-foreground">Enter your email to receive a secure login link</p>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Business Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="admin@yourcompany.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleExistingLogin()
-                      }
-                    }}
-                  />
-                </div>
-                
-                <Button 
-                  onClick={handleExistingLogin} 
-                  className="w-full" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Sending..." : "Send Magic Link"}
-                </Button>
-                
-                <div className="text-center text-sm text-muted-foreground">
-                  <p>We'll send you a secure link to access your dashboard.</p>
-                </div>
-                
-                <div className="text-center">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setIsNewPartner(null)}
-                    className="text-sm"
-                  >
-                    Back to Selection
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            
+            <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground">
+              <Link href="/">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Home
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

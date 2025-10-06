@@ -1,0 +1,148 @@
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
+
+interface RealtimeConfig {
+  table: string
+  filter?: string
+  onUpdate: (payload: any) => void
+  onError?: (error: any) => void
+  retryAttempts?: number
+  retryDelay?: number
+  fallbackInterval?: number
+}
+
+export function useRealtimeData(config: RealtimeConfig) {
+  const [isConnected, setIsConnected] = useState(false)
+  const [useFallback, setUseFallback] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
+  const [subscription, setSubscription] = useState<any>(null)
+
+  const {
+    table,
+    filter,
+    onUpdate,
+    onError,
+    retryAttempts = 3,
+    retryDelay = 2000,
+    fallbackInterval = 30000
+  } = config
+
+  const MAX_RETRIES = retryAttempts
+
+  const setupSubscription = useCallback(async () => {
+    try {
+      console.log(`🔍 Setting up real-time subscription for ${table}`)
+      
+      const channelName = `${table}-changes-${Date.now()}`
+      const newSubscription = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: table,
+            ...(filter && { filter })
+          },
+          (payload) => {
+            console.log(`🔴 Real-time update for ${table}:`, payload)
+            onUpdate(payload)
+          }
+        )
+        .subscribe((status) => {
+          console.log(`🔍 ${table} subscription status:`, status)
+          
+          if (status === 'SUBSCRIBED') {
+            console.log(`✅ ${table} real-time subscription active`)
+            setIsConnected(true)
+            setRetryCount(0)
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error(`❌ ${table} subscription error`)
+            setIsConnected(false)
+            handleRetry()
+          } else if (status === 'TIMED_OUT') {
+            console.log(`⏰ ${table} connection timed out`)
+            setIsConnected(false)
+            handleRetry()
+          } else if (status === 'CLOSED') {
+            console.log(`🔒 ${table} connection closed`)
+            setIsConnected(false)
+          }
+        })
+
+      setSubscription(newSubscription)
+      return newSubscription
+    } catch (error) {
+      console.error(`❌ Failed to setup ${table} subscription:`, error)
+      onError?.(error)
+      handleRetry()
+    }
+  }, [table, filter, onUpdate, onError])
+
+  const handleRetry = useCallback(() => {
+    if (retryCount < MAX_RETRIES) {
+      const delay = retryDelay * Math.pow(2, retryCount) // Exponential backoff
+      console.log(`🔄 Retrying ${table} connection in ${delay}ms (${retryCount + 1}/${MAX_RETRIES})`)
+      
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1)
+        setupSubscription()
+      }, delay)
+    } else {
+      console.error(`❌ Max retries exceeded for ${table}. Switching to fallback polling.`)
+      setUseFallback(true)
+      toast.error(`Real-time updates for ${table} unavailable. Using fallback polling.`)
+    }
+  }, [retryCount, MAX_RETRIES, retryDelay, table, setupSubscription])
+
+  const startFallbackPolling = useCallback(() => {
+    if (!useFallback) return
+
+    console.log(`🔄 Starting fallback polling for ${table}`)
+    const interval = setInterval(() => {
+      console.log(`🔄 Polling ${table} data...`)
+      // Trigger a manual refresh
+      onUpdate({ eventType: 'polling', table })
+    }, fallbackInterval)
+
+    return () => clearInterval(interval)
+  }, [useFallback, table, fallbackInterval, onUpdate])
+
+  useEffect(() => {
+    if (!useFallback) {
+      setupSubscription()
+    } else {
+      const cleanup = startFallbackPolling()
+      return cleanup
+    }
+
+    return () => {
+      if (subscription) {
+        console.log(`🔍 Cleaning up ${table} subscription`)
+        supabase.removeChannel(subscription)
+      }
+    }
+  }, [setupSubscription, useFallback, startFallbackPolling, subscription, table])
+
+  const reconnect = useCallback(() => {
+    console.log(`🔄 Manual reconnect for ${table}`)
+    setRetryCount(0)
+    setUseFallback(false)
+    setIsConnected(false)
+    if (subscription) {
+      supabase.removeChannel(subscription)
+    }
+    setupSubscription()
+  }, [table, subscription, setupSubscription])
+
+  return {
+    isConnected,
+    useFallback,
+    retryCount,
+    reconnect,
+    subscription
+  }
+}
+
+export default useRealtimeData

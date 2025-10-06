@@ -38,19 +38,91 @@ export function AvailabilitySchedule() {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    // Initialize availability slots
-    const initialSlots = DAYS_OF_WEEK.map(day => ({
-      day_of_week: day.value,
-      day_name: day.name,
-      start_time: "09:00",
-      end_time: "17:00",
-      is_available: day.value >= 1 && day.value <= 5, // Monday to Friday by default
-      session_duration: 60,
-      max_sessions_per_day: 8
-    }))
-    setAvailability(initialSlots)
-    setLoading(false)
-  }, [])
+    loadExistingTemplates()
+  }, [therapistInfo])
+
+  const loadExistingTemplates = async () => {
+    console.log('🔄 Loading existing templates for therapist:', therapistInfo?.id)
+    
+    if (!therapistInfo?.id) {
+      console.log('⚠️ No therapist ID available, using default slots')
+      // Initialize with default slots if no therapist info
+      const initialSlots = DAYS_OF_WEEK.map(day => ({
+        day_of_week: day.value,
+        day_name: day.name,
+        start_time: "09:00",
+        end_time: "17:00",
+        is_available: day.value >= 1 && day.value <= 5, // Monday to Friday by default
+        session_duration: 60,
+        max_sessions_per_day: 8
+      }))
+      setAvailability(initialSlots)
+      setLoading(false)
+      return
+    }
+
+    try {
+      console.log('📡 Fetching templates from API...')
+      const response = await fetch(`/api/therapist/availability/template?therapist_id=${therapistInfo.id}`)
+      console.log('📡 API response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📡 API response data:', data)
+        const templates = data.templates || []
+        console.log('📡 Found templates:', templates.length)
+        
+        // Create availability slots from templates
+        const templateSlots = DAYS_OF_WEEK.map(day => {
+          const template = templates.find((t: any) => t.day_of_week === day.value)
+          console.log(`📅 Day ${day.name} (${day.value}):`, template ? 'Has template' : 'No template')
+          return {
+            day_of_week: day.value,
+            day_name: day.name,
+            start_time: template?.start_time || "09:00",
+            end_time: template?.end_time || "17:00",
+            is_available: !!template,
+            session_duration: template?.session_duration || 60,
+            max_sessions_per_day: template?.max_sessions || 8
+          }
+        })
+        
+        console.log('📅 Final template slots:', templateSlots)
+        setAvailability(templateSlots)
+      } else {
+        console.error('❌ API error:', response.status, response.statusText)
+        const errorData = await response.json().catch(() => ({}))
+        console.error('❌ API error data:', errorData)
+        
+        // Fallback to default slots
+        const initialSlots = DAYS_OF_WEEK.map(day => ({
+          day_of_week: day.value,
+          day_name: day.name,
+          start_time: "09:00",
+          end_time: "17:00",
+          is_available: day.value >= 1 && day.value <= 5,
+          session_duration: 60,
+          max_sessions_per_day: 8
+        }))
+        setAvailability(initialSlots)
+      }
+    } catch (error) {
+      console.error('❌ Error loading templates:', error)
+      // Fallback to default slots
+      const initialSlots = DAYS_OF_WEEK.map(day => ({
+        day_of_week: day.value,
+        day_name: day.name,
+        start_time: "09:00",
+        end_time: "17:00",
+        is_available: day.value >= 1 && day.value <= 5,
+        session_duration: 60,
+        max_sessions_per_day: 8
+      }))
+      setAvailability(initialSlots)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleToggleDay = (dayOfWeek: number, checked: boolean) => {
     setSaved(false) // Reset saved state when making changes
@@ -75,35 +147,63 @@ export function AvailabilitySchedule() {
   }
 
   const handleSave = async () => {
-    if (!therapistInfo?.email) {
-      toast.error('Therapist email not found. Please refresh the page.')
+    console.log('💾 Starting save process...')
+    console.log('💾 Therapist ID:', therapistInfo?.id)
+    console.log('💾 Current availability:', availability)
+    
+    if (!therapistInfo?.id) {
+      console.error('❌ No therapist ID available')
+      toast.error('Therapist ID not found. Please refresh the page.')
       return
     }
 
     setSaving(true)
     try {
-      const response = await fetch('/api/therapist/availability', {
+      // Transform data for the new template API
+      const templateData = availability
+        .filter(slot => slot.is_available)
+        .map(slot => ({
+          day_of_week: slot.day_of_week,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          session_duration: slot.session_duration,
+          session_type: 'individual',
+          max_sessions: slot.max_sessions_per_day
+        }))
+
+      console.log('💾 Template data to save:', templateData)
+
+      const response = await fetch('/api/therapist/availability/template', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          therapistEmail: therapistInfo.email,
-          availability: availability.filter(slot => slot.is_available)
+          therapist_id: therapistInfo.id,
+          templates: templateData
         }),
       })
 
+      console.log('💾 Save response status:', response.status)
+
       if (response.ok) {
-        toast.success('Availability schedule saved successfully')
+        const responseData = await response.json()
+        console.log('✅ Save successful:', responseData)
+        toast.success('Weekly schedule saved successfully')
         setSaved(true)
-        // Don't auto-reset saved state - keep it as "Edit Availability" until user makes changes
+        
+        // Reload templates to ensure UI is in sync
+        setTimeout(() => {
+          loadExistingTemplates()
+        }, 1000)
       } else {
         const errorData = await response.json()
-        toast.error(errorData.error || 'Failed to save availability schedule')
+        console.error('❌ Save failed:', errorData)
+        toast.error(errorData.error || 'Failed to save weekly schedule')
       }
     } catch (error) {
-      console.error('Error saving availability:', error)
-      toast.error('Failed to save availability schedule')
+      console.error('❌ Error saving weekly schedule:', error)
+      toast.error('Failed to save weekly schedule')
     } finally {
       setSaving(false)
     }

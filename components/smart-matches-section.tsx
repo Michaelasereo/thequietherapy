@@ -2,7 +2,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
 import TaskCard from "./task-card"
-import { smartMatches } from "@/lib/data"
+// Smart matches data - moved from lib/data.ts (empty array since matches are fetched from API)
+const smartMatches: any[] = []
 
 export default function SmartMatchesSection() {
   return (

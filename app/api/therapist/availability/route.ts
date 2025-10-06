@@ -1,40 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { requireApiAuth } from '@/lib/server-auth'
+import { handleApiError, ValidationError, successResponse } from '@/lib/api-response'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
-
-// Helper function to get user email from session cookies
-async function getUserEmailFromCookies(request: NextRequest): Promise<string | null> {
-  const cookieStore = await cookies()
-  
-  // Check for therapist user cookie
-  const therapistUserCookie = cookieStore.get('trpi_therapist_user')
-  if (therapistUserCookie) {
-    try {
-      const userData = JSON.parse(decodeURIComponent(therapistUserCookie.value))
-      return userData.email
-    } catch (error) {
-      console.error('Error parsing therapist user cookie:', error)
-    }
-  }
-  
-  // Check for individual user cookie (therapists might be using this)
-  const individualUserCookie = cookieStore.get('trpi_individual_user')
-  if (individualUserCookie) {
-    try {
-      const userData = JSON.parse(decodeURIComponent(individualUserCookie.value))
-      return userData.email
-    } catch (error) {
-      console.error('Error parsing individual user cookie:', error)
-    }
-  }
-  
-  return null
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -138,9 +110,61 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // If no availability found, return empty array
+    if (!availability || availability.length === 0) {
+      console.log('No availability found for', therapistEmail)
+      return NextResponse.json({
+        success: true,
+        availability: []
+      })
+    }
+
+    // Filter out fully booked slots by checking existing sessions
+    let filteredAvailability = availability || []
+    
+    try {
+      // Get existing sessions for this therapist for the next 7 days
+      const today = new Date()
+      const nextWeek = new Date(today)
+      nextWeek.setDate(today.getDate() + 7)
+      
+      const { data: existingSessions, error: sessionsError } = await supabase
+        .from('sessions')
+        .select('session_date, start_time, end_time, status')
+        .eq('therapist_email', therapistEmail)
+        .gte('session_date', today.toISOString().split('T')[0])
+        .lte('session_date', nextWeek.toISOString().split('T')[0])
+        .in('status', ['scheduled', 'confirmed', 'in_progress'])
+
+      if (!sessionsError && existingSessions) {
+        // Mark slots as unavailable if they conflict with existing sessions
+        filteredAvailability = filteredAvailability.map(slot => {
+          // Generate time slots for this availability window
+          const hasConflict = existingSessions.some(session => {
+            // Check if there's a time conflict
+            const sessionStart = new Date(`${session.session_date}T${session.start_time}`)
+            const sessionEnd = new Date(`${session.session_date}T${session.end_time}`)
+            
+            // For weekly availability, we need to check against generated slots
+            // This is a simplified check - in production you'd want more sophisticated logic
+            return session.start_time === slot.start_time
+          })
+          
+          return {
+            ...slot,
+            is_available: slot.is_available && !hasConflict,
+            booking_status: hasConflict ? 'booked' : 'available'
+          }
+        })
+      }
+    } catch (bookingError) {
+      console.warn('Error checking existing bookings:', bookingError)
+      // Continue with original availability if booking check fails
+    }
+
     return NextResponse.json({
       success: true,
-      availability: availability || []
+      availability: filteredAvailability
     })
 
   } catch (error) {
@@ -155,42 +179,34 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURE Authentication Check - only therapists can modify availability
+    const authResult = await requireApiAuth(['therapist'])
+    if ('error' in authResult) {
+      return authResult.error
+    }
+
+    const { session } = authResult
     const body = await request.json()
     
     // Handle isActive toggle (from availability page)
     if (body.hasOwnProperty('isActive')) {
-      return await handleIsActiveToggle(request, body)
+      return await handleIsActiveToggle(session.user.email, body)
     }
     
     // Handle detailed availability schedule
-    if (body.therapistEmail && body.availability) {
-      return await handleAvailabilitySchedule(body)
+    if (body.availability) {
+      return await handleAvailabilitySchedule(session.user.email, body.availability)
     }
 
-    return NextResponse.json(
-      { success: false, error: 'Invalid request data' },
-      { status: 400 }
-    )
+    throw new ValidationError('Invalid request data')
 
   } catch (error) {
-    console.error('Error in therapist availability API:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
-async function handleIsActiveToggle(request: NextRequest, body: { isActive: boolean }) {
+async function handleIsActiveToggle(therapistEmail: string, body: { isActive: boolean }) {
   try {
-    const therapistEmail = await getUserEmailFromCookies(request)
-    
-    if (!therapistEmail) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
     
     // Update therapist is_active status
     const { error } = await supabase

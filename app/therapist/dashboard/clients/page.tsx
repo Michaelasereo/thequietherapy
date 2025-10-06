@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { useTherapistUser } from "@/context/therapist-user-context"
+import { useAuth } from "@/context/auth-context"
 import { Loader2, User } from "lucide-react"
 
 export default function TherapistClientsPage() {
-  const { therapistUser } = useTherapistUser()
+  const { user } = useAuth()
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState("")
@@ -18,25 +18,35 @@ export default function TherapistClientsPage() {
   // Fetch clients data
   useEffect(() => {
     const fetchClients = async () => {
-      if (!therapistUser?.id) return
+      if (!user?.id) {
+        console.log('🔍 TherapistClientsPage: No user ID, skipping fetch')
+        return
+      }
 
       try {
+        console.log('🔍 TherapistClientsPage: Fetching clients for therapist:', user.id)
         setLoading(true)
-        const response = await fetch(`/api/therapist/clients?therapistId=${therapistUser.id}`)
+        const response = await fetch(`/api/therapist/clients?therapistId=${user.id}`)
         const data = await response.json()
+        
+        console.log('🔍 TherapistClientsPage: API response:', data)
         
         if (data.clients) {
           setClients(data.clients)
+        } else {
+          console.warn('🔍 TherapistClientsPage: No clients data in response')
+          setClients([])
         }
       } catch (error) {
-        console.error('Error fetching clients:', error)
+        console.error('❌ TherapistClientsPage: Error fetching clients:', error)
+        setClients([])
       } finally {
         setLoading(false)
       }
     }
 
     fetchClients()
-  }, [therapistUser?.id])
+  }, [user?.id])
 
   const filtered = clients.filter((c) => {
     const q = query.trim().toLowerCase()

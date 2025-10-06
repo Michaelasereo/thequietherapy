@@ -1,148 +1,173 @@
 "use client"
 
-import { createContext, useContext, useState, type ReactNode, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { useAuth } from './auth-context'
 
-type TherapistUser = {
+interface TherapistProfile {
   id: string
-  name: string
   email: string
-  role: "therapist"
-  specialization?: string[]
-  licenseNumber?: string
-  phone?: string
-  languages?: string[]
+  full_name: string
+  user_type: 'therapist'
+  is_verified: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  avatar_url?: string
+  session_token?: string
+  // Therapist-specific fields
+  specialization?: string
   bio?: string
-  hourlyRate?: number
-  status?: string
-  // Add other therapist-specific properties as needed
+  experience_years?: number
+  license_number?: string
+  verification_status?: 'pending' | 'approved' | 'rejected'
 }
 
-type TherapistUserContextType = {
-  therapistUser: TherapistUser | null
+interface TherapistUserContextType {
+  therapist: TherapistProfile | null
   loading: boolean
   isAuthenticated: boolean
-  logout: () => void
-  validateSession: () => Promise<boolean>
+  refreshTherapist: () => Promise<void>
+  logout: () => Promise<void>
 }
 
 const TherapistUserContext = createContext<TherapistUserContextType | undefined>(undefined)
 
-export function TherapistUserProvider({ children }: { children: ReactNode }) {
-  const [therapistUser, setTherapistUser] = useState<TherapistUser | null>(null)
+export function TherapistUserProvider({ children }: { children: React.ReactNode }) {
+  const { user, loading: authLoading, logout: authLogout, refreshUser } = useAuth()
+  const [therapist, setTherapist] = useState<TherapistProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const router = useRouter()
 
-  // Validate session from API call (not client-side cookies)
-  const validateSession = async (): Promise<boolean> => {
-    console.log('🔍 TherapistUserContext: validateSession called')
+  // Refresh therapist data
+  const refreshTherapist = useCallback(async () => {
+    if (!user || user.user_type !== 'therapist') {
+      setTherapist(null)
+      setLoading(false)
+      return
+    }
+
     try {
-      console.log('🔍 TherapistUserContext: Calling /api/therapist/profile for validation...')
+      setLoading(true)
       
-      // Use the therapist profile API for validation
+      // Fetch therapist-specific data
       const response = await fetch('/api/therapist/profile', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache'
         }
       })
-      
-      console.log('🔍 TherapistUserContext: API response status:', response.status)
-      
+
       if (response.ok) {
         const data = await response.json()
-        console.log('🔍 TherapistUserContext: API response data:', data)
-        
-        if (data.success) {
-          console.log('✅ TherapistUserContext: Session validated successfully')
-          setTherapistUser({
-            id: data.therapist.id,
-            name: data.therapist.full_name,
-            email: data.therapist.email,
-            role: 'therapist',
-            specialization: data.therapist.specialization,
-            licenseNumber: data.therapist.license_number,
-            phone: data.therapist.phone,
-            languages: data.therapist.languages,
-            bio: data.therapist.bio,
-            hourlyRate: data.therapist.hourly_rate,
-            status: data.therapist.status
-          })
-          setIsAuthenticated(true)
-          return true
+        if (data.success && data.therapist) {
+          setTherapist(data.therapist)
         } else {
-          console.log('❌ TherapistUserContext: API returned success: false')
-          return false
+          // Fallback to basic user data
+          setTherapist({
+            id: user.id,
+            email: user.email,
+            full_name: user.full_name,
+            user_type: 'therapist',
+            is_verified: user.is_verified,
+            is_active: user.is_active,
+            created_at: user.created_at,
+            updated_at: user.updated_at,
+            avatar_url: user.avatar_url,
+            session_token: user.session_token
+          })
         }
       } else {
-        console.log('❌ TherapistUserContext: API request failed with status:', response.status)
-        return false
+        // Fallback to basic user data
+        setTherapist({
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          user_type: 'therapist',
+          is_verified: user.is_verified,
+          is_active: user.is_active,
+          created_at: user.created_at,
+          updated_at: user.updated_at,
+          avatar_url: user.avatar_url,
+          session_token: user.session_token
+        })
       }
     } catch (error) {
-      console.error('❌ TherapistUserContext: Error validating session:', error)
-      return false
-    }
-  }
-
-  // Initialize auth on mount
-  useEffect(() => {
-    console.log('🔍 TherapistUserContext: useEffect triggered - initializing auth')
-    const initializeAuth = async () => {
-      console.log('🔍 TherapistUserContext: Starting auth initialization...')
-      
-      // Try up to 3 times with increasing delays
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        console.log(`🔍 TherapistUserContext: Auth attempt ${attempt}/3`)
-        
-        if (attempt > 1) {
-          const delay = attempt * 500
-          console.log(`🔍 TherapistUserContext: Waiting ${delay}ms before attempt ${attempt}`)
-          await new Promise(resolve => setTimeout(resolve, delay))
-        }
-        
-        const result = await validateSession()
-        console.log(`🔍 TherapistUserContext: Attempt ${attempt} result:`, result)
-        
-        if (result) {
-          console.log('✅ TherapistUserContext: Auth initialization successful')
-          setLoading(false)
-          return
-        }
-      }
-      
-      console.log('🔍 TherapistUserContext: Setting loading to false')
+      console.error('Error fetching therapist data:', error)
+      // Fallback to basic user data
+      setTherapist({
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        user_type: 'therapist',
+        is_verified: user.is_verified,
+        is_active: user.is_active,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        avatar_url: user.avatar_url,
+        session_token: user.session_token
+      })
+    } finally {
       setLoading(false)
     }
+  }, [user])
 
-    initializeAuth()
-  }, [])
+  // Logout function
+  const logout = useCallback(async () => {
+    try {
+      await authLogout()
+      setTherapist(null)
+    } catch (error) {
+      console.error('Error during therapist logout:', error)
+    }
+  }, [authLogout])
 
-  const logout = () => {
-    // Clear therapist user cookie
-    document.cookie = 'trpi_therapist_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-    // Also clear individual user cookie in case therapist was using that
-    document.cookie = 'trpi_individual_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-    
-    setTherapistUser(null)
-    setIsAuthenticated(false)
-    router.push('/therapist/login')
+  // Initial load and user changes
+  useEffect(() => {
+    if (authLoading) {
+      setLoading(true)
+      return
+    }
+
+    if (!user) {
+      setTherapist(null)
+      setLoading(false)
+      return
+    }
+
+    if (user.user_type === 'therapist') {
+      refreshTherapist()
+    } else {
+      setTherapist(null)
+      setLoading(false)
+    }
+  }, [user, authLoading, refreshTherapist])
+
+  // Periodic refresh (every 5 minutes)
+  useEffect(() => {
+    if (!user || user.user_type !== 'therapist') return
+
+    const interval = setInterval(() => {
+      refreshTherapist()
+    }, 5 * 60 * 1000) // 5 minutes
+
+    return () => clearInterval(interval)
+  }, [user, refreshTherapist])
+
+  const value: TherapistUserContextType = {
+    therapist,
+    loading,
+    isAuthenticated: !!therapist,
+    refreshTherapist,
+    logout
   }
 
   return (
-    <TherapistUserContext.Provider value={{
-      therapistUser,
-      loading,
-      isAuthenticated,
-      logout,
-      validateSession
-    }}>
+    <TherapistUserContext.Provider value={value}>
       {children}
     </TherapistUserContext.Provider>
   )
 }
 
-export function useTherapistUser() {
+export function useTherapistUser(): TherapistUserContextType {
   const context = useContext(TherapistUserContext)
   if (context === undefined) {
     throw new Error('useTherapistUser must be used within a TherapistUserProvider')

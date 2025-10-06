@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { SessionManager } from '@/lib/session-manager'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -93,24 +93,26 @@ export async function GET(request: NextRequest) {
       user_type: userData.user_type
     })
 
-    // Set admin session cookie
-    const cookieStore = await cookies()
-    const sessionData = {
+    // Create unified session using SessionManager
+    const sessionResult = await SessionManager.createSession({
       id: userData.id,
       email: userData.email,
-      name: userData.full_name || userData.email?.split('@')[0],
+      name: userData.full_name || userData.email?.split('@')[0] || 'Admin',
       role: 'admin',
-      session_token: 'admin-session-' + Date.now()
-    }
-
-    cookieStore.set('trpi_admin_user', JSON.stringify(sessionData), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/',
+      user_type: 'admin',
+      is_verified: userData.is_verified || true,
+      is_active: userData.is_active || true
     })
 
-    console.log('✅ Admin session cookie set')
+    if (!sessionResult) {
+      console.error('❌ Failed to create admin session')
+      return NextResponse.json(
+        { success: false, error: 'Failed to create session' },
+        { status: 500 }
+      )
+    }
+
+    console.log('✅ Admin unified session created')
 
     // Redirect to admin dashboard
     console.log('🔄 Redirecting to admin dashboard')

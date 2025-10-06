@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback } from 'react'
 
 // Admin-specific data interfaces
 export interface AdminData {
@@ -447,8 +447,8 @@ const AdminDashboardContext = createContext<{
 export function AdminDashboardProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(adminDashboardReducer, initialState)
 
-  // Data fetching functions
-  const fetchAdminData = async () => {
+  // Data fetching functions - memoized with useCallback
+  const fetchAdminData = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true })
     try {
       // Mock data for now - replace with actual API call
@@ -468,9 +468,9 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false })
     }
-  }
+  }, [])
 
-  const fetchSystemUsers = async () => {
+  const fetchSystemUsers = useCallback(async () => {
     try {
       // Mock data for now - replace with actual API call
       const mockSystemUsers: SystemUser[] = [
@@ -503,9 +503,9 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching system users:', error)
     }
-  }
+  }, [])
 
-  const fetchSystemStats = async () => {
+  const fetchSystemStats = useCallback(async () => {
     try {
       // Mock data for now - replace with actual API call
       const mockSystemStats: SystemStats = {
@@ -547,9 +547,9 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching system stats:', error)
     }
-  }
+  }, [])
 
-  const fetchSystemSettings = async () => {
+  const fetchSystemSettings = useCallback(async () => {
     try {
       // Mock data for now - replace with actual API call
       const mockSystemSettings: SystemSettings = {
@@ -571,64 +571,64 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching system settings:', error)
     }
-  }
+  }, [])
 
-  // Helper functions
-  const toggleSidebar = () => {
+  // Helper functions - memoized with useCallback
+  const toggleSidebar = useCallback(() => {
     dispatch({ type: 'SET_SIDEBAR_COLLAPSED', payload: !state.sidebarCollapsed })
-  }
+  }, [state.sidebarCollapsed])
 
-  const setActiveSection = (section: string) => {
+  const setActiveSection = useCallback((section: string) => {
     dispatch({ type: 'SET_ACTIVE_SECTION', payload: section })
-  }
+  }, [])
 
-  const addNotification = (notification: AdminNotification) => {
+  const addNotification = useCallback((notification: AdminNotification) => {
     dispatch({ type: 'ADD_NOTIFICATION', payload: notification })
-  }
+  }, [])
 
-  const setSidebarHover = (isHovered: boolean) => {
+  const setSidebarHover = useCallback((isHovered: boolean) => {
     dispatch({ type: 'SET_SIDEBAR_HOVER', payload: isHovered })
-  }
+  }, [])
 
-  const setActiveSidebarItem = (item: string) => {
+  const setActiveSidebarItem = useCallback((item: string) => {
     dispatch({ type: 'SET_ACTIVE_SIDEBAR_ITEM', payload: item })
-  }
+  }, [])
 
-  const toggleSidebarItemExpansion = (item: string) => {
+  const toggleSidebarItemExpansion = useCallback((item: string) => {
     dispatch({ type: 'TOGGLE_SIDEBAR_ITEM_EXPANSION', payload: item })
-  }
+  }, [])
 
-  const updateSidebarAlerts = (criticalAlerts: number, pendingActions: number) => {
+  const updateSidebarAlerts = useCallback((criticalAlerts: number, pendingActions: number) => {
     dispatch({ type: 'UPDATE_SIDEBAR_ALERTS', payload: { criticalAlerts, pendingActions } })
-  }
+  }, [])
 
-  const setStatsCardState = (card: keyof AdminDashboardState['cardStates']['statsCards'], state: Partial<AdminDashboardState['cardStates']['statsCards'][keyof AdminDashboardState['cardStates']['statsCards']]>) => {
+  const setStatsCardState = useCallback((card: keyof AdminDashboardState['cardStates']['statsCards'], state: Partial<AdminDashboardState['cardStates']['statsCards'][keyof AdminDashboardState['cardStates']['statsCards']]>) => {
     dispatch({ type: 'SET_STATS_CARD_STATE', payload: { card, state } })
-  }
+  }, [])
 
-  const setUserCardState = (userId: string, state: Partial<AdminDashboardState['cardStates']['userCards'][string]>) => {
+  const setUserCardState = useCallback((userId: string, state: Partial<AdminDashboardState['cardStates']['userCards'][string]>) => {
     dispatch({ type: 'SET_USER_CARD_STATE', payload: { userId, state } })
-  }
+  }, [])
 
-  const setSystemCardState = (systemId: string, state: Partial<AdminDashboardState['cardStates']['systemCards'][string]>) => {
+  const setSystemCardState = useCallback((systemId: string, state: Partial<AdminDashboardState['cardStates']['systemCards'][string]>) => {
     dispatch({ type: 'SET_SYSTEM_CARD_STATE', payload: { systemId, state } })
-  }
+  }, [])
 
-  const setQuickActionCardState = (card: keyof AdminDashboardState['cardStates']['quickActionCards'], state: Partial<AdminDashboardState['cardStates']['quickActionCards'][keyof AdminDashboardState['cardStates']['quickActionCards']]>) => {
+  const setQuickActionCardState = useCallback((card: keyof AdminDashboardState['cardStates']['quickActionCards'], state: Partial<AdminDashboardState['cardStates']['quickActionCards'][keyof AdminDashboardState['cardStates']['quickActionCards']]>) => {
     dispatch({ type: 'SET_QUICK_ACTION_CARD_STATE', payload: { card, state } })
-  }
+  }, [])
 
-  const setPrimaryButtonState = (buttonId: string, state: Partial<AdminDashboardState['buttonStates']['primaryButtons'][string]>) => {
+  const setPrimaryButtonState = useCallback((buttonId: string, state: Partial<AdminDashboardState['buttonStates']['primaryButtons'][string]>) => {
     dispatch({ type: 'SET_PRIMARY_BUTTON_STATE', payload: { buttonId, state } })
-  }
+  }, [])
 
-  const setIconButtonState = (buttonId: string, state: Partial<AdminDashboardState['buttonStates']['iconButtons'][string]>) => {
+  const setIconButtonState = useCallback((buttonId: string, state: Partial<AdminDashboardState['buttonStates']['iconButtons'][string]>) => {
     dispatch({ type: 'SET_ICON_BUTTON_STATE', payload: { buttonId, state } })
-  }
+  }, [])
 
-  const setIconState = (iconId: string, state: Partial<AdminDashboardState['iconStates'][string]>) => {
+  const setIconState = useCallback((iconId: string, state: Partial<AdminDashboardState['iconStates'][string]>) => {
     dispatch({ type: 'SET_ICON_STATE', payload: { iconId, state } })
-  }
+  }, [])
 
   // Load initial data
   useEffect(() => {
@@ -636,9 +636,9 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     fetchSystemUsers()
     fetchSystemStats()
     fetchSystemSettings()
-  }, [])
+  }, [fetchAdminData, fetchSystemUsers, fetchSystemStats, fetchSystemSettings])
 
-  const contextValue = {
+  const contextValue = React.useMemo(() => ({
     state,
     dispatch,
     fetchAdminData,
@@ -659,7 +659,27 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     setPrimaryButtonState,
     setIconButtonState,
     setIconState
-  }
+  }), [
+    state,
+    fetchAdminData,
+    fetchSystemUsers,
+    fetchSystemStats,
+    fetchSystemSettings,
+    toggleSidebar,
+    setActiveSection,
+    addNotification,
+    setSidebarHover,
+    setActiveSidebarItem,
+    toggleSidebarItemExpansion,
+    updateSidebarAlerts,
+    setStatsCardState,
+    setUserCardState,
+    setSystemCardState,
+    setQuickActionCardState,
+    setPrimaryButtonState,
+    setIconButtonState,
+    setIconState
+  ])
 
   return (
     <AdminDashboardContext.Provider value={contextValue}>

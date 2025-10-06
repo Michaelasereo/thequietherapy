@@ -7,7 +7,7 @@ import TherapistCard from "@/components/therapist-card"
 import TherapistProfileModal from "@/components/therapist-profile-modal"
 
 interface BookingStep2Props {
-  onNext: (therapistId: string) => void
+  onNext: (therapistId: string, therapistData?: any) => void
   onBack: () => void
   initialSelectedTherapistId?: string
 }
@@ -32,15 +32,52 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
 
   // Fetch real therapist data
   useEffect(() => {
+    setLoading(true)
+    
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setLoading(false)
+      setTherapists([])
+    }, 10000)
+    
     fetch('/api/therapists')
-      .then(response => response.json())
+      .then(response => {
+        clearTimeout(timeoutId)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        return response.json()
+      })
       .then(data => {
-        if (data.success) {
-          setTherapists(data.therapists)
+        if (data.success && Array.isArray(data.therapists)) {
+          // Transform API data to match TherapistCard expected format
+          const transformedTherapists = data.therapists.map((therapist: any) => ({
+            id: therapist.id,
+            name: therapist.full_name || 'Unknown Therapist',
+            email: therapist.email,
+            picture: therapist.profile_image_url || '/placeholder.svg',
+            specialization: Array.isArray(therapist.specializations) 
+              ? therapist.specializations.join(', ') || 'General Therapy'
+              : therapist.specializations || 'General Therapy',
+            gender: therapist.gender || '',
+            age: therapist.age || '',
+            maritalStatus: therapist.maritalStatus || '',
+            isVerified: therapist.verification_status === 'verified',
+            is_active: therapist.availability_status === 'available',
+            hourly_rate: therapist.session_rate || 5000,
+            bio: therapist.bio || 'Professional therapist ready to help you.',
+            languages: therapist.languages || ['English']
+          }))
+          
+          setTherapists(transformedTherapists)
+        } else {
+          setTherapists([])
         }
       })
       .catch(error => {
+        clearTimeout(timeoutId)
         console.error('Error fetching therapists:', error)
+        setTherapists([])
       })
       .finally(() => {
         setLoading(false)
@@ -95,6 +132,7 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {loading ? (
           <div className="col-span-full text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-muted-foreground mb-4">Loading therapists...</p>
           </div>
         ) : filteredTherapists.length > 0 ? (
@@ -119,7 +157,15 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button onClick={() => selectedTherapistId && onNext(selectedTherapistId)} disabled={!selectedTherapistId}>
+        <Button 
+          onClick={() => {
+            if (selectedTherapistId) {
+              const selectedTherapist = therapists.find(t => t.id === selectedTherapistId)
+              onNext(selectedTherapistId, selectedTherapist)
+            }
+          }} 
+          disabled={!selectedTherapistId}
+        >
           Next: Choose Availability
         </Button>
       </div>

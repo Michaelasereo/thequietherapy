@@ -1,7 +1,7 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import Cookies from 'js-cookie'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
+import { ClientSessionManager } from '@/lib/client-session-manager'
 
 interface UserProfile {
   id: string
@@ -33,42 +33,81 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Debounce utility function
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), wait)
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [userType, setUserType] = useState<'individual' | 'therapist' | 'partner' | 'admin' | null>(null)
+  const isValidatingRef = useRef(false)
+  const lastValidationRef = useRef<number>(0)
 
-  // Validate session from cookie
-  const validateSession = async (): Promise<boolean> => {
+  // Validate session using SessionManager
+  const validateSession = async (retryCount = 0): Promise<boolean> => {
+    // Prevent concurrent validation calls
+    if (isValidatingRef.current) {
+      console.log('🔍 Validation already in progress, skipping...')
+      return !!user
+    }
+
+    // Cache validation results for 10 seconds
+    const now = Date.now()
+    if (now - lastValidationRef.current < 10000 && user) {
+      console.log('🔍 Using cached validation result')
+      return true
+    }
+
+    isValidatingRef.current = true
+    
     try {
-      // Call the /api/auth/me endpoint which can read HTTP-only cookies server-side
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include', // This ensures cookies are sent
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      })
+      // Check session using ClientSessionManager
+      const sessionData = ClientSessionManager.getSession()
       
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success && data.user) {
-          setUser(data.user)
-          // Determine user type from the user data
-          const userType = data.user.user_type as 'individual' | 'therapist' | 'partner' | 'admin'
-          setUserType(userType)
-          return true
+      if (sessionData) {
+        // Convert session data to UserProfile format
+        const userProfile: UserProfile = {
+          id: sessionData.id,
+          email: sessionData.email,
+          full_name: sessionData.name,
+          user_type: sessionData.user_type,
+          credits: 0, // Default value
+          package_type: 'basic', // Default value
+          is_verified: sessionData.is_verified,
+          is_active: sessionData.is_active,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          session_token: sessionData.session_token
         }
+        
+        setUser(userProfile)
+        setUserType(sessionData.user_type as 'individual' | 'therapist' | 'partner' | 'admin')
+        lastValidationRef.current = now
+        console.log('✅ Magic link session validated for user:', sessionData.email, 'type:', sessionData.user_type)
+        isValidatingRef.current = false
+        return true
+      } else {
+        console.log('❌ No valid session found')
+        setUser(null)
+        setUserType(null)
+        isValidatingRef.current = false
+        return false
       }
       
-      // If we get here, the session is invalid
-      setUser(null)
-      setUserType(null)
-      return false
-      
     } catch (error: unknown) {
-      console.error('Session validation error:', error)
+      console.error('❌ Magic link session validation error:', error)
       setUser(null)
       setUserType(null)
+      isValidatingRef.current = false
       return false
     }
   }
@@ -82,88 +121,118 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Login function
+  // Login function - sends magic link
   const login = async (email: string, userType: 'individual' | 'therapist' | 'partner' | 'admin'): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/send-magic-link', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, userType })
+        body: JSON.stringify({
+          email: email.trim(),
+          user_type: userType,
+          type: 'login'
+        }),
       })
 
       const data = await response.json()
-
-      if (data.success) {
-        return { success: true }
-      } else {
-        return { success: false, error: data.error || 'Login failed' }
-      }
+      return data
     } catch (error) {
       console.error('Login error:', error)
       return { success: false, error: 'Network error. Please try again.' }
     }
   }
 
-  // Signup function
+  // Signup function - sends magic link
   const signup = async (email: string, fullName: string, userType: 'individual' | 'therapist' | 'partner' | 'admin'): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch('/api/auth/send-magic-link', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, fullName, userType })
+        body: JSON.stringify({
+          email: email.trim(),
+          user_type: userType,
+          type: 'signup',
+          metadata: {
+            first_name: fullName
+          }
+        }),
       })
 
       const data = await response.json()
-
-      if (data.success) {
-        return { success: true }
-      } else {
-        return { success: false, error: data.error || 'Signup failed' }
-      }
+      return data
     } catch (error) {
       console.error('Signup error:', error)
       return { success: false, error: 'Network error. Please try again.' }
     }
   }
 
-  // Logout function
+  // Logout function - clears session
   const logout = async () => {
     try {
-      // Call logout API
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      })
+      console.log('🔐 Starting magic link logout...')
+      
+      // Clear session using ClientSessionManager
+      ClientSessionManager.clearSession()
+      
+      // Clear local state
+      setUser(null)
+      setUserType(null)
+      
+      console.log('✅ Magic link logout completed')
+      
+      // Redirect to login page
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
     } catch (error) {
-      console.error('Logout API error:', error)
+      console.error('❌ Magic link logout error:', error)
+      
+      // Fallback: clear local state and redirect
+      setUser(null)
+      setUserType(null)
+      
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
     }
-
-    // Clear all auth cookies
-    const cookieKeys: string[] = [
-      'trpi_individual_user',
-      'trpi_therapist_user',
-      'trpi_partner_user',
-      'trpi_admin_user'
-    ]
-    cookieKeys.forEach((name) => Cookies.remove(name))
-    
-    setUser(null)
-    setUserType(null)
   }
 
-  // Initialize auth state
+  // Initialize auth state with magic link sessions
   useEffect(() => {
     const initAuth = async () => {
       setLoading(true)
-      await validateSession()
+      
+      try {
+        console.log('🔍 Initializing magic link auth...')
+        await validateSession()
+      } catch (error) {
+        console.error('❌ Auth initialization error:', error)
+        setUser(null)
+        setUserType(null)
+      }
+      
       setLoading(false)
     }
 
     initAuth()
+    
+    // Set up periodic session refresh (every 30 minutes, less aggressive)
+    const refreshInterval = setInterval(() => {
+      if (!isValidatingRef.current && user) {
+        console.log('🔄 Periodic magic link session refresh...')
+        validateSession().catch(error => {
+          console.log('Session refresh failed (non-critical):', error)
+        })
+      }
+    }, 30 * 60 * 1000) // 30 minutes
+    
+    return () => {
+      clearInterval(refreshInterval)
+    }
   }, [])
 
   const value: AuthContextType = {

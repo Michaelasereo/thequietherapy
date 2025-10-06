@@ -32,10 +32,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const validateSession = async (): Promise<boolean> => {
     console.log('🔍 AdminContext: validateSession called')
     try {
-      console.log('🔍 AdminContext: Calling /api/admin/me for validation...')
+      console.log('🔍 AdminContext: Calling /api/auth/me for validation...')
       
-      // Use the admin profile API for validation
-      const response = await fetch('/api/admin/me', {
+      // Use the unified auth API for validation
+      const response = await fetch('/api/auth/me', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache'
@@ -48,14 +48,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         const data = await response.json()
         console.log('🔍 AdminContext: API response data:', data)
         
-        if (data.success && data.admin) {
-          console.log('✅ AdminContext: Session validated successfully')
+        if (data.success && data.user && data.user.user_type === 'admin') {
+          console.log('✅ AdminContext: Admin session validated successfully')
           setAdminUser({
-            id: data.admin.id,
-            email: data.admin.email,
-            name: data.admin.full_name || data.admin.email.split('@')[0],
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.full_name || data.user.email.split('@')[0],
             role: 'admin',
-            session_token: data.admin.session_token || 'admin-session'
+            session_token: data.user.session_token || 'admin-session'
           })
           setIsAuthenticated(true)
           return true
@@ -79,21 +79,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const initializeAuth = async () => {
       console.log('🔍 AdminContext: Initializing authentication...')
       
-      // Check for admin cookie first
-      const storedAdmin = Cookies.get("trpi_admin_user")
-      if (storedAdmin) {
-        try {
-          const parsedAdmin = JSON.parse(storedAdmin)
-          console.log('🔍 AdminContext: Found admin cookie:', parsedAdmin)
-          setAdminUser(parsedAdmin)
-          setIsAuthenticated(true)
-        } catch (error) {
-          console.error('❌ AdminContext: Error parsing admin cookie:', error)
-          Cookies.remove("trpi_admin_user")
-        }
-      }
-      
-      // Validate session with server
+      // Validate session with server (no need to check old cookies)
       await validateSession()
       setLoading(false)
     }
@@ -103,7 +89,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     console.log('🔍 AdminContext: Logging out...')
-    Cookies.remove("trpi_admin_user")
+    // Clear unified session cookie
+    Cookies.remove("quiet_session")
     setAdminUser(null)
     setIsAuthenticated(false)
     router.push("/admin/login")

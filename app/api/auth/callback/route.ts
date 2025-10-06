@@ -1,7 +1,4 @@
 import { NextResponse } from 'next/server';
-import { validateMagicLink, markMagicLinkUsed } from '@/lib/auth/magic-link';
-import { createSession } from '@/lib/auth/session';
-import { writeSessionCookie } from '@/lib/auth/cookies';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -16,55 +13,56 @@ function redirectTo(url: string, base: string) {
 export async function GET(req: Request) {
   const base = process.env.NEXT_PUBLIC_APP_URL!;
   const { searchParams } = new URL(req.url);
-  const token = searchParams.get('token');
-  const userType = searchParams.get('userType') || 'individual';
-
-  if (!token) {
-    return redirectTo('/login?error=missing_token', base);
-  }
+  const userType = searchParams.get('user_type') || 'individual';
 
   try {
-    // Validate the magic link
-    const { email, userType: linkUserType, isValid } = await validateMagicLink(token);
-
-    if (!isValid || !email) {
-      return redirectTo('/login?error=invalid_or_expired', base);
+    console.log('🔍 Supabase auth callback - processing...');
+    
+    // Handle Supabase auth callback
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error || !data.session) {
+      console.log('❌ Supabase auth callback failed:', error);
+      return redirectTo('/login?error=auth_failed', base);
     }
 
-    // Check if user exists
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
+    const user = data.session.user;
+    console.log('✅ Supabase auth successful for user:', user.email);
 
-    if (userError || !user) {
-      return redirectTo('/login?error=user_not_found', base);
-    }
-
-    // Verify user type matches (if specified)
-    if (userType !== 'individual' && user.user_type !== userType) {
-      return redirectTo('/login?error=invalid_user_type', base);
-    }
-
-    // Mark magic link as used and create session atomically
-    const sessionToken = await createSession(user.id, user.email, user.user_type);
-    await markMagicLinkUsed(token);
-
-    // Set session cookie
-    await writeSessionCookie(sessionToken);
-
+    // Get user type from the auth data or URL parameter
+    const userTypeFromAuth = user.user_metadata?.user_type || userType;
+    
     // Redirect to appropriate dashboard
     let redirectPath = '/dashboard';
-    if (user.user_type === 'therapist') {
+    if (userTypeFromAuth === 'therapist') {
       redirectPath = '/therapist/dashboard';
-    } else if (user.user_type === 'partner') {
+    } else if (userTypeFromAuth === 'partner') {
       redirectPath = '/partner/dashboard';
-    } else if (user.user_type === 'admin') {
+    } else if (userTypeFromAuth === 'admin') {
       redirectPath = '/admin/dashboard';
     }
 
-    return redirectTo(redirectPath, base);
+    // Create redirect response
+    const response = NextResponse.redirect(new URL(redirectPath, base));
+    
+    // Set session cookie for the application
+    response.cookies.set('supabase_session', JSON.stringify({
+      user: {
+        id: user.id,
+        email: user.email,
+        user_type: userTypeFromAuth,
+        name: user.user_metadata?.full_name || user.email.split('@')[0]
+      },
+      session: data.session
+    }), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Auth callback error:', error);

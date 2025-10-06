@@ -3,17 +3,19 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { useEffect } from "react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { therapists } from "@/lib/data"
+// Therapists data - moved from lib/data.ts (empty array since therapists are fetched from API)
+const therapists: any[] = []
 
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
-  phone: z.string().min(10, { message: "Please enter a valid phone number." }),
+  phone: z.string().optional(),
   country: z.string().min(1, { message: "Please select your country." }),
   complaints: z.string().min(10, { message: "Please describe your concerns in more detail." }),
   age: z.string().min(1, { message: "Age is required." }),
@@ -32,14 +34,18 @@ type PatientBiodataFormValues = z.infer<typeof formSchema>
 interface BookingStep1Props {
   onNext: (data: PatientBiodataFormValues) => void
   initialData?: PatientBiodataFormValues
+  userData?: {
+    full_name?: string
+    email?: string
+  }
 }
 
-export default function BookingStep1({ onNext, initialData }: BookingStep1Props) {
+export default function BookingStep1({ onNext, initialData, userData }: BookingStep1Props) {
   const form = useForm<PatientBiodataFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
-      firstName: "",
-      email: "",
+      firstName: userData?.full_name || "",
+      email: userData?.email || "",
       phone: "",
       country: "",
       complaints: "",
@@ -50,6 +56,14 @@ export default function BookingStep1({ onNext, initialData }: BookingStep1Props)
       therapistSpecializationPreference: "no-preference",
     },
   })
+
+  // Update form values when userData changes
+  useEffect(() => {
+    if (userData?.full_name || userData?.email) {
+      form.setValue('firstName', userData.full_name || '')
+      form.setValue('email', userData.email || '')
+    }
+  }, [userData, form])
 
   function onSubmit(data: PatientBiodataFormValues) {
     onNext(data)
@@ -260,6 +274,9 @@ export default function BookingStep1({ onNext, initialData }: BookingStep1Props)
         {/* Contact Information Section */}
         <div className="space-y-4">
           <h4 className="text-lg font-medium text-gray-900">Contact Information</h4>
+          <p className="text-sm text-gray-600">
+            Your name and email are pre-filled from your account and cannot be changed here.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -268,7 +285,12 @@ export default function BookingStep1({ onNext, initialData }: BookingStep1Props)
                 <FormItem>
                   <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John" {...field} />
+                    <Input 
+                      placeholder="John" 
+                      {...field} 
+                      disabled
+                      className="bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed" 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -281,7 +303,13 @@ export default function BookingStep1({ onNext, initialData }: BookingStep1Props)
                 <FormItem>
                   <FormLabel>Email Address</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="john@example.com" {...field} />
+                    <Input 
+                      type="email" 
+                      placeholder="john@example.com" 
+                      {...field} 
+                      disabled
+                      className="bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed" 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -294,7 +322,7 @@ export default function BookingStep1({ onNext, initialData }: BookingStep1Props)
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
+                  <FormLabel>Phone Number (Optional)</FormLabel>
                   <FormControl>
                     <Input type="tel" placeholder="+234 801 234 5678" {...field} />
                   </FormControl>

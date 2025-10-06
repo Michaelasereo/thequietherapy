@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { recentApplications } from "@/lib/data"
+// Recent applications data - moved from lib/data.ts (empty array since applications are fetched from API)
+const recentApplications: any[] = []
 import Link from "next/link"
 
 export default function RecentApplicationsSection() {

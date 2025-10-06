@@ -1,187 +1,317 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireApiAuth } from '@/lib/server-auth'
+import { ValidationError, ConflictError, NotFoundError, successResponse, validateRequired } from '@/lib/api-response'
+import { handleApiError } from '@/lib/app-error-handler'
+import { createRequestId, addRequestIdHeader, logWithRequestId } from '@/lib/log-request-id'
+import { trackApiCall } from '@/lib/monitoring'
+import { canBookTimeSlot, isTestTherapist, getTestTime } from '@/lib/dev-time-utils'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function POST(request: NextRequest) {
+// Types for better type safety
+interface BookingRequest {
+  therapist_id: string
+  session_date: string // YYYY-MM-DD
+  start_time: string // HH:MM
+  duration?: number // minutes, default 30
+  session_type?: 'video' | 'audio' | 'chat'
+  notes?: string
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const requestId = createRequestId();
+  
   try {
-    const { 
-      userId, 
-      therapistId, 
-      sessionDate, 
-      sessionTime, 
-      sessionDuration = 60,
-      sessionType = 'video',
+    // 1. SECURE Authentication Check - verify server-side session
+    const authResult = await requireApiAuth(['individual'])
+    if ('error' in authResult) {
+      return addRequestIdHeader(NextResponse.json(authResult.error, { status: 401 }), requestId)
+    }
+
+    const { session } = authResult
+    const userId = session.user.id // This is now TRUSTED and verified
+    const userEmail = session.user.email
+    const userName = session.user.full_name
+
+    // 2. Parse and validate request
+    const requestData: BookingRequest = await request.json()
+    
+    // Use centralized validation
+    validateRequired(requestData, ['therapist_id', 'session_date', 'start_time'])
+    
+    const {
+      therapist_id,
+      session_date,
+      start_time,
+      duration = 30, // Default to 30 minutes for therapy session
+      session_type = 'video',
       notes = ''
-    } = await request.json()
+    } = requestData
 
-    if (!userId || !therapistId || !sessionDate || !sessionTime) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    logWithRequestId(requestId, 'info', 'Processing booking request', {
+      therapist_id,
+      session_date,
+      start_time,
+      duration
+    })
+    
+    console.log('🔍 DEBUG: Therapist ID type:', typeof therapist_id)
+    console.log('🔍 DEBUG: Therapist ID value:', therapist_id)
 
-    // Check if therapist is available and approved
+    // 3. Validate therapist exists and is available
+    console.log('🔍 DEBUG: Looking for therapist with ID:', therapist_id)
+    
     const { data: therapist, error: therapistError } = await supabase
-      .from('therapist_auth')
-      .select('is_active, is_verified, status')
-      .eq('user_id', therapistId)
+      .from('users')
+      .select(`
+        id,
+        full_name,
+        email,
+        user_type,
+        is_active,
+        is_verified,
+        therapist_profiles!inner (
+          verification_status,
+          is_verified
+        )
+      `)
+      .eq('id', therapist_id)
+      .eq('user_type', 'therapist')
+      .eq('is_active', true)
+      .eq('is_verified', true)
+      .eq('therapist_profiles.verification_status', 'approved')
       .single()
 
-    if (therapistError || !therapist) {
-      return NextResponse.json(
-        { success: false, error: 'Therapist not found' },
-        { status: 404 }
-      )
+    console.log('🔍 DEBUG: Therapist query result:', { therapist, therapistError })
+
+    if (therapistError) {
+      console.error('❌ Therapist query error:', therapistError)
+      throw new NotFoundError('Therapist not found or not available')
     }
 
-    if (therapist.status !== 'approved') {
-      return NextResponse.json(
-        { success: false, error: 'Therapist is not approved' },
-        { status: 400 }
-      )
+    if (!therapist) {
+      console.error('❌ No therapist found with ID:', therapist_id)
+      throw new NotFoundError('Therapist not found or not available')
     }
 
-    if (!therapist.is_active) {
-      return NextResponse.json(
-        { success: false, error: 'Therapist is not currently available' },
-        { status: 400 }
-      )
-    }
+    console.log('✅ Therapist found:', therapist.full_name)
 
-    // Check if user has enough credits
-    const { data: user, error: userError } = await supabase
-      .from('individual_auth')
-      .select('credits')
-      .eq('user_id', userId)
-      .single()
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    if (user.credits < 1) {
-      return NextResponse.json(
-        { success: false, error: 'Insufficient credits. Please purchase more credits.' },
-        { status: 400 }
-      )
-    }
-
-    // Check for scheduling conflicts
-    const sessionDateTime = new Date(`${sessionDate}T${sessionTime}`)
-    const sessionEndTime = new Date(sessionDateTime.getTime() + sessionDuration * 60000)
-
-    const { data: conflictingSessions, error: conflictError } = await supabase
-      .from('sessions')
+    // 4. Check if user has available credits (check both 'individual' and 'user' types)
+    const { data: userCredits, error: creditsError } = await supabase
+      .from('user_credits')
       .select('*')
-      .or(`therapist_id.eq.${therapistId},user_id.eq.${userId}`)
-      .gte('start_time', sessionDateTime.toISOString())
-      .lt('start_time', sessionEndTime.toISOString())
-
-    if (conflictError) {
-      console.error('Error checking conflicts:', conflictError)
-      return NextResponse.json(
-        { success: false, error: 'Error checking availability' },
-        { status: 500 }
-      )
-    }
-
-    if (conflictingSessions && conflictingSessions.length > 0) {
-      return NextResponse.json(
-        { success: false, error: 'Time slot is not available' },
-        { status: 400 }
-      )
-    }
-
-    // Create the session
-    const { data: session, error: sessionError } = await supabase
-      .from('sessions')
-      .insert({
-        user_id: userId,
-        therapist_id: therapistId,
-        start_time: sessionDateTime.toISOString(),
-        end_time: sessionEndTime.toISOString(),
-        duration: sessionDuration,
-        session_type: sessionType,
-        status: 'scheduled',
-        notes: notes,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-
-    if (sessionError) {
-      console.error('Error creating session:', sessionError)
-      return NextResponse.json(
-        { success: false, error: 'Failed to book session' },
-        { status: 500 }
-      )
-    }
-
-    // Deduct credits from user
-    const { error: creditError } = await supabase
-      .from('individual_auth')
-      .update({
-        credits: user.credits - 1,
-        updated_at: new Date().toISOString()
-      })
       .eq('user_id', userId)
+      .in('user_type', ['individual', 'user'])
+      .gt('credits_balance', 0)
 
-    if (creditError) {
-      console.error('Error deducting credits:', creditError)
-      // Don't fail the booking if credit deduction fails
+    console.log('🔍 DEBUG: Credit check results:', {
+      userId,
+      userCredits,
+      creditsError,
+      creditsFound: userCredits?.length || 0
+    })
+
+    if (creditsError) {
+      console.error('❌ Error checking user credits:', creditsError)
+      throw new Error('Error checking user credits')
     }
 
-    // Send notifications (you can implement email notifications here)
-    // await sendSessionConfirmationEmail(userId, therapistId, session)
+    if (!userCredits || userCredits.length === 0) {
+      throw new ValidationError('You need to purchase a session package before booking. Please buy credits first.')
+    }
 
-    return NextResponse.json({
-      success: true,
-      session: session,
-      message: 'Session booked successfully'
+    // 5. Create session datetime objects with GMT+1 timezone
+    const sessionDateTime = new Date(`${session_date}T${start_time}:00+01:00`)
+    const sessionEndTime = new Date(sessionDateTime.getTime() + duration * 60000)
+
+    // 🚀 DEVELOPMENT BYPASS: Allow immediate booking for test therapists
+    if (process.env.NODE_ENV === 'development' && isTestTherapist(therapist_id)) {
+      console.log('🚀 Development mode: Bypassing time validation for test therapist');
+    } else {
+      // Validate session is in the future (with timezone consideration)
+      const now = getTestTime() // Use test time in development
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const sessionDate = new Date(session_date)
+      
+      console.log('🔍 DEBUG: Date validation:', {
+        session_date,
+        start_time,
+        sessionDateTime: sessionDateTime.toISOString(),
+        now: now.toISOString(),
+        today: today.toISOString(),
+        sessionDate: sessionDate.toISOString(),
+        isToday: sessionDate.getTime() === today.getTime(),
+        isPast: sessionDate < today
+      })
+
+      // Allow booking for today if the time is in the future, or any future date
+      if (sessionDate < today) {
+        throw new ValidationError('Cannot book sessions for past dates')
+      }
+      
+      // If booking for today, check if the time is in the future
+      if (sessionDate.getTime() === today.getTime()) {
+        const currentTime = getTestTime()
+        const sessionTime = new Date(`${session_date}T${start_time}:00+01:00`)
+        
+        // Use development time utilities for validation
+        if (!canBookTimeSlot(sessionTime)) {
+          throw new ValidationError('Cannot book sessions in the past. Please select a future time slot.')
+        }
+      }
+    }
+
+    // 6. Check for scheduling conflicts using AvailabilityManager
+    console.log('🔍 DEBUG: Checking availability using AvailabilityManager:', {
+      session_date,
+      start_time,
+      userId,
+      therapist_id
+    })
+    
+    const { AvailabilityManager } = await import('@/lib/availability-manager')
+    const availabilityManager = new AvailabilityManager()
+    
+    const availabilityCheck = await availabilityManager.isSlotAvailable(
+      therapist_id,
+      session_date,
+      start_time,
+      duration
+    )
+
+    console.log('🔍 DEBUG: Availability check results:', {
+      available: availabilityCheck.available,
+      conflicts: availabilityCheck.conflicts
+    })
+
+    if (!availabilityCheck.available) {
+      const conflictMessage = availabilityCheck.conflicts
+        .map(c => c.message)
+        .join('; ')
+      console.log('❌ Availability conflicts found:', conflictMessage)
+      throw new ConflictError(`Time slot is not available: ${conflictMessage}`)
+    }
+
+    // 7. Availability already verified by AvailabilityManager in step 6
+    console.log('✅ Therapist availability confirmed by AvailabilityManager')
+
+    // 8. Create the session atomically with credit deduction and notifications
+    console.log('🔍 Creating session atomically with credit deduction...')
+    const { data: createdSessions, error: rpcError } = await supabase
+      .rpc('create_session_with_credit_deduction', {
+        p_user_id: userId,
+        p_therapist_id: therapist_id,
+        p_session_date: session_date,
+        p_session_time: start_time,
+        p_duration_minutes: duration,
+        p_session_type: session_type,
+        p_notes: notes || `Booking by ${userName} (${userEmail})`,
+        p_title: `Therapy Session - ${userName}`
+      })
+
+    if (rpcError) {
+      // Map known constraint and business errors to proper responses
+      const msg = rpcError.message || ''
+      if (msg.includes('Booking conflict') || msg.includes('sessions_no_overlap_per_therapist')) {
+        throw new ConflictError('This time slot is no longer available')
+      }
+      if (msg.includes('Insufficient credits') || msg.includes('Failed to deduct credits')) {
+        throw new ValidationError('Insufficient credits to book session')
+      }
+      console.error('❌ Atomic booking error:', rpcError)
+      throw new Error('Failed to create session')
+    }
+
+    const sessionRecord = Array.isArray(createdSessions) ? createdSessions[0] : createdSessions
+    const sessionId = sessionRecord?.id
+    if (!sessionId) {
+      throw new Error('Failed to create session')
+    }
+
+    // 9. Create Daily.co room for the session
+    try {
+      const { createTherapySessionRoom } = await import('@/lib/daily')
+      const room = await createTherapySessionRoom({
+        sessionId: sessionId,
+        therapistName: therapist.full_name,
+        patientName: userName,
+        duration: duration,
+        scheduledTime: sessionDateTime
+      })
+
+      // Update session with room URL
+      await supabase
+        .from('sessions')
+        .update({ 
+          session_url: room.url,
+          room_name: room.name
+        })
+        .eq('id', sessionId)
+
+      console.log('✅ Daily.co room created:', room.name)
+    } catch (roomError) {
+      console.error('❌ Failed to create Daily.co room:', roomError)
+      // Don't fail the booking if room creation fails
+    }
+
+    // 10. Credit deduction handled atomically inside the SQL function
+
+    // 11. TODO: Send confirmation emails/notifications
+    // await sendBookingConfirmation(user, therapist, session)
+
+    console.log('✅ Session booked successfully:', sessionId)
+
+    // Track successful booking
+    trackApiCall('/api/sessions/book', true)
+    
+    return successResponse({
+      session: {
+        ...sessionRecord,
+        therapist_name: therapist.full_name,
+        therapist_email: therapist.email
+      }
     })
 
   } catch (error) {
-    console.error('Error in book session API:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    // Track failed booking
+    trackApiCall('/api/sessions/book', false, error)
+    return handleApiError(error)
   }
 }
 
+// GET endpoint for retrieving user sessions
 export async function GET(request: NextRequest) {
   try {
+    // SECURE Authentication Check
+    const authResult = await requireApiAuth(['individual'])
+    if ('error' in authResult) {
+      return NextResponse.json(authResult.error, { status: 401 })
+    }
+
+    const { session } = authResult
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const therapistId = searchParams.get('therapistId')
-    const status = searchParams.get('status')
+    const status = searchParams.get('status') || 'all'
+    const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50) // Max 50 items
 
     let query = supabase
       .from('sessions')
       .select(`
         *,
-        users:user_id (id, full_name, email),
-        therapists:therapist_id (id, full_name, email)
+        therapist:therapist_id (
+          id,
+          full_name,
+          email
+        )
       `)
+      .eq('user_id', session.user.id) // Use verified user ID from session
       .order('start_time', { ascending: true })
+      .limit(limit)
 
-    if (userId) {
-      query = query.eq('user_id', userId)
-    }
-
-    if (therapistId) {
-      query = query.eq('therapist_id', therapistId)
-    }
-
-    if (status) {
+    if (status !== 'all') {
       query = query.eq('status', status)
     }
 
@@ -189,22 +319,14 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching sessions:', error)
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch sessions' },
-        { status: 500 }
-      )
+      throw new Error('Failed to fetch sessions')
     }
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       sessions: sessions || []
     })
 
   } catch (error) {
-    console.error('Error in sessions GET API:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

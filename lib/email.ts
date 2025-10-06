@@ -42,7 +42,7 @@ export async function sendVerificationEmail(email: string, token: string) {
     subject: 'Welcome to Thequietherapy.live - Access Your Dashboard',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #3b82f6;">Welcome to Trpi!</h2>
+        <h2 style="color: #3b82f6;">Welcome to Quiet!</h2>
         <p>Your account has been created successfully! Click the button below to access your dashboard and start your therapy journey:</p>
         <a href="${verificationUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
           🚀 Access Your Dashboard
@@ -56,7 +56,7 @@ export async function sendVerificationEmail(email: string, token: string) {
           <li>Track your progress</li>
           <li>Access your credits and packages</li>
         </ul>
-        <p>Best regards,<br>The Trpi Team</p>
+        <p>Best regards,<br>The Quiet Team</p>
       </div>
     `,
   };
@@ -84,9 +84,9 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   const senderEmail = process.env.SENDER_EMAIL || 'noreply@trpi.com';
   
   const mailOptions = {
-    from: `Trpi <${senderEmail}>`,
+    from: `Quiet <${senderEmail}>`,
     to: email,
-    subject: 'Reset your Trpi password',
+    subject: 'Reset your Quiet password',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #3b82f6;">Password Reset Request</h2>
@@ -96,7 +96,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
         </a>
         <p>If you didn't request this, you can safely ignore this email.</p>
         <p>This link will expire in 1 hour.</p>
-        <p>Best regards,<br>The Trpi Team</p>
+        <p>Best regards,<br>The Quiet Team</p>
       </div>
     `,
   };
@@ -143,24 +143,24 @@ export async function sendMagicLinkEmail(email: string, verificationUrl: string,
       break;
     case 'login':
       if (userType === 'therapist') {
-        subject = 'Login to Your Trpi Therapist Dashboard';
+        subject = 'Login to Your Quiet Therapist Dashboard';
         title = 'Login to Therapist Dashboard';
-        description = 'Click the link below to securely log in to your Trpi therapist dashboard:';
+        description = 'Click the link below to securely log in to your Quiet therapist dashboard:';
       } else if (userType === 'partner') {
-        subject = 'Login to Your Trpi Partner Portal';
+        subject = 'Login to Your Quiet Partner Portal';
         title = 'Login to Partner Portal';
-        description = 'Click the link below to securely log in to your Trpi partner portal:';
+        description = 'Click the link below to securely log in to your Quiet partner portal:';
       } else {
-        subject = 'Login to Your Trpi Account';
-        title = 'Login to Trpi';
-        description = 'Click the link below to securely log in to your Trpi account:';
+        subject = 'Login to Your Quiet Account';
+        title = 'Login to Quiet';
+        description = 'Click the link below to securely log in to your Quiet account:';
       }
       break;
     case 'signup':
       if (userType === 'therapist') {
-        subject = 'Welcome to Trpi - Complete Your Therapist Registration';
-        title = 'Welcome to Trpi!';
-        description = `Hi ${metadata?.first_name || 'there'}, welcome to Trpi! Click the link below to complete your therapist registration and access your professional dashboard:`;
+        subject = 'Welcome to Quiet - Complete Your Therapist Registration';
+        title = 'Welcome to Quiet!';
+        description = `Hi ${metadata?.first_name || 'there'}, welcome to Quiet! Click the link below to complete your therapist registration and access your professional dashboard:`;
       } else if (userType === 'partner') {
         subject = 'Welcome to Trpi - Complete Your Partner Onboarding';
         title = 'Welcome to Trpi!';
@@ -176,7 +176,7 @@ export async function sendMagicLinkEmail(email: string, verificationUrl: string,
   const senderEmail = process.env.SENDER_EMAIL || 'noreply@trpi.com';
   
   const mailOptions = {
-    from: `Trpi <${senderEmail}>`,
+    from: `Quiet <${senderEmail}>`,
     to: email,
     subject: subject,
     html: `
@@ -191,7 +191,7 @@ export async function sendMagicLinkEmail(email: string, verificationUrl: string,
         <p>If the button doesn't work, copy and paste this link into your browser:</p>
         <p style="word-break: break-all; color: #6b7280;">${verificationUrl}</p>
         <p>This link will expire in 24 hours.</p>
-        <p>Best regards,<br>The Trpi Team</p>
+        <p>Best regards,<br>The Quiet Team</p>
       </div>
     `,
   };

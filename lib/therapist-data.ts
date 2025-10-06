@@ -1,4 +1,4 @@
-import { Home, Calendar, Users, DollarSign, Settings, CheckCircle2, Video, Bell } from "lucide-react"
+import { Home, Calendar, Users, DollarSign, Settings, CheckCircle2, Video, Bell, Shield, Plus } from "lucide-react"
 import { supabase } from '@/lib/supabase'
 
 // Types for therapist data
@@ -54,10 +54,11 @@ export interface TherapistDashboardData {
 export async function getTherapistClients(therapistId: string): Promise<TherapistClient[]> {
   try {
     const { data, error } = await supabase
-      .from('global_sessions')
+      .from('sessions')
       .select(`
         user_id,
-        start_time,
+        scheduled_date,
+        scheduled_time,
         users:user_id (
           id,
           full_name,
@@ -67,7 +68,8 @@ export async function getTherapistClients(therapistId: string): Promise<Therapis
       `)
       .eq('therapist_id', therapistId)
       .not('user_id', 'is', null)
-      .order('start_time', { ascending: false })
+      .order('scheduled_date', { ascending: false })
+      .order('scheduled_time', { ascending: false })
 
     if (error) {
       console.error('Error fetching therapist clients:', error)
@@ -119,42 +121,46 @@ export async function getTherapistSessions(therapistId: string): Promise<{
     
     // Get upcoming sessions
     const { data: upcomingData, error: upcomingError } = await supabase
-      .from('global_sessions')
+      .from('sessions')
       .select(`
         id,
-        start_time,
+        scheduled_date,
+        scheduled_time,
         end_time,
         session_type,
         status,
-        session_link,
+        session_url,
         users:user_id (
           full_name,
           email
         )
       `)
       .eq('therapist_id', therapistId)
-      .gte('start_time', now)
-      .order('start_time', { ascending: true })
+      .gte('scheduled_date', now.split('T')[0])
+      .order('scheduled_date', { ascending: true })
+      .order('scheduled_time', { ascending: true })
 
     // Get past sessions
     const { data: pastData, error: pastError } = await supabase
-      .from('global_sessions')
+      .from('sessions')
       .select(`
         id,
-        start_time,
+        scheduled_date,
+        scheduled_time,
         end_time,
         session_type,
         status,
-        session_summary,
-        amount_earned,
+        notes,
+        price,
         users:user_id (
           full_name,
           email
         )
       `)
       .eq('therapist_id', therapistId)
-      .lt('start_time', now)
-      .order('start_time', { ascending: false })
+      .lt('scheduled_date', now.split('T')[0])
+      .order('scheduled_date', { ascending: false })
+      .order('scheduled_time', { ascending: false })
       .limit(20)
 
     if (upcomingError || pastError) {
@@ -164,17 +170,17 @@ export async function getTherapistSessions(therapistId: string): Promise<{
 
     const formatSession = (session: any, isUpcoming: boolean): TherapistSession => ({
       id: session.id,
-      session_date: new Date(session.start_time).toLocaleDateString(),
-      session_time: new Date(session.start_time).toLocaleTimeString([], { 
+      session_date: new Date(`${session.scheduled_date}T${session.scheduled_time}`).toLocaleDateString(),
+      session_time: new Date(`${session.scheduled_date}T${session.scheduled_time}`).toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit' 
       }),
       client_name: session.users?.full_name || 'Unknown Client',
       session_type: session.session_type || 'Therapy Session',
       status: session.status || 'scheduled',
-      session_link: isUpcoming ? session.session_link : undefined,
-      summary: !isUpcoming ? session.session_summary : undefined,
-      amount_earned: !isUpcoming ? session.amount_earned : undefined
+      session_link: isUpcoming ? session.session_url : undefined,
+      summary: !isUpcoming ? session.notes : undefined,
+      amount_earned: !isUpcoming ? session.price : undefined
     })
 
     return {
@@ -257,7 +263,7 @@ export async function getTherapistDashboardData(therapistId: string): Promise<Th
 export async function getClientDetails(clientId: string, therapistId: string) {
   try {
     const { data, error } = await supabase
-      .from('global_sessions')
+      .from('sessions')
       .select(`
         *,
         users:user_id (
@@ -269,7 +275,8 @@ export async function getClientDetails(clientId: string, therapistId: string) {
       `)
       .eq('user_id', clientId)
       .eq('therapist_id', therapistId)
-      .order('start_time', { ascending: false })
+      .order('scheduled_date', { ascending: false })
+      .order('scheduled_time', { ascending: false })
 
     if (error) {
       console.error('Error fetching client details:', error)
@@ -287,7 +294,7 @@ export async function getClientDetails(clientId: string, therapistId: string) {
 export async function checkTherapistClientAccess(therapistId: string, clientId: string): Promise<boolean> {
   try {
     const { data, error } = await supabase
-      .from('global_sessions')
+      .from('sessions')
       .select('id')
       .eq('therapist_id', therapistId)
       .eq('user_id', clientId)
@@ -323,6 +330,7 @@ export const therapistDashboardSidebarGroups = [
   {
     label: "Meetings & Availability",
     items: [
+      { name: "Create Session", href: "/therapist/dashboard/create-session", icon: Plus },
       { name: "Availability", href: "/therapist/dashboard/availability", icon: Calendar },
       { name: "Video Call", href: "/therapist/dashboard/video-call", icon: Video },
     ],
@@ -331,6 +339,12 @@ export const therapistDashboardSidebarGroups = [
     label: "Communication",
     items: [
       { name: "Notifications", href: "/therapist/dashboard/notifications", icon: Bell },
+    ],
+  },
+  {
+    label: "Admin",
+    items: [
+      { name: "Approve Therapists", href: "/admin/dashboard/therapists", icon: Shield },
     ],
   },
 ]

@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
     const cookieValue = JSON.stringify(cookieData)
     console.log('🔍 Verification: Cookie value to set:', cookieValue)
     
-    response.cookies.set("trpi_therapist_user", cookieValue, {
+    response.cookies.set("quiet_therapist_user", cookieValue, {
       httpOnly: false, // Allow client-side access
       secure: process.env.NODE_ENV === "production",
       sameSite: 'lax',

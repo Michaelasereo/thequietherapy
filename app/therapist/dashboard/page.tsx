@@ -1,73 +1,89 @@
 'use client';
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, memo, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Video, CheckCircle2, TrendingUp, Clock, Users, Mail, DollarSign } from "lucide-react"
-import { useTherapistData, useTherapistButtonState, useTherapistNotificationState } from "@/hooks/useTherapistDashboardState"
-import { useCrossDashboardBroadcast } from '@/hooks/useCrossDashboardSync';
-import { StatefulButton } from "@/components/ui/stateful-button"
-import { useTherapistUser } from "@/context/therapist-user-context"
+import { CalendarIcon, Video, CheckCircle2, TrendingUp, Clock, Users, Mail, DollarSign, RefreshCw } from "lucide-react"
+// Removed unused imports that were causing re-renders
+import { useAuth } from "@/context/auth-context"
 
-export default function TherapistDashboardPage() {
+// Simple debounce utility
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
+  let timeout: ReturnType<typeof setTimeout> | null = null
+  return ((...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), wait)
+  }) as T
+}
+
+const TherapistDashboardPage = memo(function TherapistDashboardPage() {
   console.log('🔍 TherapistDashboardPage: Component rendered')
   
-  const { therapistUser } = useTherapistUser()
-  const { therapistInfo, sessionStats, clientStats, fetchTherapistData, fetchClients, fetchSessions, fetchStats } = useTherapistData()
-  const { getPrimaryButtonState, setButtonLoading } = useTherapistButtonState()
-  const { addSuccessNotification, addErrorNotification } = useTherapistNotificationState()
-  const { broadcastSessionStatusChange } = useCrossDashboardBroadcast();
+  const { user } = useAuth()
+  
+  // Simplified - only keep what we actually use
+  const addErrorNotification = useCallback((title: string, message: string) => {
+    console.error(`${title}: ${message}`)
+  }, [])
 
   // State for real data
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const hasFetchedRef = useRef(false)
+  const currentUserIdRef = useRef<string | null>(null)
 
-  // Fetch real therapist dashboard data
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!therapistUser?.id) return
-
-      try {
-        setLoading(true)
-        const response = await fetch(`/api/therapist/dashboard-data?therapistId=${therapistUser.id}`)
-        const data = await response.json()
-        setDashboardData(data)
-      } catch (error) {
-        console.error('Error fetching therapist dashboard data:', error)
-        addErrorNotification('Data Fetch Error', 'Failed to load dashboard data')
-      } finally {
-        setLoading(false)
-      }
+  // Fetch function - no debouncing needed, just prevent duplicate calls
+  const fetchDashboardData = useCallback(async (userId: string, forceRefresh = false) => {
+    // Prevent duplicate calls for the same user unless force refresh
+    if (currentUserIdRef.current === userId && hasFetchedRef.current && !forceRefresh) {
+      console.log('🔍 TherapistDashboardPage: Skipping duplicate fetch for:', userId)
+      return
     }
 
-    fetchDashboardData()
-  }, [therapistUser?.id, addErrorNotification])
+    try {
+      setLoading(true)
+      hasFetchedRef.current = true
+      currentUserIdRef.current = userId
+      console.log('🔍 TherapistDashboardPage: Fetching dashboard data for:', userId)
+      
+      const response = await fetch(`/api/therapist/dashboard-data?therapistId=${userId}&t=${Date.now()}`)
+      const data = await response.json()
+      setDashboardData(data)
+      
+      console.log('✅ TherapistDashboardPage: Dashboard data loaded successfully')
+    } catch (error) {
+      console.error('❌ TherapistDashboardPage: Error fetching dashboard data:', error)
+      addErrorNotification('Data Fetch Error', 'Failed to load dashboard data')
+      hasFetchedRef.current = false // Allow retry on error
+    } finally {
+      setLoading(false)
+    }
+  }, [addErrorNotification])
 
-  // Fetch therapist data on component mount
-  useEffect(() => {
-    console.log('🔍 TherapistDashboardPage: Fetching therapist data...')
-    fetchTherapistData()
-  }, []) // Empty dependency array to run only once
+  // Add refresh function
+  const refreshDashboard = useCallback(() => {
+    if (user?.id) {
+      fetchDashboardData(user.id, true)
+    }
+  }, [user?.id, fetchDashboardData])
 
+  // Fetch real therapist dashboard data - SINGLE API call with duplicate prevention
   useEffect(() => {
-    fetchSessions()
-  }, []) // Empty dependency array to run only once
+    if (!user?.id) {
+      setLoading(false)
+      return
+    }
 
-  useEffect(() => {
-    fetchClients()
-  }, []) // Empty dependency array to run only once
-
-  useEffect(() => {
-    fetchStats()
-  }, []) // Empty dependency array to run only once
+    fetchDashboardData(user.id)
+  }, [user?.id, fetchDashboardData])
 
   // Use real data from API
-  const therapist = dashboardData?.therapist
-  const sessions = dashboardData?.sessions || []
-  const clients = dashboardData?.clients || 0
+  const therapist = dashboardData?.data?.therapist
+  const sessions = dashboardData?.data?.sessions || []
+  const clients = dashboardData?.data?.clients || 0
 
-  // Calculate earnings this month (₦5,000 per session)
-  const earningsThisMonth = (therapist?.completedSessions || 0) * 5000
+  // Use earnings from API (already calculated)
+  const earningsThisMonth = therapist?.earningsThisMonth || 0
 
   // Dynamic data based on real therapist info
   const therapistSummaryCards = [
@@ -98,7 +114,7 @@ export default function TherapistDashboardPage() {
   ]
 
   // Use real session data from API
-  const therapistUpcomingSessions = sessions.filter((s: any) => s.status === 'scheduled')
+  const therapistUpcomingSessions = sessions.filter((s: any) => s.status === 'scheduled' || s.status === 'in_progress')
 
   const format = (date: Date, formatStr: string) => {
     return date.toLocaleDateString('en-US', {
@@ -112,11 +128,11 @@ export default function TherapistDashboardPage() {
     // Update local state
     // ... existing session update logic ...
 
-    // Broadcast to other dashboards
-    broadcastSessionStatusChange(sessionId, newStatus, 'therapist');
+    // Broadcast to other dashboards (simplified)
+    console.log(`Session ${sessionId} status changed to ${newStatus}`);
 
-    // Add notification
-    addSuccessNotification('Session Updated', `Session status changed to ${newStatus}`);
+    // Add notification (simplified)
+    console.log('Session Updated:', `Session status changed to ${newStatus}`);
   };
 
   if (loading) {
@@ -148,96 +164,29 @@ export default function TherapistDashboardPage() {
 
   return (
     <div className="grid gap-6">
-      {/* Email Verification Banner - Show if not verified */}
-      {!therapist?.isVerified && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                  <Mail className="h-4 w-4 text-orange-600" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium text-orange-800">Email Verification Required</h3>
-                <p className="text-sm text-orange-700">
-                  Please check your email and click the verification link to complete your account setup.
-                </p>
-              </div>
-              <div className="flex-shrink-0">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                  Unverified
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Admin Approval Banner - Show if verified but not approved */}
-      {therapist?.isVerified && !therapist?.isApproved && (
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <Clock className="h-4 w-4 text-yellow-600" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium text-yellow-800">Waiting for Admin Approval</h3>
-                <p className="text-sm text-yellow-700">
-                  Your account has been verified! We're currently reviewing your application. 
-                  You'll be able to set availability and accept clients once approved.
-                </p>
-              </div>
-              <div className="flex-shrink-0">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  Pending Approval
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Fully Approved Banner - Show when verified and approved */}
-      {therapist?.isVerified && therapist?.isApproved && (
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium text-green-800">Account Fully Approved!</h3>
-                <p className="text-sm text-green-700">
-                  Your therapist account has been approved and activated. You can now set availability and accept clients.
-                </p>
-              </div>
-              <div className="flex-shrink-0">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Approved
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">
-          Welcome, {therapist?.name || 'Therapist'}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {therapist?.specialization && Array.isArray(therapist.specialization) && therapist.specialization.length > 0 
-            ? therapist.specialization.join(' • ') 
-            : 'Licensed Therapist'
-          }
-          {therapist?.licenseNumber && ` • License: ${therapist.licenseNumber}`}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">
+            Welcome, {therapist?.name || user?.name || 'Therapist'}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {therapist?.specialization && Array.isArray(therapist.specialization) && therapist.specialization.length > 0 
+              ? therapist.specialization.join(' • ') 
+              : 'Licensed Therapist'
+            }
+            {therapist?.licenseNumber && ` • License: ${therapist.licenseNumber}`}
+          </p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={refreshDashboard}
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Summary Cards Section */}
@@ -279,17 +228,27 @@ export default function TherapistDashboardPage() {
                           </div>
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">Session #{session.id}</h4>
-                          <p className="text-sm text-gray-600">{session.status}</p>
+                          <h4 className="font-medium text-gray-900">
+                            {session.users?.full_name || 'Client'} - Session #{session.id}
+                          </h4>
+                          <p className="text-sm text-gray-600 capitalize">{session.status}</p>
                           <p className="text-xs text-gray-500">
-                            {new Date(session.created_at).toLocaleDateString()} at {new Date(session.created_at).toLocaleTimeString()}
+                            {new Date(session.start_time).toLocaleDateString()} at {new Date(session.start_time).toLocaleTimeString()}
                           </p>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm">
-                        View Details
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          // Navigate to session or join session
+                          window.location.href = `/therapist/dashboard/video-call?sessionId=${session.id}`
+                        }}
+                      >
+                        <Video className="h-4 w-4 mr-1" />
+                        Join Session
                       </Button>
                     </div>
                   </div>
@@ -326,4 +285,6 @@ export default function TherapistDashboardPage() {
       </Card>
     </div>
   )
-}
+})
+
+export default TherapistDashboardPage

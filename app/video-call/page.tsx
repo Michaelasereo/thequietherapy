@@ -130,7 +130,7 @@ function VideoCallContent() {
         body: JSON.stringify({
           roomName: finalRoomName,
           properties: {
-            exp: Math.round(Date.now() / 1000) + (60 * 60 * 2), // 2 hours
+            exp: Math.round(Date.now() / 1000) + (30 * 60), // 30 minutes for therapy session
             eject_at_room_exp: true,
             enable_chat: true,
             enable_recording: false, // Disabled for Nigerian compliance
@@ -367,7 +367,7 @@ function VideoCallContent() {
             </div>
 
             <div className="text-xs text-muted-foreground text-center space-y-1">
-              <p>• Rooms expire after 2 hours</p>
+              <p>• Rooms expire after 30 minutes</p>
               <p>• Share the room name with your therapist</p>
               <p>• Ensure your camera and microphone are enabled</p>
               <p>• Browser-based recording available for therapists</p>

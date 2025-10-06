@@ -158,15 +158,21 @@ export default function TherapistCard({ therapist, onSelect, onViewProfile, isSe
         
         {/* Tags */}
         <div className="flex flex-wrap gap-2 pt-2">
-          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
-            {therapist.gender}
-          </Badge>
-          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
-            {therapist.maritalStatus}
-          </Badge>
-          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
-            {therapist.age}
-          </Badge>
+          {therapist.gender && therapist.gender !== 'Not specified' && (
+            <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+              {therapist.gender}
+            </Badge>
+          )}
+          {therapist.maritalStatus && therapist.maritalStatus !== 'Not specified' && (
+            <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+              {therapist.maritalStatus}
+            </Badge>
+          )}
+          {therapist.age && therapist.age !== 'Not specified' && (
+            <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+              {therapist.age}
+            </Badge>
+          )}
           <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
             Virtual
           </Badge>

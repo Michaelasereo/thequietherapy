@@ -1,0 +1,9 @@
+name,email,phone,department,position,credits,package
+John Doe,john@testcompany.com,+2348012345678,Engineering,Software Engineer,10,standard
+Jane Smith,jane@testcompany.com,+2348098765432,Marketing,Marketing Manager,15,professional
+Bob Wilson,bob@testcompany.com,,Sales,Sales Representative,8,basic
+Alice Brown,alice@testcompany.com,+2348055123456,Human Resources,HR Coordinator,12,standard
+Charlie Davis,charlie@testcompany.com,+2348077654321,Finance,Financial Analyst,10,standard
+Diana Prince,diana@testcompany.com,+2348033987654,Operations,Operations Manager,20,professional
+Mike Johnson,mike@testcompany.com,,IT,System Administrator,15,standard
+Sarah Connor,sarah@testcompany.com,+2348066543210,Security,Security Analyst,18,professional
