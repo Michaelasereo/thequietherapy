@@ -1,7 +1,57 @@
 "use client"
 
 import { useState } from "react"
-import { whyUsFeatures } from "@/lib/data"
+// Why us features data - Healthcare professional focused
+const whyUsFeatures = [
+  {
+    id: "secure",
+    name: "Healthcare-Grade Security",
+    icon: "🔒",
+    description: "End-to-end encrypted video calls and HIPAA-compliant data protection designed specifically for healthcare professionals",
+    details: {
+      amount: "256-bit",
+      period: "Encryption",
+      status: "HIPAA Compliant",
+      statusColor: "bg-green-100 text-green-800"
+    }
+  },
+  {
+    id: "video",
+    name: "Medical-Grade Video",
+    icon: "📹",
+    description: "High-quality, low-latency video calls optimized for healthcare professional schedules and needs",
+    details: {
+      amount: "HD Quality",
+      period: "Real-time",
+      status: "Live",
+      statusColor: "bg-blue-100 text-blue-800"
+    }
+  },
+  {
+    id: "payment",
+    name: "Flexible Healthcare Pricing",
+    icon: "💳",
+    description: "Flexible payment options designed for medical students and healthcare professionals with transparent pricing",
+    details: {
+      amount: "Credits",
+      period: "Pay-as-you-go",
+      status: "Transparent",
+      statusColor: "bg-purple-100 text-purple-800"
+    }
+  },
+  {
+    id: "different",
+    name: "Healthcare-Focused Care",
+    icon: "⭐",
+    description: "Specialized matching with therapists who understand medical practice, physician wellness, and healthcare professional challenges",
+    details: {
+      amount: "100%",
+      period: "Healthcare-Focused",
+      status: "Medical Expert Vetted",
+      statusColor: "bg-orange-100 text-orange-800"
+    }
+  }
+]
 import { ChevronUp } from "lucide-react"
 
 export default function WhyUs() {
@@ -18,8 +68,8 @@ export default function WhyUs() {
             <span className="text-sm font-bold uppercase text-black tracking-wide">WHY WE'RE DIFFERENT</span>
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-black leading-tight mb-4">
-            Secure, personalized, and effective therapy made simple so you can focus on what matters most,
-            <span className="text-[#A66B24]"> your mental health.</span>
+            Secure, specialized, and effective mental health support designed for healthcare professionals so you can focus on what matters most,
+            <span className="text-[#A66B24]"> your wellbeing and patient care.</span>
           </h2>
         </div>
 
@@ -147,7 +197,7 @@ export default function WhyUs() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Specialization</span>
-                          <span className="font-medium">CBT & Anxiety</span>
+                          <span className="font-medium">Physician Wellness & CBT</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Experience</span>

@@ -2,7 +2,34 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { faqs } from "@/lib/data"
+// FAQ data - Healthcare professional focused
+const faqs = [
+  {
+    question: "What makes Quiet different for healthcare professionals?",
+    answer:
+      "Quiet is specifically designed for healthcare professionals and medical students, with therapists who understand the unique challenges of medical practice, including burnout, stress, and the demanding nature of healthcare work.",
+  },
+  {
+    question: "How do I book a therapy session as a medical student?",
+    answer:
+      "Medical students can book sessions by clicking 'Get Mental Health Support' on our homepage and following the process: provide your information, select a therapist who specializes in medical student counseling, and complete checkout with flexible payment options.",
+  },
+  {
+    question: "Are therapy sessions confidential for doctors and medical professionals?",
+    answer:
+      "Yes, all sessions are strictly confidential with HIPAA-compliant privacy protection. We understand the sensitive nature of healthcare professional mental health and ensure complete confidentiality.",
+  },
+  {
+    question: "What types of therapy do you offer for healthcare workers?",
+    answer:
+      "We offer specialized therapy including CBT, physician wellness programs, medical student counseling, doctor burnout therapy, stress management, and peer support groups specifically designed for healthcare professionals.",
+  },
+  {
+    question: "Can I choose a therapist who understands medical practice?",
+    answer:
+      "Yes, our platform allows you to browse therapist profiles and filter by specialization in healthcare professional therapy, medical student counseling, and physician wellness to find the right match for your needs.",
+  },
+]
 
 export default function FAQSection() {
   return (
@@ -12,7 +39,7 @@ export default function FAQSection() {
           <div className="space-y-4">
             <h2 className="text-3xl font-bold tracking-tight sm:text-5xl text-black">Frequently Asked Questions</h2>
             <p className="max-w-[900px] text-gray-600 text-lg md:text-xl leading-relaxed">
-              Find answers to common questions about Quiet and our services.
+              Find answers to common questions about Quiet's mental health services for healthcare professionals and medical students.
             </p>
           </div>
         </div>

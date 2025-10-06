@@ -12,23 +12,23 @@ export default function HeroSection() {
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-medium text-black">
                 <span className="w-2 h-2 bg-black rounded-full"></span>
-                Top Therapy Platform
+                Trusted by Healthcare Professionals
               </div>
               <h1 className="text-3xl font-bold tracking-tight sm:text-5xl xl:text-6xl text-black leading-tight">
-                Your Journey to Mental Well-being Starts Here,
-                <span className="text-[#A66B24]"> your mental health.</span>
+                Mental Health Support for Doctors & Medical Students
+                <span className="text-[#A66B24]"> - Professional Healthcare Therapy</span>
               </h1>
               <p className="text-gray-600 text-base md:text-lg leading-relaxed">
-                Connect with compassionate, licensed therapists from the comfort of your home. Personalized care,
-                flexible scheduling, and a secure platform.
+                Specialized mental health platform for healthcare professionals and medical students. Access licensed therapists, physician wellness programs, 
+                medical student counseling, and doctor burnout therapy. HIPAA-compliant sessions designed for healthcare workers' unique needs.
               </p>
             </div>
             <div className="flex flex-col gap-3 min-[400px]:flex-row">
               <Button asChild size="lg" className="bg-black text-white hover:bg-gray-800 rounded-xl px-8 py-4 text-lg">
-                <Link href="/signup">Get Started</Link>
+                <Link href="/login?user_type=individual">Get Mental Health Support</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl px-8 py-4 text-lg">
-                <Link href="#about">Learn More</Link>
+                <Link href="/therapist/enroll">Join as Healthcare Therapist</Link>
               </Button>
             </div>
           </div>

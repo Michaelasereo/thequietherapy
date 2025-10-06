@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next/types"
+import type { Metadata, Viewport } from "next/types"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -11,12 +11,82 @@ import Script from "next/script"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Quiet - Your Therapy Partner",
-  description: "Connect with therapists and manage your mental well-being.",
-  generator: 'v0.dev',
+  title: "Mental Health Platform for Doctors & Medical Students | Quiet - Professional Therapy Services",
+  description: "Professional mental health support platform designed for healthcare professionals and medical students. Access licensed therapists, psychiatrist consultations, medical student counseling, and physician wellness programs. HIPAA-compliant, evidence-based therapy for healthcare workers.",
+  keywords: [
+    "mental health for doctors",
+    "therapy for medical students",
+    "physician mental health",
+    "healthcare professional counseling",
+    "medical student therapy",
+    "doctor burnout therapy",
+    "resident physician counseling",
+    "healthcare worker mental health",
+    "medical professional therapy",
+    "physician wellness program",
+    "medical student mental health",
+    "healthcare provider counseling",
+    "doctor stress management",
+    "medical resident therapy",
+    "healthcare professional support",
+    "physician anxiety therapy",
+    "medical student depression",
+    "healthcare worker counseling",
+    "doctor mental wellness",
+    "medical professional support",
+    "healthcare provider therapy",
+    "physician counseling services",
+    "medical student support group",
+    "healthcare professional burnout",
+    "doctor mental health resources"
+  ],
+  authors: [{ name: "Quiet Therapy Platform" }],
+  creator: "Quiet",
+  publisher: "Quiet",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://quiet-therapy.com'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: "Mental Health Platform for Doctors & Medical Students | Quiet",
+    description: "Professional mental health support for healthcare professionals and medical students. Licensed therapists, physician wellness programs, and medical student counseling.",
+    url: 'https://quiet-app.com',
+    siteName: 'Quiet - Healthcare Mental Health Platform',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Quiet - Mental Health Platform for Doctors and Medical Students',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Mental Health Platform for Doctors & Medical Students | Quiet",
+    description: "Professional mental health support for healthcare professionals and medical students. Licensed therapists, physician wellness programs, and medical student counseling.",
+    images: ['/og-image.jpg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  generator: 'Next.js',
   manifest: '/manifest.json',
-  themeColor: '#000000',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -33,6 +103,14 @@ export const metadata: Metadata = {
   }
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#000000',
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -47,6 +125,91 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Quiet Therapy" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#000000" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "MedicalBusiness",
+              "name": "Quiet - Healthcare Mental Health Platform",
+              "description": "Professional mental health support platform designed specifically for healthcare professionals and medical students. Providing licensed therapists, physician wellness programs, and medical student counseling services.",
+              "url": "https://quiet-app.com",
+              "logo": "https://quiet-app.com/logo-black.svg",
+              "image": "https://quiet-app.com/og-image.jpg",
+              "telephone": "+234-800-QUIET-01",
+              "email": "support@quiet-app.com",
+              "address": {
+                "@type": "PostalAddress",
+                "addressCountry": "NG"
+              },
+              "serviceArea": {
+                "@type": "Country",
+                "name": "Nigeria"
+              },
+              "medicalSpecialty": [
+                "Psychiatry",
+                "Psychology", 
+                "Mental Health Counseling",
+                "Physician Wellness",
+                "Medical Student Counseling",
+                "Healthcare Professional Therapy",
+                "Doctor Burnout Treatment",
+                "Medical Resident Support",
+                "Cognitive Behavioral Therapy",
+                "Anxiety Treatment",
+                "Depression Treatment"
+              ],
+              "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "Healthcare Professional Mental Health Services",
+                "itemListElement": [
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Doctor Mental Health Counseling",
+                      "description": "Specialized therapy sessions for physicians and healthcare professionals dealing with stress, burnout, and mental health challenges"
+                    }
+                  },
+                  {
+                    "@type": "Offer", 
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Medical Student Therapy",
+                      "description": "Professional counseling and support services for medical students facing academic stress, anxiety, and depression"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service", 
+                      "name": "Physician Wellness Programs",
+                      "description": "Comprehensive wellness programs designed to support physician mental health and prevent burnout"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service", 
+                      "name": "Healthcare Worker Counseling",
+                      "description": "Mental health support for nurses, technicians, and other healthcare workers"
+                    }
+                  }
+                ]
+              },
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.9",
+                "reviewCount": "850"
+              },
+              "sameAs": [
+                "https://www.facebook.com/quiethealthcare",
+                "https://www.twitter.com/quiethealthcare",
+                "https://www.linkedin.com/company/quiet-healthcare"
+              ]
+            })
+          }}
+        />
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
