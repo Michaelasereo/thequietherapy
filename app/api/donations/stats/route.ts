@@ -1,75 +1,92 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
 
 export async function GET() {
   const startTime = Date.now()
-  
+  const diagnostics = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    supabaseUrlLength: process.env.NEXT_PUBLIC_SUPABASE_URL?.length || 0,
+    supabaseKeyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length || 0,
+  }
+
   try {
-    // Attempt live data first
+    // Dynamic import to avoid build-time issues
+    const { createServerClient } = await import('@/lib/supabase')
     const supabase = createServerClient()
-    
-    const { data: donations, error } = await supabase
-      .from('donations')
-      .select('amount, email, created_at, donor_name, status')
-      .eq('status', 'success')
-      .gte('created_at', new Date('2024-01-01').toISOString())
-      .order('created_at', { ascending: false })
 
-    if (error) throw error
-
-    // Your existing calculations (proven working)
-    const totalRaised = donations?.reduce((sum, d) => sum + (Number(d.amount) || 0), 0) || 0
-    const donorCount = new Set((donations || [])
-      .map(d => d.email)
-      .filter((email): email is string => typeof email === 'string' && email.trim().length > 0)
-    ).size
-
-    const stats = {
-      raised: totalRaised,
-      donors: donorCount,
-      target: 120000000,
-      daysLeft: Math.max(0, 45 - Math.floor((Date.now() - new Date('2024-01-01').getTime()) / (1000 * 60 * 60 * 24))),
-      averageDonation: donorCount > 0 ? Math.round(totalRaised / donorCount) : 0,
-      recentDonations: (donations || []).slice(0, 10).map(d => ({
-        amount: d.amount,
-        donor_name: d.donor_name,
-        created_at: d.created_at,
-        email_masked: typeof d.email === 'string' ? d.email.replace(/(.{2}).*(@.*)/, '$1***$2') : ''
-      }))
+    if (!supabase) {
+      throw new Error('Supabase client creation failed')
     }
 
-    console.log(`✅ Live stats fetched: ₦${totalRaised} from ${donorCount} donors`)
+    const { data: donations, error, count } = await supabase
+      .from('donations')
+      .select('amount, email, donor_name, status, created_at', { count: 'exact' })
+      .eq('status', 'success')
 
-    return NextResponse.json({
+    if (error) {
+      console.error('Supabase query error:', error)
+      throw error
+    }
+
+    // Your proven calculation logic
+    const totalRaised = donations?.reduce((sum, d) => sum + (Number(d.amount) || 0), 0) || 0
+    const donorCount = new Set(donations?.map(d => d.email).filter(Boolean)).size
+
+    const response = {
       success: true,
-      data: stats,
-      cached: false,
-      timestamp: Date.now(),
-      responseTime: Date.now() - startTime,
-      source: 'live_database'
-    })
+      data: {
+        raised: totalRaised,
+        donors: donorCount,
+        target: 120000000,
+        daysLeft: 45,
+        averageDonation: donorCount > 0 ? Math.round(totalRaised / donorCount) : 0,
+        totalRecords: count || 0,
+        recentDonations: (donations || []).slice(0, 5).map(d => ({
+          amount: d.amount,
+          donor_name: d.donor_name,
+          created_at: d.created_at,
+          email_masked: d.email ? d.email.replace(/(.{2}).*(@.*)/, '$1***$2') : ''
+        }))
+      },
+      diagnostics: {
+        ...diagnostics,
+        responseTime: Date.now() - startTime,
+        source: 'live_database',
+        recordCount: count,
+        supabaseConnected: true
+      },
+      timestamp: Date.now()
+    }
+
+    console.log('✅ Production API Success:', response.data)
+    return NextResponse.json(response)
 
   } catch (error) {
-    console.error('❌ Live stats failed, using fallback:', error.message)
+    console.error('❌ Production API Fallback:', error.message)
     
-    // Graceful fallback - users never see 500 errors
-    const fallbackData = {
-      raised: 0,
-      donors: 0,
-      target: 120000000,
-      daysLeft: 45,
-      averageDonation: 0,
-      recentDonations: []
+    const fallbackResponse = {
+      success: true,
+      data: {
+        raised: 0,
+        donors: 0,
+        target: 120000000,
+        daysLeft: 45,
+        averageDonation: 0,
+        totalRecords: 0,
+        recentDonations: []
+      },
+      diagnostics: {
+        ...diagnostics,
+        responseTime: Date.now() - startTime,
+        source: 'fallback',
+        error: error.message,
+        supabaseConnected: false
+      },
+      timestamp: Date.now()
     }
 
-    return NextResponse.json({
-      success: true,
-      data: fallbackData,
-      cached: false,
-      timestamp: Date.now(),
-      responseTime: Date.now() - startTime,
-      source: 'fallback',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    })
+    return NextResponse.json(fallbackResponse)
   }
 }
