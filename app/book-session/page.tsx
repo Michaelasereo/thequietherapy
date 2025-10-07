@@ -17,7 +17,7 @@ import BookingStep4 from "@/components/booking-step-4"
 interface PatientBiodata {
   firstName: string
   email: string
-  phone: string
+  phone?: string
   country: string
   complaints: string
   age: string

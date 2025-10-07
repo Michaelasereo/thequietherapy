@@ -327,21 +327,6 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
                   <Brain className="h-5 w-5" />
                   SOAP Notes
                 </div>
-                {!soapNotes && (
-                  <Button 
-                    onClick={generateSOAPNotes} 
-                    disabled={generatingSOAP}
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    {generatingSOAP ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Brain className="h-4 w-4" />
-                    )}
-                    Generate SOAP Notes
-                  </Button>
-                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

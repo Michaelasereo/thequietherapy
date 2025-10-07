@@ -8,13 +8,10 @@ export async function POST(request: Request) {
     console.log('🧪 Testing user sync with:', { email, full_name, user_type })
     
     const syncResult = await syncUserToSupabaseAuth({
+      id: 'test-user-' + Date.now(),
       email: email || 'test@example.com',
       full_name: full_name || 'Test User',
-      user_type: user_type || 'individual',
-      metadata: {
-        test_user: true,
-        created_at: new Date().toISOString()
-      }
+      user_type: user_type || 'individual'
     })
     
     return NextResponse.json({

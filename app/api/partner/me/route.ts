@@ -29,31 +29,32 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Parsed cookies:', cookies)
 
-    const trpiPartnerUserCookie = cookies['trpi_partner_user']
-    if (!trpiPartnerUserCookie) {
-      console.log('❌ No trpi_partner_user cookie found')
+    // Check for unified session cookie first (quiet_session)
+    const quietSessionCookie = cookies['quiet_session']
+    if (!quietSessionCookie) {
+      console.log('❌ No quiet_session cookie found')
       console.log('🔍 Available cookies:', Object.keys(cookies))
       return NextResponse.json({ error: 'No session found' }, { status: 401 })
     }
 
-    console.log('🔍 Found trpi_partner_user cookie:', trpiPartnerUserCookie)
+    console.log('🔍 Found quiet_session cookie:', quietSessionCookie)
 
     let userData
     try {
-      // Handle both URL-encoded and plain JSON
-      const decodedCookie = decodeURIComponent(trpiPartnerUserCookie)
+      // Parse JWT token from quiet_session cookie
+      const decodedCookie = decodeURIComponent(quietSessionCookie)
       console.log('🔍 Decoded cookie:', decodedCookie)
-      userData = JSON.parse(decodedCookie)
+      userData = JSON.parse(atob(decodedCookie.split('.')[1])) // Decode JWT payload
       console.log('🔍 Parsed user data:', userData)
     } catch (parseError) {
-      console.log('❌ Error parsing user cookie:', parseError)
-      console.log('🔍 Raw cookie value:', trpiPartnerUserCookie)
+      console.log('❌ Error parsing session cookie:', parseError)
+      console.log('🔍 Raw cookie value:', quietSessionCookie)
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
     }
 
     const { id, email } = userData
     if (!id || !email) {
-      console.log('❌ No user id or email in cookie')
+      console.log('❌ No user id or email in session')
       return NextResponse.json({ error: 'Invalid session data' }, { status: 401 })
     }
 
@@ -78,7 +79,8 @@ export async function GET(request: NextRequest) {
         temporary_approval,
         company_name,
         organization_type,
-        contact_person
+        contact_person,
+        onboarding_data
       `)
       .eq('id', id)
       .eq('email', email)
@@ -92,8 +94,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 })
     }
 
-    // Check if partner has valid status
-    if (user.partner_status !== 'active' && user.partner_status !== 'temporary') {
+    // Check if partner has valid status (allow pending for dashboard access)
+    if (user.partner_status !== 'active' && user.partner_status !== 'temporary' && user.partner_status !== 'pending') {
       console.log('❌ Partner status not valid:', user.partner_status)
       return NextResponse.json({ error: 'Partner account not approved' }, { status: 403 })
     }
@@ -110,7 +112,8 @@ export async function GET(request: NextRequest) {
         temporary_approval: user.temporary_approval,
         company_name: user.company_name,
         organization_type: user.organization_type,
-        contact_person: user.contact_person
+        contact_person: user.contact_person,
+        onboarding_data: user.onboarding_data
       }
     }
 

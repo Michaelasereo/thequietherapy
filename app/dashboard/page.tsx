@@ -225,6 +225,21 @@ function DashboardContent() {
     }
   }, [searchParams, toast])
 
+  // Refresh data when component mounts - only once
+  useEffect(() => {
+    if (user?.id) {
+      console.log('🔍 Dashboard: Refreshing data on mount for user:', user.id)
+      // Only refresh if we don't have data yet
+      if (state.stats.totalSessions === 0) {
+        fetchSessions()
+      }
+      if (state.stats.totalCredits === 0) {
+        refreshCredits()
+      }
+      refreshStats()
+    }
+  }, [user?.id]) // Remove function dependencies to prevent infinite loops
+
   // Check for payment status in URL params
   useEffect(() => {
     const paymentStatus = searchParams.get('payment')
@@ -253,8 +268,10 @@ function DashboardContent() {
 
   // Load biodata and check if user needs to complete profile
   useEffect(() => {
-    refreshBiodata()
-  }, [refreshBiodata])
+    if (user?.id) {
+      refreshBiodata()
+    }
+  }, [user?.id]) // Remove function dependency to prevent infinite loops
 
   useEffect(() => {
     if (biodata && !loading.biodata) {
@@ -357,8 +374,10 @@ function DashboardContent() {
                 <h1 className="text-2xl font-semibold text-foreground">
                   Welcome, {(() => {
                     try {
-                      if (user && typeof user === 'object' && user.full_name && typeof user.full_name === 'string') {
-                        const firstName = user.full_name.trim().split(' ')[0];
+                      if (user && typeof user === 'object') {
+                        // Try different name fields in order of preference
+                        const name = user.full_name || user.name || user.email?.split('@')[0] || 'User';
+                        const firstName = name.trim().split(' ')[0];
                         return firstName || 'User';
                       }
                       return 'User';
@@ -374,18 +393,6 @@ function DashboardContent() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button 
-                onClick={async () => {
-                  console.log('🔍 Manual refresh clicked - using dashboard context')
-                  await fetchSessions()
-                  await refreshStats()
-                  await refreshCredits()
-                }} 
-                variant="outline" 
-                size="sm"
-              >
-                🔄 Refresh Data
-              </Button>
               <Button onClick={handleStartBooking}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 Book a Session
@@ -443,17 +450,17 @@ function DashboardContent() {
                     <CalendarIcon className="h-6 w-6 text-primary" />
                     <div className="grid gap-0.5">
                       <p className="font-medium">
-                        {format(new Date(session.date), "PPP")} at {session.time}
+                        {format(new Date(session.scheduled_date || session.date), "PPP")} at {session.scheduled_time || session.time}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {session.therapist} • {session.topic}
+                        {session.therapist_name || session.therapist?.full_name || 'Therapist'} • {session.title || session.topic || 'Therapy Session'}
                       </p>
                     </div>
                     <div className="ml-auto flex gap-2">
                       <Button variant="outline" size="sm" className="bg-transparent" asChild>
                         <Link href={`/video-session/${session.id}`}>
                           <VideoIcon className="mr-2 h-4 w-4" /> 
-                          {session.status === 'in_progress' ? 'Join Video Call' : 'View Session'}
+                          {session.status === 'scheduled' ? 'Join Video Call' : 'View Session'}
                         </Link>
                       </Button>
                     </div>
@@ -504,10 +511,10 @@ function DashboardContent() {
                   <CheckCircle className="h-6 w-6 text-green-500" />
                   <div className="grid gap-0.5">
                     <p className="font-medium">
-                      {format(new Date(session.date), "PPP")} at {session.time}
+                      {format(new Date(session.scheduled_date || session.date), "PPP")} at {session.scheduled_time || session.time}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {session.therapist} • {session.topic}
+                      {session.therapist_name || session.therapist?.full_name || 'Therapist'} • {session.title || session.topic || 'Therapy Session'}
                     </p>
                   </div>
                   <div className="ml-auto">
@@ -534,7 +541,7 @@ function DashboardContent() {
         <CardContent>
           <div className="space-y-2 text-muted-foreground">
             {state.upcomingSessions.length > 0 ? (
-              <p>• Reminder: Your next session is scheduled for {format(new Date(state.upcomingSessions[0].date), "PPP")}.</p>
+              <p>• Reminder: Your next session is scheduled for {format(new Date(state.upcomingSessions[0].scheduled_date || state.upcomingSessions[0].date), "PPP")}.</p>
             ) : (
               <p>• No upcoming sessions scheduled. Book your first session to get started!</p>
             )}

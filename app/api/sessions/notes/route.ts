@@ -41,16 +41,7 @@ export async function GET(request: NextRequest) {
     // Get session details
     const { data: sessionData, error: sessionError } = await supabase
       .from('sessions')
-      .select(`
-        id,
-        user_id,
-        therapist_id,
-        duration,
-        session_type,
-        status,
-        users:user_id(full_name, email),
-        therapist:therapist_id(full_name, email)
-      `)
+      .select('*')
       .eq('id', sessionId)
       .single();
 

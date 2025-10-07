@@ -3,6 +3,20 @@
 import type React from "react"
 import ErrorBoundary from "@/components/ui/error-boundary"
 import { useEffect, useState } from "react"
+import Link from "next/link"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { 
+  LayoutDashboard, 
+  Users, 
+  CreditCard, 
+  Calendar, 
+  Settings, 
+  AlertCircle,
+  Clock,
+  CheckCircle
+} from "lucide-react"
 
 export default function PartnerDashboardLayout({
   children,
@@ -24,6 +38,21 @@ export default function PartnerDashboardLayout({
     const allCookies = document.cookie;
     console.log('🍪 All cookies:', allCookies);
     
+    fetchPartnerData();
+  }, []);
+
+  // Refresh data every 30 seconds to catch approval updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!loading) {
+        fetchPartnerData();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  const fetchPartnerData = () => {
     fetch('/api/partner/me', {
       credentials: 'include',
       headers: {
@@ -46,7 +75,7 @@ export default function PartnerDashboardLayout({
       setError(err.message);
       setLoading(false);
     });
-  }, []);
+  };
 
   if (loading) {
     return (
@@ -76,20 +105,102 @@ export default function PartnerDashboardLayout({
     );
   }
 
+  const isPending = partnerData?.partner?.partner_status === 'pending';
+  const isApproved = partnerData?.partner?.partner_status === 'active';
+
+  const sidebarItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/partner/dashboard', enabled: true },
+    { id: 'members', label: 'Members', icon: Users, href: '/partner/dashboard/members', enabled: isApproved },
+    { id: 'credits', label: 'Credits', icon: CreditCard, href: '/partner/dashboard/credits', enabled: isApproved },
+    { id: 'sessions', label: 'Sessions', icon: Calendar, href: '/partner/dashboard/sessions', enabled: isApproved },
+    { id: 'settings', label: 'Settings', icon: Settings, href: '/partner/dashboard/settings', enabled: isApproved },
+  ];
+
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-white">
-        <header className="bg-white border-b border-gray-200 p-4">
-          <h1 className="text-xl font-semibold">Partner Dashboard</h1>
-          {partnerData && (
-            <p className="text-sm text-gray-600 mt-1">
-              Welcome, {partnerData.partner?.full_name || 'Partner'}
-            </p>
-          )}
-        </header>
-        <main className="p-6">
-          {children}
-        </main>
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex">
+          {/* Sidebar */}
+          <div className="w-64 bg-black border-r border-gray-800 min-h-screen">
+            <div className="p-6 border-b border-gray-800">
+              <h1 className="text-xl font-semibold text-white">Partner Portal</h1>
+              {partnerData && (
+                <p className="text-sm text-gray-300 mt-1">
+                  {partnerData.partner?.full_name || 'Partner'}
+                </p>
+              )}
+            </div>
+            
+            <nav className="p-4">
+              {sidebarItems.map((item) => {
+                const Icon = item.icon;
+                const isDisabled = !item.enabled;
+                
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.enabled ? item.href : '#'}
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md mb-2 ${
+                      isDisabled 
+                        ? 'text-gray-500 cursor-not-allowed' 
+                        : 'text-gray-200 hover:bg-gray-800 hover:text-white'
+                    }`}
+                    onClick={isDisabled ? (e) => e.preventDefault() : undefined}
+                  >
+                    <Icon className="mr-3 h-5 w-5" />
+                    {item.label}
+                    {isDisabled && (
+                      <Badge variant="secondary" className="ml-auto text-xs bg-gray-700 text-gray-300">
+                        Locked
+                      </Badge>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1">
+            {/* Pending Approval Banner */}
+            {isPending && (
+              <div className="bg-yellow-50 border-b border-yellow-200 p-4">
+                <div className="flex items-center">
+                  <Clock className="h-5 w-5 text-yellow-600 mr-3" />
+                  <div>
+                    <h3 className="text-sm font-medium text-yellow-800">
+                      Account Pending Approval
+                    </h3>
+                    <p className="text-sm text-yellow-700">
+                      Your partnership application is under review. Full access will be available within 24-48 hours.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Approved Banner */}
+            {isApproved && (
+              <div className="bg-green-50 border-b border-green-200 p-4">
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+                  <div>
+                    <h3 className="text-sm font-medium text-green-800">
+                      Account Approved
+                    </h3>
+                    <p className="text-sm text-green-700">
+                      Welcome to the full partner portal! All features are now available.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <main className="p-6">
+              {children}
+            </main>
+          </div>
+        </div>
       </div>
     </ErrorBoundary>
   );

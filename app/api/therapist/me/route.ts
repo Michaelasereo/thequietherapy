@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { SessionManager } from '@/lib/session-manager'
+import { ServerSessionManager } from '@/lib/server-session-manager'
 
 export async function GET(request: NextRequest) {
   console.log('🔍 GET /therapist/me called')
   
   try {
     // Try unified session first
-    const unifiedSession = await SessionManager.getSessionFromRequest(request)
+    const unifiedSession = await ServerSessionManager.getSession()
     
     if (unifiedSession && unifiedSession.role === 'therapist') {
       console.log('✅ Using unified session for therapist:', unifiedSession.email)
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
       console.log('🔍 Parsed user data:', userData)
     } catch (parseError) {
       console.log('❌ Error parsing user cookie:', parseError)
-      console.log('🔍 Raw cookie value:', trpiTherapistUserCookie)
+      console.log('🔍 Raw cookie value:', quietTherapistUserCookie)
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
     }
 

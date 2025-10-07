@@ -26,7 +26,7 @@ export function authGuard(
   return async (request: NextRequest) => {
     try {
       // Try to get session with automatic refresh
-      const session = await SessionManager.getSessionWithRefresh()
+      const session = await ServerSessionManager.getSession()
       
       if (!session) {
         // Check if it's an expired token vs no token

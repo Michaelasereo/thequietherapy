@@ -1,0 +1,6 @@
+firstname,email,statustype,caderlevel,phone,department,employeeid
+John,john.doe@hospital.com,doctor,consultant,+2348012345678,Cardiology,EMP001
+Sarah,sarah.smith@hospital.com,doctor,resident,+2348012345679,Neurology,EMP002
+Michael,michael.johnson@university.edu,student,300level,+2348012345680,Medicine,STU001
+Emily,emily.brown@university.edu,student,400level,+2348012345681,Medicine,STU002
+David,david.wilson@hospital.com,doctor,house officer,+2348012345682,Internal Medicine,EMP003

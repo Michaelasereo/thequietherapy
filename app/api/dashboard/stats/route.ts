@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
-import { SessionManager } from '@/lib/session-manager';
+import { ServerSessionManager } from '@/lib/server-session-manager';
 import { updateAllSessionStatuses } from '@/lib/session-status-updater';
 
 export async function GET(request: NextRequest) {
   try {
     // Get user from session using SessionManager
-    const session = await SessionManager.getSessionFromRequest(request);
+    const session = await ServerSessionManager.getSession();
     
     if (!session) {
       return NextResponse.json(

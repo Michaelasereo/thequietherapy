@@ -1,42 +1,13 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { SessionManager } from '@/lib/session-manager'
+import { useSession } from '@/lib/client-session-manager'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, XCircle, User, Mail, Shield } from 'lucide-react'
 
 export default function TestAuthPage() {
-  const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const sessionData = await SessionManager.getSession()
-        setSession(sessionData)
-      } catch (error) {
-        setError('Failed to check authentication')
-        console.error('Auth check error:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    checkAuth()
-  }, [])
-
-  const handleLogout = async () => {
-    try {
-      await SessionManager.clearSession()
-      setSession(null)
-    } catch (error) {
-      setError('Failed to logout')
-      console.error('Logout error:', error)
-    }
-  }
+  const { session, loading, error, logout } = useSession()
 
   if (loading) {
     return (
@@ -105,7 +76,7 @@ export default function TestAuthPage() {
                   </div>
                 </div>
 
-                <Button onClick={handleLogout} variant="outline" className="w-full">
+                <Button onClick={logout} variant="outline" className="w-full">
                   Logout
                 </Button>
               </div>

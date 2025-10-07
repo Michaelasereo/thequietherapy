@@ -47,7 +47,7 @@ export default function CoreServices() {
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center justify-center space-y-4 text-center mb-16">
           <div className="space-y-4">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-5xl text-black">Healthcare Professional Mental Health Services</h2>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-5xl text-black text-center">Healthcare Professional Mental Health Services</h2>
             <p className="max-w-[600px] text-gray-600 text-lg md:text-xl leading-relaxed">
               Specialized mental health support for doctors, medical students, and healthcare professionals with licensed therapists who understand your unique challenges
             </p>

@@ -27,7 +27,7 @@ export async function POST() {
         results: syncResult.results
       },
       supabase_auth: {
-        total_users: authUsersResult.success ? authUsersResult.count : 'Unknown',
+        total_users: authUsersResult.success ? authUsersResult.users?.length || 0 : 'Unknown',
         users: authUsersResult.success && authUsersResult.users ? authUsersResult.users.map(u => ({
           id: u.id,
           email: u.email,
@@ -64,7 +64,7 @@ export async function GET() {
       success: true,
       message: 'Supabase auth users retrieved successfully',
       data: {
-        total_users: authUsersResult.count,
+        total_users: authUsersResult.users?.length || 0,
         users: authUsersResult.users ? authUsersResult.users.map(u => ({
           id: u.id,
           email: u.email,

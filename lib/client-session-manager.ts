@@ -14,83 +14,54 @@ export interface SessionData {
 }
 
 export class ClientSessionManager {
-  private static readonly COOKIE_NAME = 'quiet_session'
-
   /**
-   * Get session data from cookie (client-side)
+   * Get session data from API
    */
-  static getSession(): SessionData | null {
-    if (typeof window === 'undefined') {
-      return null
-    }
-
+  static async getSession(): Promise<SessionData | null> {
     try {
-      const cookies = document.cookie.split(';')
-      const sessionCookie = cookies.find(cookie => 
-        cookie.trim().startsWith(`${this.COOKIE_NAME}=`)
-      )
+      const response = await fetch('/api/auth/me', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
-      if (!sessionCookie) {
+      if (!response.ok) {
         return null
       }
 
-      const token = sessionCookie.split('=')[1]
-      if (!token) {
-        return null
-      }
-
-      // Decode JWT token (client-side validation)
-      const parts = token.split('.')
-      if (parts.length !== 3) {
-        return null
-      }
-
-      const payload = JSON.parse(atob(parts[1]))
-      const sessionData = payload as SessionData
-
-      // Basic validation
-      if (!sessionData.id || !sessionData.email) {
-        return null
-      }
-
-      // Check if token is expired
-      const now = Math.floor(Date.now() / 1000)
-      if (payload.exp && payload.exp < now) {
-        return null
-      }
-
-      return sessionData
+      const data = await response.json()
+      return data.user || null
     } catch (error) {
-      console.error('Client session validation error:', error)
+      console.error('Failed to get session:', error)
       return null
     }
   }
 
   /**
-   * Clear session cookie (client-side)
+   * Clear session by calling logout API
    */
-  static clearSession(): void {
-    if (typeof window === 'undefined') {
-      return
+  static async clearSession(): Promise<void> {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    } catch (error) {
+      console.error('Failed to clear session:', error)
     }
-
-    document.cookie = `${this.COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
   }
 
   /**
    * Check if user has specific role
    */
-  static hasRole(role: SessionData['role']): boolean {
-    const session = this.getSession()
+  static async hasRole(role: SessionData['role']): Promise<boolean> {
+    const session = await this.getSession()
     return session?.role === role
-  }
-
-  /**
-   * Get user type from session
-   */
-  static getUserType(): string | null {
-    const session = this.getSession()
-    return session?.user_type || null
   }
 }
 
@@ -100,22 +71,45 @@ export class ClientSessionManager {
 export function useSession() {
   const [session, setSession] = useState<SessionData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const sessionData = ClientSessionManager.getSession()
-    setSession(sessionData)
-    setLoading(false)
+    const checkSession = async () => {
+      try {
+        setLoading(true)
+        const sessionData = await ClientSessionManager.getSession()
+        setSession(sessionData)
+        setError(null)
+      } catch (err) {
+        setError('Failed to check authentication')
+        console.error('Session check error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkSession()
   }, [])
 
-  const clearSession = () => {
-    ClientSessionManager.clearSession()
-    setSession(null)
+  const logout = async () => {
+    try {
+      await ClientSessionManager.clearSession()
+      setSession(null)
+      setError(null)
+    } catch (err) {
+      setError('Failed to logout')
+      console.error('Logout error:', err)
+    }
   }
 
   return {
     session,
     loading,
-    isAuthenticated: !!session,
-    clearSession
+    error,
+    logout,
+    refetch: () => {
+      setLoading(true)
+      ClientSessionManager.getSession().then(setSession).finally(() => setLoading(false))
+    }
   }
 }

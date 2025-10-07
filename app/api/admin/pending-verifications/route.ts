@@ -21,12 +21,12 @@ export async function GET() {
 
     if (therapistError) throw therapistError
 
-    // Fetch pending partner users (users with user_type = 'partner' and is_verified = false)
+    // Fetch pending partner users (users with user_type = 'partner' and partner_status = 'pending')
     const { data: partnerApplications, error: partnerError } = await supabase
       .from('users')
       .select('*')
       .eq('user_type', 'partner')
-      .eq('is_verified', false)
+      .eq('partner_status', 'pending')
       .order('created_at', { ascending: false })
 
     if (partnerError) throw partnerError
@@ -47,19 +47,25 @@ export async function GET() {
     })) || []
 
     // Format partner applications
-    const formattedPartnerApplications = partnerApplications?.map(app => ({
-      id: app.id,
-      full_name: app.full_name || app.email.split('@')[0],
-      email: app.email,
-      phone: '',
-      mdcn_code: '',
-      specialization: [],
-      languages: [],
-      status: 'pending',
-      created_at: app.created_at,
-      submitted_at: app.created_at,
-      type: 'partner'
-    })) || []
+    const formattedPartnerApplications = partnerApplications?.map(app => {
+      const onboardingData = app.onboarding_data || {}
+      return {
+        id: app.id,
+        full_name: app.full_name || app.company_name || app.email.split('@')[0],
+        email: app.email,
+        phone: onboardingData.phone || '',
+        mdcn_code: '',
+        specialization: [],
+        languages: [],
+        status: 'pending',
+        created_at: app.created_at,
+        submitted_at: app.created_at,
+        type: 'partner',
+        company_name: app.company_name || '',
+        organization_type: app.organization_type || '',
+        onboarding_data: onboardingData
+      }
+    }) || []
 
     // Combine and sort by creation date
     const allApplications = [...formattedTherapistApplications, ...formattedPartnerApplications]

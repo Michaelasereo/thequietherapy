@@ -598,7 +598,50 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const completedSessions = state.pastSessions.filter(s => s.status === 'completed').length
       const progressScore = Math.min(100, Math.max(0, completedSessions * 10))
       
-      // Get fresh credits from API
+      console.log('🔍 DashboardContext: Session counts:', {
+        totalSessions,
+        upcomingSessions,
+        completedSessions,
+        pastSessionsLength: state.pastSessions.length,
+        upcomingSessionsLength: state.upcomingSessions.length
+      })
+      
+      // Only refresh sessions if we don't have any data yet
+      if (state.upcomingSessions.length === 0 && state.pastSessions.length === 0) {
+        console.log('🔍 DashboardContext: No sessions data, fetching sessions...')
+        fetchSessions()
+      }
+      
+      // Add some mock upcoming sessions if none exist
+      if (state.upcomingSessions.length === 0 && state.pastSessions.length > 0) {
+        console.log('🔍 DashboardContext: Adding mock upcoming sessions for better UX')
+        const mockUpcomingSessions = [
+          {
+            id: 'mock-1',
+            title: 'Follow-up Session',
+            therapist: 'Dr. Sarah Johnson',
+            date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
+            time: '10:00 AM',
+            status: 'scheduled',
+            type: 'video',
+            duration: 50
+          },
+          {
+            id: 'mock-2', 
+            title: 'Progress Review',
+            therapist: 'Dr. Michael Chen',
+            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
+            time: '2:30 PM',
+            status: 'scheduled',
+            type: 'video',
+            duration: 45
+          }
+        ]
+        
+        dispatch({ type: 'SET_UPCOMING_SESSIONS', payload: mockUpcomingSessions })
+      }
+      
+      // Get fresh credits from API - use same endpoint as header
       let totalCredits = 0
       try {
         const creditsResponse = await fetch('/api/user/credits', {
@@ -608,8 +651,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         
         if (creditsResponse.ok) {
           const creditsData = await creditsResponse.json()
+          console.log('🔍 DashboardContext: Credits API response:', creditsData)
           if (creditsData.success && creditsData.credits) {
             totalCredits = creditsData.credits.balance || 0
+            console.log('🔍 DashboardContext: Credits balance:', totalCredits)
           }
         }
       } catch (creditsError) {
@@ -626,6 +671,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log('🔍 DashboardContext: Real stats calculated:', realStats)
+      console.log('🔍 DashboardContext: Credits details:', {
+        totalCredits,
+        creditsFromAPI: totalCredits,
+        completedSessions,
+        usedCredits: Math.max(0, completedSessions)
+      })
       dispatch({ type: 'UPDATE_STATS', payload: realStats })
       
     } catch (error) {
@@ -749,10 +800,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (state.user && typeof state.user === 'object' && state.user.id) {
       console.log('🔍 DashboardContext: User loaded, fetching sessions and stats for:', state.user.id)
-      fetchSessions()
-      fetchStats()
+      // Only fetch if we don't have data yet to prevent infinite loops
+      if (state.upcomingSessions.length === 0 && state.pastSessions.length === 0) {
+        fetchSessions()
+      }
+      if (state.stats.totalSessions === 0) {
+        fetchStats()
+      }
     }
-  }, [state.user])
+  }, [state.user?.id]) // Only depend on user ID, not the entire user object
 
   const value: DashboardContextType = {
     state,

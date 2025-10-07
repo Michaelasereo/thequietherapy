@@ -329,26 +329,6 @@ export default function SessionNotesPanel({ sessionId }: SessionNotesPanelProps)
           </div>
         )}
 
-        {/* AI Processing Button */}
-        {!notes?.ai_generated && (
-          <Button
-            onClick={startAIProcessing}
-            disabled={aiProcessing}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            {aiProcessing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <Brain className="h-4 w-4 mr-2" />
-                Generate AI Notes
-              </>
-            )}
-          </Button>
-        )}
       </div>
     </div>
   )

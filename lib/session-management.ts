@@ -65,6 +65,10 @@ export interface SessionData {
   therapist_email?: string
   user_name?: string
   user_email?: string
+  client_name?: string
+  session_summary?: string
+  reschedule_reason?: string
+  amount_paid?: number
 }
 
 export interface DashboardSessions {

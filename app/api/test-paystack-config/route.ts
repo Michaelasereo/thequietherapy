@@ -72,12 +72,12 @@ export async function GET(request: NextRequest) {
     } catch (error) {
       console.error('Paystack library or API error:', error)
       
-      if (error.message?.includes('401')) {
+      if (error instanceof Error && error.message?.includes('401')) {
         config.error = 'Invalid Paystack secret key (401 Unauthorized)'
-      } else if (error.message?.includes('Cannot find module')) {
+      } else if (error instanceof Error && error.message?.includes('Cannot find module')) {
         config.error = 'Paystack library not installed (run: npm install paystack)'
       } else {
-        config.error = `Paystack error: ${error.message}`
+        config.error = `Paystack error: ${error instanceof Error ? error.message : 'Unknown error'}`
       }
       
       return NextResponse.json(config, { status: 400 })

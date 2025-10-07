@@ -54,7 +54,7 @@ export class ServerSessionManager {
     }
 
     // Create JWT token
-    const token = await new SignJWT(sessionData)
+    const token = await new SignJWT(sessionData as any)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime(expiresAt)
@@ -94,7 +94,7 @@ export class ServerSessionManager {
       }
 
       const { payload } = await jwtVerify(sessionCookie.value, JWT_SECRET)
-      return payload as SessionData
+      return payload as any as SessionData
     } catch (error) {
       console.error('Session validation error:', error)
       return null

@@ -122,6 +122,15 @@ export function handleDatabaseError(error: any): AppError {
           'Wait 5 seconds then try again'
         );
   }
+
+  // Default database error
+  return new AppError(
+    'DATABASE_ERROR',
+    'Database operation failed',
+    500,
+    { code: error.code },
+    'Please try again or contact support'
+  );
 }
 
 /**
@@ -178,6 +187,15 @@ export function handleApplicationError(error: any): AppError {
       'Please check your input and try again'
     );
   }
+
+  // Default application error
+  return new AppError(
+    'APPLICATION_ERROR',
+    error.message || 'Application error occurred',
+    500,
+    {},
+    'Please try again or contact support'
+  );
 }
 
 /**

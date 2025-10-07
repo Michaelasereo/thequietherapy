@@ -55,7 +55,7 @@ const whyUsFeatures = [
 import { ChevronUp } from "lucide-react"
 
 export default function WhyUs() {
-  const [activeTab, setActiveTab] = useState("different")
+  const [activeTab, setActiveTab] = useState("secure")
 
   const activeFeature = whyUsFeatures.find(feature => feature.id === activeTab)
 
@@ -187,21 +187,21 @@ export default function WhyUs() {
                   {activeTab === "different" && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-gray-900">Your Match</h4>
-                        <span className="px-2 py-1 bg-gray-100 text-black rounded-full text-xs font-medium">Perfect Match</span>
+                        <h4 className="font-semibold text-gray-900">About Our CEO</h4>
+                        <span className="px-2 py-1 bg-gray-100 text-black rounded-full text-xs font-medium">Leadership</span>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Therapist</span>
-                          <span className="font-medium">Dr. Sarah Chen</span>
+                          <span className="text-gray-600">CEO</span>
+                          <span className="font-medium">Dr. Asere Opeyemi-Michael</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Specialization</span>
-                          <span className="font-medium">Physician Wellness & CBT</span>
+                          <span className="text-gray-600">Company</span>
+                          <span className="font-medium">TheQuietbrand</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Experience</span>
-                          <span className="font-medium text-black">8+ Years</span>
+                          <span className="text-gray-600">Passion</span>
+                          <span className="font-medium text-black">Healthcare Excellence</span>
                         </div>
                       </div>
                     </div>

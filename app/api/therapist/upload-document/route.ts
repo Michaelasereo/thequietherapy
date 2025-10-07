@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { SessionManager } from '@/lib/session-manager'
+import { ServerSessionManager } from '@/lib/server-session-manager'
 import { handleApiError, successResponse } from '@/lib/api-response'
 
 const supabase = createClient(
@@ -11,7 +11,7 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     // SECURE Authentication - only therapists can upload documents
-    const session = await SessionManager.getSessionFromRequest(request)
+    const session = await ServerSessionManager.getSession()
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }

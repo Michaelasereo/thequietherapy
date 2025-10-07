@@ -11,6 +11,7 @@ import { invalidateTherapistAvailability } from '@/lib/availability-cache';
  */
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createServerClient();
     const { searchParams } = new URL(request.url);
     const therapistId = searchParams.get('therapist_id');
 
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createServerClient();
     // SECURE Authentication Check - only therapists can modify templates
     const authResult = await requireApiAuth(['therapist']);
     if ('error' in authResult) {
@@ -209,6 +211,7 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
+    const supabase = createServerClient();
     // SECURE Authentication Check
     const authResult = await requireApiAuth(['therapist']);
     if ('error' in authResult) {
@@ -278,6 +281,7 @@ export async function PUT(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
+    const supabase = createServerClient();
     // SECURE Authentication Check
     const authResult = await requireApiAuth(['therapist']);
     if ('error' in authResult) {

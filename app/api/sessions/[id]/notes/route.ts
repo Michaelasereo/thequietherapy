@@ -41,7 +41,7 @@ export async function GET(
       });
     }
 
-    console.log('✅ Session notes fetched successfully for session:', params.id);
+    console.log('✅ Session notes fetched successfully for session:', id);
 
     return NextResponse.json({
       success: true,

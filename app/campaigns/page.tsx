@@ -39,64 +39,64 @@ export default function CampaignsPage() {
           {/* Hero Image Grid */}
           <div className="mt-16 max-w-6xl mx-auto">
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {/* Row 1 */}
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              {/* Row 1 - Mental Health in Nigeria Images */}
+              <div className="aspect-square bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
+                <div className="text-blue-600 text-2xl">🧠</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center">
+                <div className="text-green-600 text-2xl">💚</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center">
+                <div className="text-purple-600 text-2xl">🤝</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl flex items-center justify-center">
+                <div className="text-orange-600 text-2xl">🌱</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center">
+                <div className="text-pink-600 text-2xl">💪</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-xl flex items-center justify-center">
+                <div className="text-indigo-600 text-2xl">🌟</div>
               </div>
               
               {/* Row 2 */}
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-teal-100 to-teal-200 rounded-xl flex items-center justify-center">
+                <div className="text-teal-600 text-2xl">🏥</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-red-100 to-red-200 rounded-xl flex items-center justify-center">
+                <div className="text-red-600 text-2xl">❤️</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-xl flex items-center justify-center">
+                <div className="text-yellow-600 text-2xl">☀️</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-cyan-100 to-cyan-200 rounded-xl flex items-center justify-center">
+                <div className="text-cyan-600 text-2xl">🌊</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-lime-100 to-lime-200 rounded-xl flex items-center justify-center">
+                <div className="text-lime-600 text-2xl">🌿</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-rose-100 to-rose-200 rounded-xl flex items-center justify-center">
+                <div className="text-rose-600 text-2xl">🌸</div>
               </div>
               
               {/* Row 3 */}
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-violet-100 to-violet-200 rounded-xl flex items-center justify-center">
+                <div className="text-violet-600 text-2xl">🦋</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl flex items-center justify-center">
+                <div className="text-emerald-600 text-2xl">🌳</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl flex items-center justify-center">
+                <div className="text-amber-600 text-2xl">🔥</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-sky-100 to-sky-200 rounded-xl flex items-center justify-center">
+                <div className="text-sky-600 text-2xl">☁️</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-fuchsia-100 to-fuchsia-200 rounded-xl flex items-center justify-center">
+                <div className="text-fuchsia-600 text-2xl">🎭</div>
               </div>
-              <div className="aspect-square bg-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+              <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center">
+                <div className="text-slate-600 text-2xl">🕊️</div>
               </div>
             </div>
             
@@ -114,7 +114,7 @@ export default function CampaignsPage() {
       <section className="w-full py-16 md:py-24 lg:py-32 bg-white">
         <div className="container px-4 md:px-6">
           <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-[1fr_400px] lg:gap-16 xl:grid-cols-[1fr_450px] items-center">
+            <div className="grid lg:grid-cols-[1fr_400px] lg:gap-16 xl:grid-cols-[1fr_450px] items-start">
               {/* Left Side - Content */}
               <div className="space-y-8">
                 <div className="space-y-6">
@@ -132,30 +132,28 @@ export default function CampaignsPage() {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="bg-black rounded-2xl p-8 flex items-center justify-center">
                     <div className="text-white">
-                      <GraduationCap className="h-16 w-16 mx-auto" />
+                      <Heart className="h-16 w-16 mx-auto" />
                     </div>
                   </div>
                   <div className="bg-purple-100 rounded-2xl p-8 flex items-center justify-center">
                     <div className="text-purple-600">
-                      <Heart className="h-16 w-16 mx-auto" />
+                      <Users className="h-16 w-16 mx-auto" />
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Right Side - CTA and Stats */}
-              <div className="space-y-8">
+              <div className="space-y-8 flex flex-col justify-end h-full">
                 <div className="text-right">
-                  <p className="text-sm text-gray-500 mb-4">Join 500+ students already healing</p>
-                  <Button asChild size="lg" className="bg-black text-white hover:bg-gray-800 rounded-xl px-8 py-4 text-lg">
-                    <Link href="/signup?campaign=students">
-                      See If You Qualify
-                    </Link>
+                  <p className="text-sm text-gray-500 mb-4">Coming Soon</p>
+                  <Button size="lg" className="bg-gray-500 text-white hover:bg-gray-600 rounded-xl px-8 py-4 text-lg cursor-not-allowed" disabled>
+                    Coming Soon
                   </Button>
                 </div>
 
                 {/* Social Media Hashtags */}
-                <div className="bg-gray-50 rounded-2xl p-6">
+                <div className="bg-gray-50 rounded-2xl p-6 mt-auto">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Share Your Story</h3>
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="outline" className="text-xs">#StudentsInTherapy</Badge>
@@ -175,7 +173,7 @@ export default function CampaignsPage() {
       <section className="w-full py-16 md:py-24 lg:py-32 bg-gray-50">
         <div className="container px-4 md:px-6">
           <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-[1fr_400px] lg:gap-16 xl:grid-cols-[1fr_450px] items-center">
+            <div className="grid lg:grid-cols-[1fr_400px] lg:gap-16 xl:grid-cols-[1fr_450px] items-start">
               {/* Left Side - Content */}
               <div className="space-y-8">
                 <div className="space-y-6">
@@ -205,18 +203,16 @@ export default function CampaignsPage() {
               </div>
 
               {/* Right Side - CTA and Stats */}
-              <div className="space-y-8">
+              <div className="space-y-8 flex flex-col justify-end h-full">
                 <div className="text-right">
-                  <p className="text-sm text-gray-500 mb-4">Join 300+ professionals already healing</p>
-                  <Button asChild size="lg" className="bg-black text-white hover:bg-gray-800 rounded-xl px-8 py-4 text-lg">
-                    <Link href="/signup?campaign=doctors">
-                      See If You Qualify
-                    </Link>
+                  <p className="text-sm text-gray-500 mb-4">Coming Soon</p>
+                  <Button size="lg" className="bg-gray-500 text-white hover:bg-gray-600 rounded-xl px-8 py-4 text-lg cursor-not-allowed" disabled>
+                    Coming Soon
                   </Button>
                 </div>
 
                 {/* Social Media Hashtags */}
-                <div className="bg-white rounded-2xl p-6">
+                <div className="bg-white rounded-2xl p-6 mt-auto">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Share Your Story</h3>
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="outline" className="text-xs">#HealthcareProfessionals</Badge>
@@ -293,23 +289,16 @@ export default function CampaignsPage() {
           <div className="mx-auto grid max-w-6xl grid-cols-1 md:grid-cols-2 gap-8">
             <Card className="bg-white border border-gray-200 rounded-lg shadow-sm">
               <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
                 <p className="text-gray-700 mb-4 italic">
-                  "As a medical student, I was struggling with anxiety and imposter syndrome. 
-                  The Students in Therapy program connected me with a therapist who understood 
-                  the unique pressures of medical education. I'm now more confident and focused."
+                  "As a final year medical student at University of Lagos, I was struggling with severe anxiety and depression. The pressure of exams, clinical rotations, and family expectations was overwhelming. I couldn't sleep, lost my appetite, and started having panic attacks. Through therapy, I learned coping strategies, breathing exercises, and how to manage my stress. Now I'm not just surviving medical school - I'm thriving. I've become a mental health advocate on campus and help other students who are struggling. Therapy saved my academic career and my life."
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold">SM</span>
+                    <span className="text-white font-semibold">AO</span>
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">Sarah M.</div>
-                    <div className="text-sm text-gray-600">Medical Student</div>
+                    <div className="font-semibold text-gray-900">Aisha O.</div>
+                    <div className="text-sm text-gray-600">Final Year Medical Student, University of Lagos</div>
                   </div>
                 </div>
               </CardContent>
@@ -317,23 +306,16 @@ export default function CampaignsPage() {
 
             <Card className="bg-white border border-gray-200 rounded-lg shadow-sm">
               <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
                 <p className="text-gray-700 mb-4 italic">
-                  "After 15 years in emergency medicine, I was experiencing severe burnout. 
-                  The Healthcare Professionals program provided me with tools and support to 
-                  rediscover my passion for medicine while maintaining my mental health."
+                  "I'm a resident doctor at Lagos University Teaching Hospital, and the burnout was real. Working 80+ hours a week, dealing with inadequate resources, and the emotional toll of patient care was crushing me. I was drinking too much, snapping at my family, and felt like I was drowning. Therapy helped me set boundaries, develop healthy coping mechanisms, and remember why I became a doctor. Now I'm not just surviving residency - I'm actually enjoying medicine again. I've learned to care for myself so I can better care for my patients."
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold">DR</span>
+                    <span className="text-white font-semibold">DT</span>
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">Dr. Robert K.</div>
-                    <div className="text-sm text-gray-600">Emergency Physician</div>
+                    <div className="font-semibold text-gray-900">Dr. Tunde A.</div>
+                    <div className="text-sm text-gray-600">Resident Doctor, Lagos University Teaching Hospital</div>
                   </div>
                 </div>
               </CardContent>
@@ -353,17 +335,13 @@ export default function CampaignsPage() {
               Take the first step towards better mental health with our specialized support programs.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="bg-black text-white hover:bg-gray-800 rounded-xl px-8 py-4 text-lg">
-                <Link href="/signup?campaign=students">
-                  <GraduationCap className="mr-2 h-5 w-5" />
-                  Join Students Campaign
-                </Link>
+              <Button size="lg" className="bg-gray-500 text-white hover:bg-gray-600 rounded-xl px-8 py-4 text-lg cursor-not-allowed" disabled>
+                <Heart className="mr-2 h-5 w-5" />
+                Coming Soon
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl px-8 py-4 text-lg">
-                <Link href="/signup?campaign=doctors">
-                  <Stethoscope className="mr-2 h-5 w-5" />
-                  Join Doctors Campaign
-                </Link>
+              <Button size="lg" className="bg-gray-500 text-white hover:bg-gray-600 rounded-xl px-8 py-4 text-lg cursor-not-allowed" disabled>
+                <Stethoscope className="mr-2 h-5 w-5" />
+                Coming Soon
               </Button>
             </div>
           </div>

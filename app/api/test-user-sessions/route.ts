@@ -24,9 +24,15 @@ export async function GET() {
     console.log('🔍 All sessions:', { sessions, sessionsError });
 
     // Check table structure
-    const { data: structure, error: structureError } = await supabase
-      .rpc('get_table_structure', { table_name: 'user_sessions' })
-      .catch(() => ({ data: null, error: 'RPC not available' }));
+    let structure = null;
+    let structureError = null;
+    try {
+      const result = await supabase.rpc('get_table_structure', { table_name: 'user_sessions' });
+      structure = result.data;
+      structureError = result.error;
+    } catch (error) {
+      structureError = { message: 'RPC not available' };
+    }
 
     return NextResponse.json({
       tableExists: !tableError,

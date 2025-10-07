@@ -10,37 +10,72 @@ function redirectTo(url: string, base: string) {
   return NextResponse.redirect(new URL(url, base));
 }
 
+function getDashboardUrl(userType: string | null): string {
+  switch (userType) {
+    case 'therapist':
+      return '/therapist/dashboard';
+    case 'partner':
+      return '/partner/dashboard';
+    case 'admin':
+      return '/admin/dashboard';
+    default:
+      return '/dashboard';
+  }
+}
+
 export async function GET(req: Request) {
-  const base = process.env.NEXT_PUBLIC_APP_URL!;
+  const base = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const { searchParams } = new URL(req.url);
+  const code = searchParams.get('code');
   const userType = searchParams.get('user_type') || 'individual';
+  const authType = searchParams.get('type') || 'login';
+  const redirectUrl = searchParams.get('redirect_url');
 
   try {
-    console.log('🔍 Supabase auth callback - processing...');
-    
-    // Handle Supabase auth callback
-    const { data, error } = await supabase.auth.getSession();
+    console.log('🔍 OAuth callback processing...', { 
+      userType, 
+      authType, 
+      hasCode: !!code,
+      redirectUrl 
+    });
+
+    if (!code) {
+      console.log('❌ No authorization code found');
+      return redirectTo(`/login?error=no_code&user_type=${userType}`, base);
+    }
+
+    // Exchange code for session
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (error || !data.session) {
-      console.log('❌ Supabase auth callback failed:', error);
-      return redirectTo('/login?error=auth_failed', base);
+      console.log('❌ Failed to exchange code for session:', error);
+      return redirectTo(`/login?error=auth_failed&user_type=${userType}`, base);
     }
 
     const user = data.session.user;
-    console.log('✅ Supabase auth successful for user:', user.email);
+    console.log('✅ OAuth successful for user:', user.email);
 
-    // Get user type from the auth data or URL parameter
-    const userTypeFromAuth = user.user_metadata?.user_type || userType;
-    
-    // Redirect to appropriate dashboard
-    let redirectPath = '/dashboard';
-    if (userTypeFromAuth === 'therapist') {
-      redirectPath = '/therapist/dashboard';
-    } else if (userTypeFromAuth === 'partner') {
-      redirectPath = '/partner/dashboard';
-    } else if (userTypeFromAuth === 'admin') {
-      redirectPath = '/admin/dashboard';
+    // Update user metadata with user_type if provided
+    if (userType && data.user) {
+      console.log('🔄 Updating user metadata with user_type:', userType);
+      
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { 
+          user_type: userType,
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User'
+        }
+      });
+
+      if (updateError) {
+        console.error('❌ Failed to update user metadata:', updateError);
+      } else {
+        console.log('✅ User metadata updated successfully');
+      }
     }
+
+    // Determine redirect path
+    const redirectPath = redirectUrl || getDashboardUrl(userType);
+    console.log('🔄 Redirecting to:', redirectPath);
 
     // Create redirect response
     const response = NextResponse.redirect(new URL(redirectPath, base));
@@ -50,8 +85,8 @@ export async function GET(req: Request) {
       user: {
         id: user.id,
         email: user.email,
-        user_type: userTypeFromAuth,
-        name: user.user_metadata?.full_name || user.email.split('@')[0]
+        user_type: userType,
+        name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User'
       },
       session: data.session
     }), {
@@ -65,7 +100,7 @@ export async function GET(req: Request) {
     return response;
 
   } catch (error) {
-    console.error('Auth callback error:', error);
-    return redirectTo('/login?error=server_error', base);
+    console.error('❌ Auth callback error:', error);
+    return redirectTo(`/login?error=server_error&user_type=${userType}`, base);
   }
 }

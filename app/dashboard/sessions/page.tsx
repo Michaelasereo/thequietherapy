@@ -14,6 +14,7 @@ import {
   SessionData 
 } from "@/lib/session-management"
 import { useAuth } from '@/context/auth-context'
+import { useDashboard } from '@/context/dashboard-context'
 import SessionActionsMenu from '@/components/session-actions-menu'
 import { formatTime, formatDate, getSessionStartTime } from '@/lib/utils'
 // import { supabase } from "@/lib/supabase" // Removed - not used and causing WebSocket connection attempts
@@ -22,6 +23,7 @@ import { formatTime, formatDate, getSessionStartTime } from '@/lib/utils'
 export default function SessionsPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const { state: dashboardState, fetchSessions: refreshDashboardSessions } = useDashboard()
   const [sessions, setSessions] = useState<SessionData[]>([])
   const [loading, setLoading] = useState(true)
   const [realTimeUpdates, setRealTimeUpdates] = useState(0) // Disabled - realtime functionality removed
@@ -45,13 +47,23 @@ export default function SessionsPage() {
     })
   }
 
-  // Fetch sessions data
+  // Fetch sessions data - use dashboard context for consistency
   const fetchSessions = async () => {
     try {
       if (user?.id) {
-        const allSessions = await getUserSessions(user.id)
-        console.log('🔍 Fetched all sessions:', allSessions)
-        setSessions(allSessions)
+        // First try to use dashboard context data
+        if (dashboardState.upcomingSessions.length > 0 || dashboardState.pastSessions.length > 0) {
+          const allSessions = [...dashboardState.upcomingSessions, ...dashboardState.pastSessions]
+          console.log('🔍 Using dashboard context sessions:', allSessions)
+          setSessions(allSessions)
+        } else {
+          // Fallback to direct API call
+          const allSessions = await getUserSessions(user.id)
+          console.log('🔍 Fetched sessions directly:', allSessions)
+          setSessions(allSessions)
+          // Refresh dashboard context
+          await refreshDashboardSessions()
+        }
       }
     } catch (error) {
       console.error('Error fetching sessions:', error)
@@ -73,7 +85,7 @@ export default function SessionsPage() {
     } else {
       setLoading(false)
     }
-  }, [user])
+  }, [user?.id]) // Remove dashboard state dependencies to prevent infinite loops
 
   // Real-time updates disabled - using polling instead
   useEffect(() => {
@@ -235,10 +247,14 @@ export default function SessionsPage() {
           <CardContent className="p-6">
             {isCompletedSession && (
               <div className="flex items-center justify-end mb-2">
-                <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                  <Eye className="h-3 w-3" />
-                  <span>Click to view details</span>
-                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-black text-white hover:bg-gray-800 border-black"
+                  onClick={() => router.push(`/dashboard/sessions/${session.id}`)}
+                >
+                  View Details
+                </Button>
               </div>
             )}
         <div className="flex items-start justify-between mb-4">

@@ -27,10 +27,24 @@ export async function GET(request: NextRequest) {
     // Verify the magic link
     const result = await verifyMagicLinkForAuthType(token, authType as 'individual' | 'therapist' | 'partner' | 'admin')
     
-    if (!result.success || !result.user) {
+    if (!result.success) {
       console.error('❌ Magic link verification failed:', result.error)
+      
+      // If there's a redirect URL in the result, use it
+      if (result.redirectTo) {
+        return NextResponse.redirect(new URL(result.redirectTo, request.url))
+      }
+      
+      // Otherwise, show error page
       return NextResponse.redirect(
         new URL(`/auth/error?error=${result.error || 'Verification failed'}`, request.url)
+      )
+    }
+    
+    if (!result.user) {
+      console.error('❌ No user returned from magic link verification')
+      return NextResponse.redirect(
+        new URL('/auth/error?error=No user data returned', request.url)
       )
     }
 
@@ -109,11 +123,9 @@ export async function POST(request: NextRequest) {
         id: result.user.id,
         email: result.user.email,
         name: result.user.full_name || result.user.email.split('@')[0],
-        role: userType as 'individual' | 'therapist' | 'partner' | 'admin',
         user_type: result.user.user_type || userType,
         is_verified: result.user.is_verified || false,
         is_active: result.user.is_active || true,
-        session_token: result.user.session_token
       })
 
       console.log('🍪 Created unified session for:', userType, 'Token:', sessionToken.substring(0, 20) + '...')

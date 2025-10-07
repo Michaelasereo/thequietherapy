@@ -7,6 +7,10 @@ const publicRoutes = [
   '/',
   '/login',
   '/register',
+  '/campaigns',
+  '/support',
+  '/faqs',
+  '/articles',
   '/therapist/login',
   '/therapist/enroll',
   '/partner/login',
@@ -17,7 +21,9 @@ const publicRoutes = [
   '/api/auth/verify-magic-link',
   '/api/health',
   '/_next',
-  '/favicon.ico'
+  '/favicon.ico',
+  '/manifest.json',
+  '/.well-known'
 ]
 
 export function middleware(request: NextRequest) {

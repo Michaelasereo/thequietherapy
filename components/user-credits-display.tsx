@@ -35,8 +35,10 @@ export function UserCreditsDisplay({ className = "", showPurchaseButton = true }
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchUserCredits()
-  }, [])
+    if (!credits) {
+      fetchUserCredits()
+    }
+  }, [credits]) // Only fetch if we don't have credits yet
 
   const fetchUserCredits = async () => {
     try {

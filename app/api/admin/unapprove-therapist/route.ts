@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { SessionManager } from '@/lib/session-manager'
+import { ServerSessionManager } from '@/lib/server-session-manager'
 import { handleApiError, successResponse } from '@/lib/api-response'
 
 const supabase = createClient(
@@ -11,7 +11,7 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     // SECURE Authentication - only admins can unapprove therapists
-    const session = await SessionManager.getSessionFromRequest(request)
+    const session = await ServerSessionManager.getSession()
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // SECURE Authentication - only admins can access this
-    const session = await SessionManager.getSessionFromRequest(request)
+    const session = await ServerSessionManager.getSession()
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }

@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
     // Format the session data
     const formattedSessions = sessions?.map(session => ({
       id: session.id,
-      patient_name: session.users?.full_name || 'Unknown Patient',
-      patient_email: session.users?.email || '',
+      patient_name: session.users?.[0]?.full_name || 'Unknown Patient',
+      patient_email: session.users?.[0]?.email || '',
       start_time: `${session.scheduled_date}T${session.scheduled_time}`,
       duration: session.duration_minutes || 50,
       room_url: session.daily_room_url,

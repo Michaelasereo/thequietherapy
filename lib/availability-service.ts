@@ -274,6 +274,7 @@ export class AvailabilityService {
           title: `${template.session_type || 'Individual'} Session`,
           isAvailable: template.is_active !== false
         })),
+        customSlots: [],
         breaks: [],
         notes: ''
       };

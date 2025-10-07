@@ -195,7 +195,11 @@ export async function POST(request: NextRequest) {
     
     // Handle detailed availability schedule
     if (body.availability) {
-      return await handleAvailabilitySchedule(session.user.email, body.availability)
+      return await handleAvailabilitySchedule({
+        therapistEmail: session.user.email,
+        availability: body.availability,
+        weeklySchedule: body.weeklySchedule
+      })
     }
 
     throw new ValidationError('Invalid request data')

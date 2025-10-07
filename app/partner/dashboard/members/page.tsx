@@ -1,60 +1,181 @@
+'use client';
+
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Upload, Download, Users, Calendar, Clock, CreditCard } from "lucide-react"
-import CSVUpload from "@/components/csv-upload"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Upload, Download, Users, Calendar, Clock, CreditCard, Plus, Mail, CheckCircle } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
+
+interface PartnerMember {
+  id: string
+  name: string
+  email: string
+  creditsAssigned: number
+  sessionsUsed: number
+  status: 'active' | 'inactive' | 'pending'
+  joinedAt: string
+  lastActivity?: string
+}
+
+interface CSVUploadData {
+  firstname: string
+  email: string
+  statustype: 'doctor' | 'student'
+  caderlevel: string
+  phone?: string
+  department?: string
+  employeeId?: string
+}
 
 export default function PartnerMembersPage() {
-  // Default data in case imports are not available during build
-  const partnerMembers = [
-    {
-      id: "1",
-      name: "John Smith",
-      email: "john@company.com",
-      creditsAssigned: 50,
-      sessionsUsed: 5,
-      status: "Active"
-    },
-    {
-      id: "2",
-      name: "Sarah Johnson",
-      email: "sarah@company.com",
-      creditsAssigned: 30,
-      sessionsUsed: 3,
-      status: "Active"
-    },
-    {
-      id: "3",
-      name: "Mike Chen",
-      email: "mike@company.com",
-      creditsAssigned: 20,
-      sessionsUsed: 2,
-      status: "Active"
+  const [members, setMembers] = useState<PartnerMember[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedMembers, setSelectedMembers] = useState<Record<string, boolean>>({})
+  const [showCSVModal, setShowCSVModal] = useState(false)
+  const [csvFile, setCsvFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    fetchMembers()
+  }, [])
+
+  const fetchMembers = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/partner/members')
+      if (response.ok) {
+        const data = await response.json()
+        setMembers(data)
+      } else {
+        console.error('Failed to fetch members')
+      }
+    } catch (error) {
+      console.error('Error fetching members:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load members",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
 
-  const partnerPackages = [
-    { id: "1", name: "Starter", credits: 100, price: 500000 },
-    { id: "2", name: "Professional", credits: 500, price: 2000000 },
-    { id: "3", name: "Enterprise", credits: -1, price: 10000000 }
-  ]
+  const handleCSVUpload = async (file: File) => {
+    try {
+      setUploading(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const response = await fetch('/api/partner/upload-members', {
+        method: 'POST',
+        body: formData
+      })
 
-  const members = partnerMembers
-  const name = ""
-  const email = ""
-  const selected: Record<string, boolean> = {}
-  const selectedPackage = ""
-  const csvData = ""
+      if (response.ok) {
+        const result = await response.json()
+        toast({
+          title: "Upload Successful",
+          description: `${result.uploaded} members uploaded and magic links sent`
+        })
+        setShowCSVModal(false)
+        setCsvFile(null)
+        fetchMembers() // Refresh the members list
+      } else {
+        const error = await response.json()
+        throw new Error(error.message || 'Upload failed')
+      }
+    } catch (error) {
+      console.error('Error uploading CSV:', error)
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Failed to upload CSV",
+        variant: "destructive"
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleSelectMember = (memberId: string) => {
+    setSelectedMembers(prev => ({
+      ...prev,
+      [memberId]: !prev[memberId]
+    }))
+  }
+
+  const handleSelectAll = () => {
+    const allSelected = Object.keys(selectedMembers).length === members.length
+    if (allSelected) {
+      setSelectedMembers({})
+    } else {
+      const newSelection: Record<string, boolean> = {}
+      members.forEach(member => {
+        newSelection[member.id] = true
+      })
+      setSelectedMembers(newSelection)
+    }
+  }
+
+  const downloadTemplate = () => {
+    const templateContent = `firstname,email,statustype,caderlevel,phone,department,employeeid
+John,john.doe@hospital.com,doctor,consultant,+2348012345678,Cardiology,EMP001
+Sarah,sarah.smith@hospital.com,doctor,resident,+2348012345679,Neurology,EMP002
+Michael,michael.johnson@university.edu,student,300level,+2348012345680,Medicine,STU001
+Emily,emily.brown@university.edu,student,400level,+2348012345681,Medicine,STU002
+David,david.wilson@hospital.com,doctor,house officer,+2348012345682,Internal Medicine,EMP003`
+
+    const blob = new Blob([templateContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'partner-member-template.csv'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }
+
+  const filteredMembers = members.filter(member =>
+    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.email.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   // Calculate summary data
   const totalMembers = members.length
-  const activeMembers = members.filter(m => m.status === "Active").length
+  const activeMembers = members.filter(m => m.status === 'active').length
   const totalSessions = members.reduce((sum, m) => sum + m.sessionsUsed, 0)
   const totalCreditsAssigned = members.reduce((sum, m) => sum + m.creditsAssigned, 0)
-  const upcomingSessions = 3 // Mock data - in real app this would come from API
+  const upcomingSessions = 0 // This would come from a sessions API in a real implementation
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold">Members</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2"></div>
+                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -122,8 +243,8 @@ export default function PartnerMembersPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-col sm:flex-row gap-2">
-            <Input placeholder="Name" defaultValue={name} />
-            <Input placeholder="Email" defaultValue={email} />
+            <Input placeholder="Name" />
+            <Input placeholder="Email" />
             <Button>Add</Button>
           </div>
         </CardContent>
@@ -149,10 +270,14 @@ export default function PartnerMembersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {members.map((m) => (
+              {filteredMembers.length > 0 ? filteredMembers.map((m) => (
                 <TableRow key={m.id}>
                   <TableCell>
-                    <input type="checkbox" defaultChecked={!!selected[m.id]} />
+                    <input 
+                      type="checkbox" 
+                      checked={!!selectedMembers[m.id]} 
+                      onChange={() => handleSelectMember(m.id)}
+                    />
                   </TableCell>
                   <TableCell>{m.name}</TableCell>
                   <TableCell>{m.email}</TableCell>
@@ -164,7 +289,17 @@ export default function PartnerMembersPage() {
                     <Button variant="destructive" size="sm">Remove</Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <div className="text-center">
+                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No members found</h3>
+                      <p className="text-muted-foreground">Upload a CSV file to add members or add them manually.</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

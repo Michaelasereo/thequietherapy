@@ -63,9 +63,8 @@ export default function Footer() {
         <div className="grid gap-4">
           <h3 className="text-lg font-semibold text-white">Contact Us</h3>
           <ul className="space-y-3 text-gray-300">
-            <li>123 Therapy Lane, Wellness City, 90210</li>
-            <li>Email: info@quiet.com</li>
-            <li>Phone: (123) 456-7890</li>
+            <li>Surulere, Lagos</li>
+            <li>Email: michaelasereoo@gmail.com</li>
           </ul>
         </div>
         <div className="grid gap-4">

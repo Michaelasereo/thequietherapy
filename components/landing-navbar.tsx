@@ -10,6 +10,7 @@ import { Logo } from "@/components/ui/logo"
 const navLinks = [
   { name: "Therapy", href: "#therapy" },
   { name: "Campaigns", href: "/campaigns" },
+  { name: "Support", href: "/support" },
   { name: "About Us", href: "#about" },
   { name: "FAQs", href: "/faqs" },
   { name: "Articles", href: "/articles" },
@@ -21,7 +22,7 @@ export default function LandingNavbar() {
       {/* Top Banner */}
       <div className="bg-black text-white px-4 py-2 text-center text-sm font-medium">
         <div className="container flex items-center justify-center gap-2">
-          <span>🎉 Magic Link Authentication - No Passwords Needed!</span>
+          <span>🎉 3 Amazing Years of The QuietBrand! Happy Anniversary!</span>
           <span>→</span>
         </div>
       </div>

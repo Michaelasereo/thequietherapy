@@ -123,7 +123,7 @@ export default function TherapistClientDetailsPage({ params }: { params: Promise
         {/* Action Buttons */}
         <div className="flex gap-2">
           <Button asChild variant="outline">
-            <Link href={`/therapist/dashboard/patient-medical-history/${id}`}>
+            <Link href={`/therapist/dashboard/patient-medical-history/${clientId}`}>
               <Stethoscope className="mr-2 h-4 w-4" />
               Medical History
             </Link>
@@ -175,7 +175,7 @@ export default function TherapistClientDetailsPage({ params }: { params: Promise
             Medical History Preview
           </CardTitle>
           <Button asChild variant="outline" size="sm">
-            <Link href={`/therapist/dashboard/patient-medical-history/${id}`}>
+            <Link href={`/therapist/dashboard/patient-medical-history/${clientId}`}>
               Manage Medical History
             </Link>
           </Button>

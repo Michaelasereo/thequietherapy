@@ -249,7 +249,7 @@ export async function requireAuth(allowedUserTypes?: string[]): Promise<ServerSe
  */
 export async function requireApiAuth(allowedUserTypes?: string[]): Promise<{ session: ServerSession } | { error: Response }> {
   // Try unified session first
-  const unifiedSession = await SessionManager.getSession()
+  const unifiedSession = await ServerSessionManager.getSession()
   
   if (unifiedSession) {
     // Convert unified session to ServerSession format

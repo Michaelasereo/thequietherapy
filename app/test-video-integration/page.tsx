@@ -139,7 +139,11 @@ export default function TestVideoIntegrationPage() {
 
   // Test 4: Session API Endpoints
   const testSessionAPIs = async () => {
-    const results = {
+    const results: {
+      upcoming: { status: number; ok: boolean; data: any } | { error: string } | null
+      history: { status: number; ok: boolean; data: any } | { error: string } | null
+      therapistToday: { status: number; ok: boolean; data: any } | { error: string } | null
+    } = {
       upcoming: null,
       history: null,
       therapistToday: null

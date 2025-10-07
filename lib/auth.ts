@@ -69,6 +69,42 @@ export async function createMagicLinkForAuthType(
       return { success: false, error: 'Too many requests. Please try again in an hour.' }
     }
 
+    // Check if user exists for login attempts
+    if (type === 'login') {
+      console.log('🔍 Checking if user exists for login...')
+      const { data: existingUser, error: userError } = await supabase
+        .from('users')
+        .select('id, email, user_type, is_verified, is_active')
+        .eq('email', email)
+        .single()
+
+      if (userError && userError.code !== 'PGRST116') {
+        console.error('❌ Error checking user existence:', userError)
+        return { success: false, error: 'Error checking user account' }
+      }
+
+      if (!existingUser) {
+        console.log('❌ User not found for login attempt')
+        return { 
+          success: false, 
+          error: 'User account not found. Please sign up first.',
+          redirectTo: `/register?user_type=${authType}&error=account_not_found&email=${encodeURIComponent(email)}`
+        }
+      }
+
+      // Verify user type matches
+      if (existingUser.user_type !== authType) {
+        console.log('❌ User type mismatch for login:', existingUser.user_type, 'vs', authType)
+        return { 
+          success: false, 
+          error: 'Invalid user type for this login.',
+          redirectTo: `/register?user_type=${authType}&error=wrong_user_type&email=${encodeURIComponent(email)}`
+        }
+      }
+
+      console.log('✅ User found and verified for login:', existingUser.email)
+    }
+
     const token = randomUUID()
     const expiryDuration = getMagicLinkExpiry(email)
     const expiresAt = new Date(Date.now() + expiryDuration)
@@ -226,8 +262,9 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
 
     let finalUser = user
 
-    // If user doesn't exist and this is a signup, create them
+    // Handle user existence based on magic link type
     if (!user && magicLink.type === 'signup') {
+      // Create new user for signup
       console.log('👤 Creating new user with Supabase Auth sync...')
       
       const createResult = await createUserWithSupabaseAuth({
@@ -256,11 +293,16 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
       finalUser = newUser
       console.log('✅ New user created with Supabase Auth sync:', finalUser.id)
     } else if (!user && magicLink.type === 'login') {
+      // User doesn't exist for login - redirect to signup
       console.log('❌ User not found for login')
-      return { success: false, error: 'User account not found. Please sign up first.' }
+      return { 
+        success: false, 
+        error: 'User account not found. Please sign up first.',
+        redirectTo: `/register?user_type=${authType}&error=account_not_found&email=${encodeURIComponent(magicLink.email)}`
+      }
     } else if (user && magicLink.type === 'login') {
+      // User exists for login - verify user type
       console.log('✅ Existing user found for login:', user.email)
-      // Verify user type matches
       if (user.user_type !== authType) {
         console.log('❌ User type mismatch:', user.user_type, 'vs', authType)
         return { success: false, error: 'Invalid user type for this login' }

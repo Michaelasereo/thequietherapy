@@ -58,6 +58,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
     }
 
+    // Invalidate donation stats cache when payment is successful
+    if (event.event === 'charge.success') {
+      try {
+        // Clear cache by making a request to the stats API with cache-busting
+        const statsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/donations/stats`, {
+          headers: { 'Cache-Control': 'no-cache' }
+        })
+        console.log('📊 Donation stats cache invalidated after successful payment')
+      } catch (cacheError) {
+        console.warn('⚠️ Failed to invalidate donation stats cache:', cacheError)
+      }
+    }
+
     return NextResponse.json({ received: true, event_id: event.id })
 
   } catch (error) {

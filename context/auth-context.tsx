@@ -38,7 +38,7 @@ function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null
+  let timeout: ReturnType<typeof setTimeout> | null = null
   return (...args: Parameters<T>) => {
     if (timeout) clearTimeout(timeout)
     timeout = setTimeout(() => func(...args), wait)
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       // Check session using ClientSessionManager
-      const sessionData = ClientSessionManager.getSession()
+      const sessionData = await ClientSessionManager.getSession()
       
       if (sessionData) {
         // Convert session data to UserProfile format

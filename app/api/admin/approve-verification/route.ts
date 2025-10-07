@@ -69,13 +69,14 @@ export async function POST(request: Request) {
       }
 
     } else if (type === 'partner') {
-      // Update partner enrollment status (assuming there's a partner_enrollments table)
-      // For now, we'll update the users table directly
+      // Update partner enrollment status
       const { error: userError } = await supabase
         .from('users')
         .update({ 
+          partner_status: action === 'approve' ? 'active' : 'rejected',
           is_verified: action === 'approve',
           is_active: action === 'approve',
+          approval_date: action === 'approve' ? new Date().toISOString() : null,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)

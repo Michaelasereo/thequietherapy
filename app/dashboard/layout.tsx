@@ -14,14 +14,14 @@ import { DevSessionSetup } from "@/components/dev-session-setup"
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<any>(null);
   const router = useRouter();
 
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
-            const sessionData = ClientSessionManager.getSession();
+            const sessionData = await ClientSessionManager.getSession();
         if (!sessionData) {
           console.log('🔍 DashboardLayout: No session found, redirecting to login')
           router.push('/login')
@@ -58,7 +58,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   const userInfo = { 
-    name: session.name || session.email?.split('@')[0] || 'User', 
+    name: session.full_name || session.name || session.email?.split('@')[0] || 'User', 
     email: session.email || '' 
   }
 

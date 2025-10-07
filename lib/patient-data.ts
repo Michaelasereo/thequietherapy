@@ -261,18 +261,20 @@ export async function upsertPatientSocialHistory(userId: string, socialHistory: 
 // Patient Medical History Functions (Therapist only)
 export async function getPatientMedicalHistory(userId: string): Promise<PatientMedicalHistory[]> {
   try {
-    const { data, error } = await supabase
-      .from('patient_medical_history')
-      .select('*')
-      .eq('user_id', userId)
-      .order('diagnosis_date', { ascending: false })
+    const response = await fetch(`/api/patient/medical-history?userId=${userId}`, {
+      credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    })
 
-    if (error) {
-      console.error('Error fetching patient medical history:', error)
+    if (!response.ok) {
+      console.error('Error fetching patient medical history:', response.status)
       return []
     }
 
-    return data || []
+    const data = await response.json()
+    return data.success ? data.data || [] : []
   } catch (error) {
     console.error('Error fetching patient medical history:', error)
     return []
@@ -310,18 +312,20 @@ export async function addPatientMedicalHistory(
 // Patient Drug History Functions (Therapist only)
 export async function getPatientDrugHistory(userId: string): Promise<PatientDrugHistory[]> {
   try {
-    const { data, error } = await supabase
-      .from('patient_drug_history')
-      .select('*')
-      .eq('user_id', userId)
-      .order('start_date', { ascending: false })
+    const response = await fetch(`/api/patient/drug-history?userId=${userId}`, {
+      credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    })
 
-    if (error) {
-      console.error('Error fetching patient drug history:', error)
+    if (!response.ok) {
+      console.error('Error fetching patient drug history:', response.status)
       return []
     }
 
-    return data || []
+    const data = await response.json()
+    return data.success ? data.data || [] : []
   } catch (error) {
     console.error('Error fetching patient drug history:', error)
     return []

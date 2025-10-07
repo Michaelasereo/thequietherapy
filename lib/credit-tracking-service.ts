@@ -153,18 +153,23 @@ export async function getUserCreditUsage(userId: string, limit: number = 50): Pr
       return []
     }
 
-    return data?.map(credit => ({
-      id: credit.id,
-      user_id: credit.user_id,
-      session_id: credit.session_id,
-      credit_id: credit.id,
-      session_duration_minutes: credit.session_duration_minutes,
-      is_free_credit: credit.is_free_credit,
-      used_at: credit.used_at,
-      session_title: credit.sessions?.session_title,
-      therapist_name: credit.sessions?.therapists?.full_name,
-      session_status: credit.sessions?.status
-    })) || []
+    return data?.map(credit => {
+      const session = Array.isArray(credit.sessions) ? credit.sessions[0] : credit.sessions;
+      const therapist = session?.therapists ? (Array.isArray(session.therapists) ? session.therapists[0] : session.therapists) : null;
+      
+      return {
+        id: credit.id,
+        user_id: credit.user_id,
+        session_id: credit.session_id,
+        credit_id: credit.id,
+        session_duration_minutes: credit.session_duration_minutes,
+        is_free_credit: credit.is_free_credit,
+        used_at: credit.used_at,
+        session_title: session?.session_title,
+        therapist_name: therapist?.full_name,
+        session_status: session?.status
+      };
+    }) || []
   } catch (error) {
     console.error('Error getting credit usage:', error)
     return []

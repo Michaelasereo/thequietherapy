@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { joinSession } from '@/lib/session-management-server';
-import { SessionManager } from '@/lib/session-manager';
+import { ServerSessionManager } from '@/lib/server-session-manager';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user from session using SessionManager
-    const session = await SessionManager.getSessionFromRequest(request);
+    const session = await ServerSessionManager.getSession();
     
     if (!session) {
       return NextResponse.json(

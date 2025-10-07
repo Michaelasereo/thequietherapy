@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
-import { SessionManager } from '@/lib/session-manager'
+import { ServerSessionManager } from '@/lib/server-session-manager'
 
 export async function POST(request: NextRequest) {
   try {
     // Get the user's session from our auth system
-    const session = await SessionManager.getSessionFromRequest(request)
+    const session = await ServerSessionManager.getSession()
     
     if (!session) {
       return NextResponse.json(
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Get the user's session from our auth system
-    const session = await SessionManager.getSessionFromRequest(request)
+    const session = await ServerSessionManager.getSession()
     
     if (!session) {
       return NextResponse.json(

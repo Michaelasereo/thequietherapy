@@ -29,9 +29,9 @@ const faqData = [
   {
     id: "3",
     question: "How much do therapy sessions cost?",
-    answer: "Sessions are priced at $10 per credit, with most sessions requiring 1 credit. We offer various credit packages to suit different needs, and you can purchase credits as needed.",
+    answer: "Each therapy session costs 5,000 Naira. We offer flexible payment options and you can book sessions as needed. All payments are processed securely through our platform.",
     category: "Pricing",
-    tags: ["Cost", "Credits", "Pricing"]
+    tags: ["Cost", "Naira", "Pricing", "5000"]
   },
   {
     id: "4",
@@ -50,9 +50,9 @@ const faqData = [
   {
     id: "6",
     question: "What if I need to cancel or reschedule a session?",
-    answer: "You can cancel or reschedule sessions up to 24 hours before your appointment without any penalty. Late cancellations may result in a credit being used. We understand that life happens and try to be flexible.",
+    answer: "You can reschedule sessions up to 24 hours before your appointment. However, if you cancel therapy sessions, no refunds will be provided. We understand that life happens and encourage rescheduling rather than cancellation.",
     category: "Scheduling",
-    tags: ["Cancellation", "Reschedule", "Policy"]
+    tags: ["Cancellation", "Reschedule", "Policy", "No refunds"]
   },
   {
     id: "7",
@@ -71,16 +71,16 @@ const faqData = [
   {
     id: "9",
     question: "How long are therapy sessions?",
-    answer: "Standard therapy sessions are 50 minutes long, which is the traditional therapy hour. This allows enough time for meaningful work while respecting your schedule.",
+    answer: "Each therapy session is 30 minutes long. This duration is designed to be effective while fitting into your busy schedule. The focused time allows for meaningful therapeutic work.",
     category: "Scheduling",
-    tags: ["Duration", "Session length", "Time"]
+    tags: ["Duration", "Session length", "30 minutes"]
   },
   {
     id: "10",
     question: "Can I use Quiet if I'm in crisis?",
-    answer: "If you're experiencing a mental health crisis, please contact emergency services immediately (911) or call the National Suicide Prevention Lifeline at 988. While we provide ongoing therapy, we're not equipped for crisis intervention.",
+    answer: "If you're experiencing a mental health crisis, please contact emergency services immediately. In Nigeria, call 112 for general emergencies, 767 for Lagos State Emergency Management Agency (LASEMA), or 0800 333 3333 for Domestic and Sexual Violence Response Team. While we provide ongoing therapy, we're not equipped for crisis intervention.",
     category: "Emergency",
-    tags: ["Crisis", "Emergency", "Safety"]
+    tags: ["Crisis", "Emergency", "Safety", "Nigeria"]
   },
   {
     id: "11",

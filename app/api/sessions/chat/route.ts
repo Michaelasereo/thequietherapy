@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: chatData,
+      data: chatData,
       messageId: chatData.id,
       message: 'Message sent successfully'
     });

@@ -22,13 +22,13 @@ import { toast } from "sonner"
 import * as XLSX from 'xlsx'
 
 interface CSVRow {
-  name: string
+  firstname: string
   email: string
+  statustype: 'doctor' | 'student'
+  caderlevel: string
   phone?: string
   department?: string
-  position?: string
-  credits?: number
-  package?: string
+  employeeid?: string
 }
 
 interface ValidationError {
@@ -38,8 +38,10 @@ interface ValidationError {
 }
 
 interface UploadResult {
-  success: number
-  failed: number
+  success: boolean
+  message: string
+  successfulRecords: number
+  failedRecords: number
   errors: ValidationError[]
 }
 
@@ -105,11 +107,11 @@ export default function CSVUpload() {
       const rowNumber = index + 2 // +2 because Excel is 1-indexed and has header
 
       // Required fields
-      if (!row.name || row.name.trim() === '') {
+      if (!row.firstname || row.firstname.trim() === '') {
         errors.push({
           row: rowNumber,
-          field: 'name',
-          message: 'Name is required'
+          field: 'firstname',
+          message: 'First name is required'
         })
       }
 
@@ -127,6 +129,28 @@ export default function CSVUpload() {
         })
       }
 
+      if (!row.statustype || row.statustype.trim() === '') {
+        errors.push({
+          row: rowNumber,
+          field: 'statustype',
+          message: 'Status type is required'
+        })
+      } else if (!['doctor', 'student'].includes(row.statustype.toLowerCase())) {
+        errors.push({
+          row: rowNumber,
+          field: 'statustype',
+          message: 'Status type must be "doctor" or "student"'
+        })
+      }
+
+      if (!row.caderlevel || row.caderlevel.trim() === '') {
+        errors.push({
+          row: rowNumber,
+          field: 'caderlevel',
+          message: 'Cader/Level is required'
+        })
+      }
+
       // Optional phone validation
       if (row.phone && !isValidPhone(row.phone)) {
         errors.push({
@@ -136,12 +160,12 @@ export default function CSVUpload() {
         })
       }
 
-      // Credits validation
-      if (row.credits && (isNaN(Number(row.credits)) || Number(row.credits) < 0)) {
+      // Employee ID validation (optional)
+      if (row.employeeid && row.employeeid.trim() === '') {
         errors.push({
           row: rowNumber,
-          field: 'credits',
-          message: 'Credits must be a positive number'
+          field: 'employeeid',
+          message: 'Employee ID cannot be empty if provided'
         })
       }
     })
@@ -170,7 +194,7 @@ export default function CSVUpload() {
 
     try {
       // Convert data back to CSV format for the API
-      const headers = ['name', 'email', 'phone', 'department', 'position', 'credits', 'package']
+      const headers = ['firstname', 'email', 'statustype', 'caderlevel', 'phone', 'department', 'employeeid']
       const csvRows = [
         headers.join(','),
         ...data.map(row => headers.map(header => {
@@ -192,7 +216,7 @@ export default function CSVUpload() {
         })
       }, 300)
 
-      const response = await fetch('/api/partner/bulk-upload-members', {
+      const response = await fetch('/api/partner/upload-members', {
         method: 'POST',
         headers: {
           'Content-Type': 'text/csv'
@@ -232,29 +256,47 @@ export default function CSVUpload() {
   const downloadTemplate = () => {
     const template = [
       {
-        name: 'John Doe',
-        email: 'john.doe@company.com',
+        firstname: 'John',
+        email: 'john.doe@hospital.com',
+        statustype: 'doctor',
+        caderlevel: 'consultant',
         phone: '+2348012345678',
-        department: 'Engineering',
-        position: 'Software Engineer',
-        credits: 50,
-        package: 'Standard'
+        department: 'Cardiology',
+        employeeid: 'EMP001'
       },
       {
-        name: 'Jane Smith',
-        email: 'jane.smith@company.com',
-        phone: '+2348098765432',
-        department: 'Marketing',
-        position: 'Marketing Manager',
-        credits: 100,
-        package: 'Professional'
+        firstname: 'Sarah',
+        email: 'sarah.smith@hospital.com',
+        statustype: 'doctor',
+        caderlevel: 'resident',
+        phone: '+2348012345679',
+        department: 'Neurology',
+        employeeid: 'EMP002'
+      },
+      {
+        firstname: 'Michael',
+        email: 'michael.johnson@university.edu',
+        statustype: 'student',
+        caderlevel: '300level',
+        phone: '+2348012345680',
+        department: 'Medicine',
+        employeeid: 'STU001'
+      },
+      {
+        firstname: 'Emily',
+        email: 'emily.brown@university.edu',
+        statustype: 'student',
+        caderlevel: '400level',
+        phone: '+2348012345681',
+        department: 'Medicine',
+        employeeid: 'STU002'
       }
     ]
 
     const ws = XLSX.utils.json_to_sheet(template)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Template')
-    XLSX.writeFile(wb, 'member-upload-template.xlsx')
+    XLSX.writeFile(wb, 'partner-member-template.xlsx')
   }
 
   const clearFile = () => {
@@ -369,11 +411,12 @@ export default function CSVUpload() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
+                      <TableHead>First Name</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Status Type</TableHead>
+                      <TableHead>Cader/Level</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Department</TableHead>
-                      <TableHead>Credits</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -382,19 +425,24 @@ export default function CSVUpload() {
                       const rowErrors = errors.filter(e => e.row === index + 2)
                       return (
                         <TableRow key={index}>
-                          <TableCell className={rowErrors.some(e => e.field === 'name') ? 'text-red-600' : ''}>
-                            {row.name}
+                          <TableCell className={rowErrors.some(e => e.field === 'firstname') ? 'text-red-600' : ''}>
+                            {row.firstname}
                           </TableCell>
                           <TableCell className={rowErrors.some(e => e.field === 'email') ? 'text-red-600' : ''}>
                             {row.email}
+                          </TableCell>
+                          <TableCell className={rowErrors.some(e => e.field === 'statustype') ? 'text-red-600' : ''}>
+                            <Badge variant={row.statustype === 'doctor' ? 'default' : 'secondary'}>
+                              {row.statustype}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className={rowErrors.some(e => e.field === 'caderlevel') ? 'text-red-600' : ''}>
+                            {row.caderlevel}
                           </TableCell>
                           <TableCell className={rowErrors.some(e => e.field === 'phone') ? 'text-red-600' : ''}>
                             {row.phone || '-'}
                           </TableCell>
                           <TableCell>{row.department || '-'}</TableCell>
-                          <TableCell className={rowErrors.some(e => e.field === 'credits') ? 'text-red-600' : ''}>
-                            {row.credits || '-'}
-                          </TableCell>
                           <TableCell>
                             {rowErrors.length > 0 ? (
                               <Badge variant="destructive">Error</Badge>
@@ -430,7 +478,7 @@ export default function CSVUpload() {
                       <ul className="list-disc list-inside mt-1 text-sm space-y-1">
                         {uploadResult.errors.slice(0, 5).map((error, index) => (
                           <li key={index} className="text-red-600">
-                            Row {error.row}: {error.field ? `${error.field} - ` : ''}{(error as Error).message}
+                            Row {error.row}: {error.field ? `${error.field} - ` : ''}{error.message}
                           </li>
                         ))}
                         {uploadResult.errors.length > 5 && (

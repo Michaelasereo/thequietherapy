@@ -147,15 +147,9 @@ export async function POST(request: NextRequest) {
         }
 
         await notificationIntegrationService.sendPaymentConfirmation(
-          userId,
-          user,
-          {
-            amount: pendingPayment.amount_kobo / 100,
-            currency: 'NGN',
-            transactionId: reference,
-            packageName: packageDef.name,
-            creditsAdded: packageDef.sessions_included
-          }
+          userData.email,
+          pendingPayment.amount_kobo / 100,
+          packageDef.sessions_included
         )
 
         console.log('📧 Payment confirmation notifications sent')

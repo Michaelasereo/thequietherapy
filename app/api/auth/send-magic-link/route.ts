@@ -60,44 +60,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use Supabase's built-in magic link
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/callback?user_type=${user_type || 'individual'}`,
-        data: {
-          user_type: user_type || 'individual'
-        }
-      }
-    })
+    // Use custom Brevo email implementation instead of Supabase's built-in magic link
+    const { createMagicLinkForAuthType } = await import('@/lib/auth')
+    
+    const result = await createMagicLinkForAuthType(
+      email.trim(),
+      user_type as 'individual' | 'therapist' | 'partner' | 'admin',
+      type as 'login' | 'signup',
+      { user_type }
+    )
 
-    if (error) {
-      console.error('Supabase magic link error:', error)
+    if (!result.success) {
+      console.error('Magic link creation error:', result.error)
       
-      // Handle specific Supabase errors
-      if (error.message?.includes('rate limit') || error.message?.includes('too many')) {
+      // Handle specific errors
+      if (result.error?.includes('rate limit') || result.error?.includes('Too many')) {
         return NextResponse.json(
-          { success: false, error: 'Email rate limit exceeded. Please wait a few minutes before trying again.' },
+          { success: false, error: 'Too many requests. Please wait a moment before trying again.' },
           { status: 429 }
         )
       }
       
-      if (error.message?.includes('Invalid email')) {
-        return NextResponse.json(
-          { success: false, error: 'Please enter a valid email address' },
-          { status: 400 }
-        )
-      }
-      
       return NextResponse.json(
-        { success: false, error: 'Failed to send magic link. Please try again later.' },
+        { success: false, error: result.error || 'Failed to send magic link. Please try again later.' },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Magic link sent successfully'
+      message: 'Magic link sent! Please check your email.'
     })
 
   } catch (error) {

@@ -23,7 +23,7 @@ export default function SettingsPage() {
   }
 
   const currentUser = user || defaultUser
-  const name = currentUser.full_name || currentUser.name || "User"
+  const name = (currentUser as any).full_name || (currentUser as any).name || currentUser.email?.split('@')[0] || "User"
   const email = currentUser.email || "user@example.com"
 
   // Load user preferences on mount

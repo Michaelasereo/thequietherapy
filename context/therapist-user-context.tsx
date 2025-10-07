@@ -24,9 +24,11 @@ interface TherapistProfile {
 
 interface TherapistUserContextType {
   therapist: TherapistProfile | null
+  therapistUser: TherapistProfile | null  // Alias for backward compatibility
   loading: boolean
   isAuthenticated: boolean
   refreshTherapist: () => Promise<void>
+  validateSession: () => Promise<void>  // Alias for refreshTherapist
   logout: () => Promise<void>
 }
 
@@ -154,9 +156,11 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
 
   const value: TherapistUserContextType = {
     therapist,
+    therapistUser: therapist,  // Alias for backward compatibility
     loading,
     isAuthenticated: !!therapist,
     refreshTherapist,
+    validateSession: refreshTherapist,  // Alias for refreshTherapist
     logout
   }
 

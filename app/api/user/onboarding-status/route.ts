@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { SessionManager } from '@/lib/session-manager'
+import { ServerSessionManager } from '@/lib/server-session-manager'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,7 +10,7 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
   try {
     // Get user from session
-    const session = await SessionManager.getSession()
+    const session = await ServerSessionManager.getSession()
     
     if (!session) {
       console.log('❌ No session found for onboarding status check')

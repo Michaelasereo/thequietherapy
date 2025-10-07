@@ -2,12 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CreditCard, Users, Calendar, TrendingUp } from "lucide-react"
+import { CreditCard, Users, Calendar, TrendingUp, Clock, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 
 export default function PartnerOverviewPage() {
   console.log('🚀 PARTNER DASHBOARD PAGE STARTED');
   console.log('🔍 Partner dashboard component rendering...');
+  const router = useRouter();
 
   // State for real data
   const [dashboardData, setDashboardData] = useState<any>(null)
@@ -56,6 +58,9 @@ export default function PartnerOverviewPage() {
 
   console.log('🔍 Partner dashboard data loaded:', { partnerSummary, recentActivity });
 
+  // Check if partner is under review
+  const isUnderReview = dashboardData?.partner?.partner_status === 'under_review';
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -83,12 +88,71 @@ export default function PartnerOverviewPage() {
 
   try {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Partner Overview</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage members, credits, and sessions</p>
+      <div className="grid gap-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Welcome, {dashboardData?.partner?.full_name || dashboardData?.partner?.company_name || 'Partner'}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {dashboardData?.partner?.organization_type ? `${dashboardData.partner.organization_type} • ` : ''}Manage members, credits, and sessions
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.reload()}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
 
+        {/* Under Review Card */}
+        {isUnderReview && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center text-blue-800">
+                <Clock className="h-5 w-5 mr-2" />
+                Partnership Under Review
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <p className="text-blue-700">
+                  🎉 <strong>Welcome to the platform!</strong> Your partnership has been automatically approved and you have full access to all features while our team conducts a final review.
+                </p>
+                <div className="bg-white p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-800 mb-2">You Can Access:</h4>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>✅ All dashboard features and navigation</li>
+                    <li>✅ Add and manage members</li>
+                    <li>✅ Purchase and assign credits</li>
+                    <li>✅ View reports and analytics</li>
+                    <li>✅ Complete partner onboarding</li>
+                  </ul>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> Our team will conduct a final review within 24-48 hours. You'll receive an email notification once the review is complete. Your access will continue uninterrupted.
+                  </p>
+                </div>
+                <p className="text-sm text-blue-600">
+                  <strong>Organization:</strong> {dashboardData?.partner?.company_name || 'Organization'} - {dashboardData?.partner?.organization_type || 'Organization Type'}
+                </p>
+                {dashboardData?.partner?.onboarding_data && (
+                  <div className="mt-2 p-2 bg-white/50 rounded text-xs">
+                    <strong>Contact:</strong> {dashboardData.partner.onboarding_data.phone || 'Not provided'} | 
+                    <strong> Website:</strong> {dashboardData.partner.onboarding_data.website || 'Not provided'}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Summary Cards Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -181,9 +245,26 @@ export default function PartnerOverviewPage() {
           <Card>
             <CardHeader><CardTitle>Quick Actions</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full">Add Members</Button>
-              <Button variant="outline" className="w-full">Purchase Credits</Button>
-              <Button variant="outline" className="w-full">Assign Credits</Button>
+              <Button 
+                className="w-full" 
+                onClick={() => router.push('/partner/dashboard/members')}
+              >
+                Add Members
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => router.push('/partner/dashboard/credits')}
+              >
+                Purchase Credits
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => router.push('/partner/dashboard/members')}
+              >
+                Assign Credits
+              </Button>
             </CardContent>
           </Card>
         </div>

@@ -13,8 +13,8 @@ import { getUserSessions, getUpcomingSessions } from "@/lib/session-management"
 
 interface Session {
   id: string
-  therapist_name: string
-  therapist_email: string
+  therapist_name?: string
+  therapist_email?: string
   start_time: string
   duration: number
   room_url?: string
@@ -48,7 +48,18 @@ export default function GoToTherapyPage() {
       // Fetch upcoming sessions
       const upcomingSessions = await getUpcomingSessions(user.id)
       if (upcomingSessions && upcomingSessions.length > 0) {
-        setUpcomingSession(upcomingSessions[0]) // Get the next upcoming session
+        const sessionData = upcomingSessions[0]
+        setUpcomingSession({
+          id: sessionData.id,
+          therapist_name: sessionData.therapist_name || sessionData.therapist?.full_name,
+          therapist_email: sessionData.therapist_email || sessionData.therapist?.email,
+          start_time: sessionData.start_time || sessionData.scheduled_date || sessionData.created_at,
+          duration: sessionData.duration || 60,
+          room_url: sessionData.session_url,
+          room_name: sessionData.room_name,
+          status: sessionData.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+          notes: sessionData.notes
+        })
       }
       
       // Fetch all sessions and filter for history

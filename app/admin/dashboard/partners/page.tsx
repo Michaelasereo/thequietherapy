@@ -80,10 +80,14 @@ export default function PartnersPage() {
     switch (status) {
       case 'active':
         return <Badge variant="outline" className="text-green-600 border-green-600">Active</Badge>
+      case 'under_review':
+        return <Badge variant="outline" className="text-blue-600 border-blue-600">Under Review</Badge>
       case 'suspended':
         return <Badge variant="outline" className="text-yellow-600 border-yellow-600">Suspended</Badge>
       case 'inactive':
         return <Badge variant="outline" className="text-gray-600 border-gray-600">Inactive</Badge>
+      case 'rejected':
+        return <Badge variant="outline" className="text-red-600 border-red-600">Rejected</Badge>
       default:
         return <Badge variant="outline">Unknown</Badge>
     }
@@ -147,15 +151,56 @@ export default function PartnersPage() {
     try {
       setProcessingId(partnerId)
       
-      // This would be replaced with actual API call
-      setPartners(prev => prev.map(partner => 
-        partner.id === partnerId ? { ...partner, status: 'rejected' } : partner
-      ))
-      toast.success('Partner application rejected')
-      setRejectionReason("")
+      const response = await fetch('/api/admin/partner-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ partnerId, action: 'reject', reason })
+      })
+      
+      if (response.ok) {
+        setPartners(prev => prev.map(partner => 
+          partner.id === partnerId ? { ...partner, status: 'rejected' } : partner
+        ))
+        toast.success('Partner application rejected')
+        setRejectionReason("")
+      } else {
+        toast.error('Failed to reject partner')
+      }
     } catch (error) {
       console.error('Error rejecting partner:', error)
       toast.error('Failed to reject partner')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handlePartnerStateChange = async (partnerId: string, action: string, reason?: string) => {
+    try {
+      setProcessingId(partnerId)
+      
+      const response = await fetch('/api/admin/partner-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ partnerId, action, reason })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setPartners(prev => prev.map(partner => 
+          partner.id === partnerId ? { 
+            ...partner, 
+            status: action === 'activate' ? 'active' : 
+                   action === 'deactivate' ? 'inactive' : 
+                   action === 'suspend' ? 'suspended' : partner.status
+          } : partner
+        ))
+        toast.success(`Partner ${action}ed successfully`)
+      } else {
+        toast.error(`Failed to ${action} partner`)
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing partner:`, error)
+      toast.error(`Failed to ${action} partner`)
     } finally {
       setProcessingId(null)
     }
@@ -1029,6 +1074,69 @@ export default function PartnersPage() {
                             <Button variant="outline" size="sm">
                               Contact Partner
                             </Button>
+                          </div>
+                          
+                          {/* Partner State Management */}
+                          <div className="border-t pt-4">
+                            <Label className="text-sm font-medium">Partner Management</Label>
+                            <div className="flex gap-2 mt-2">
+                              {partner.status === 'active' ? (
+                                <>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handlePartnerStateChange(partner.id, 'deactivate')}
+                                    disabled={processingId === partner.id}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    Deactivate
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handlePartnerStateChange(partner.id, 'suspend', 'Suspended by admin')}
+                                    disabled={processingId === partner.id}
+                                    className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
+                                  >
+                                    <AlertTriangle className="h-4 w-4 mr-1" />
+                                    Suspend
+                                  </Button>
+                                </>
+                              ) : partner.status === 'inactive' ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handlePartnerStateChange(partner.id, 'activate')}
+                                  disabled={processingId === partner.id}
+                                  className="text-green-600 border-green-600 hover:bg-green-50"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Activate
+                                </Button>
+                              ) : partner.status === 'suspended' ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handlePartnerStateChange(partner.id, 'activate')}
+                                  disabled={processingId === partner.id}
+                                  className="text-green-600 border-green-600 hover:bg-green-50"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Reactivate
+                                </Button>
+                              ) : partner.status === 'under_review' ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handlePartnerStateChange(partner.id, 'approve')}
+                                  disabled={processingId === partner.id}
+                                  className="text-green-600 border-green-600 hover:bg-green-50"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Final Approve
+                                </Button>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </DialogContent>

@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
 You are a licensed mental health professional. Based on the therapy session transcript below, generate comprehensive SOAP notes following medical documentation standards.
 
 Session Details:
-- Patient: ${sessionData.users?.full_name || 'Patient'}
-- Therapist: ${sessionData.therapist?.full_name || 'Therapist'}
+- Patient: ${sessionData.users?.[0]?.full_name || 'Patient'}
+- Therapist: ${sessionData.therapist?.[0]?.full_name || 'Therapist'}
 - Duration: ${sessionData.duration || 30} minutes
 - Type: ${sessionData.session_type || 'Individual therapy'}
 

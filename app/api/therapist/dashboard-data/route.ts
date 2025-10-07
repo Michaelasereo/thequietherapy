@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 DEBUG: Raw sessions data:', rawSessions)
 
     // Transform sessions to match frontend expectations
-    const sessions = rawSessions.map(session => {
+    const sessions = rawSessions?.map(session => {
       // Convert scheduled_date and scheduled_time to start_time and end_time
       const startDateTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
       const endDateTime = session.end_time ? new Date(session.end_time) : new Date(startDateTime.getTime() + 30 * 60000) // Default 30 minutes
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
           email: user.email
         } : null
       }
-    })
+    }) || []
 
     // Calculate stats in JavaScript (more efficient than separate queries)
     const totalSessions = sessions.length

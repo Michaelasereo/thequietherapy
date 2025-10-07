@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { SessionManager } from '@/lib/session-manager'
+import { ServerSessionManager } from '@/lib/server-session-manager'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -94,11 +94,10 @@ export async function GET(request: NextRequest) {
     })
 
     // Create unified session using SessionManager
-    const sessionResult = await SessionManager.createSession({
+    const sessionResult = await ServerSessionManager.createSession({
       id: userData.id,
       email: userData.email,
       name: userData.full_name || userData.email?.split('@')[0] || 'Admin',
-      role: 'admin',
       user_type: 'admin',
       is_verified: userData.is_verified || true,
       is_active: userData.is_active || true

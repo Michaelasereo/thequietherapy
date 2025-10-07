@@ -41,7 +41,7 @@ export class UnifiedAuth {
       console.log('🔍 UnifiedAuth: Validating session...')
       
       // Try to get session with automatic refresh
-      const session = await SessionManager.getSessionWithRefresh()
+      const session = await ServerSessionManager.getSession()
       
       if (!session) {
         console.log('❌ UnifiedAuth: No valid session found')
@@ -83,7 +83,7 @@ export class UnifiedAuth {
       console.log('🔐 UnifiedAuth: Starting comprehensive logout...')
       
       // Get current session before clearing
-      const session = await SessionManager.getSession()
+      const session = await ServerSessionManager.getSession()
       
       // Audit log: Logout event
       if (session) {
@@ -99,7 +99,7 @@ export class UnifiedAuth {
       }
       
       // Clear the main session cookie
-      await SessionManager.clearSession()
+      await ServerSessionManager.clearSession()
       
       // Clear any legacy cookies
       await this.clearLegacyCookies()
@@ -108,7 +108,7 @@ export class UnifiedAuth {
     } catch (error) {
       console.error('❌ UnifiedAuth: Logout error:', error)
       // Still try to clear cookies even if DB operation fails
-      await SessionManager.clearSession()
+      await ServerSessionManager.clearSession()
       await this.clearLegacyCookies()
     }
   }

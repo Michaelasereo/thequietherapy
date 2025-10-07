@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
 import { useSidebarState } from "@/hooks/useDashboardState"
-import { logoutAction } from "@/actions/auth"
+import { useAuth } from "@/context/auth-context"
 
 // Users sidebar groups
 const usersDashboardSidebarGroups = [
@@ -58,6 +58,7 @@ const usersDashboardBottomNavItems = [
 
 export default function UsersDashboardSidebar() {
   const pathname = usePathname()
+  const { logout } = useAuth()
   const {
     isActive,
     isExpanded,
@@ -141,12 +142,10 @@ export default function UsersDashboardSidebar() {
             </SidebarMenuItem>
           ))}
           <SidebarMenuItem>
-            <form action={logoutAction}>
-              <SidebarMenuButton type="submit">
-                <LogOut className="h-5 w-5" />
-                <span className="group-data-[state=collapsed]:hidden">Logout</span>
-              </SidebarMenuButton>
-            </form>
+            <SidebarMenuButton onClick={() => logout()} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+              <LogOut className="h-5 w-5" />
+              <span className="group-data-[state=collapsed]:hidden">Logout</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
