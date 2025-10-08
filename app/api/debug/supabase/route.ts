@@ -12,8 +12,8 @@ export async function GET() {
     },
     supabase: {
       clientCreated: false,
-      connectionTest: null,
-      error: null
+      connectionTest: null as any,
+      error: null as any
     }
   }
 
@@ -31,7 +31,7 @@ export async function GET() {
     diagnostics.supabase.connectionTest = error ? 'failed' : 'success'
     diagnostics.supabase.error = error?.message
 
-  } catch (error) {
+  } catch (error: any) {
     diagnostics.supabase.error = error.message
   }
 

@@ -14,7 +14,7 @@ export async function GET() {
     if (allError) throw allError
 
     // Check for different status types
-    const statusCounts = {
+    const statusCounts: any = {
       success: 0,
       pending: 0,
       failed: 0,
@@ -57,7 +57,7 @@ export async function GET() {
       timestamp: new Date().toISOString()
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error analyzing donations:', error)
     
     return NextResponse.json({

@@ -50,7 +50,7 @@ export async function GET() {
       timestamp: new Date().toISOString()
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error counting donations:', error)
     
     return NextResponse.json({

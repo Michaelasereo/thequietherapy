@@ -64,7 +64,7 @@ export async function GET() {
     console.log('✅ Production API Success:', response.data)
     return NextResponse.json(response)
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Production API Fallback:', error.message)
     
     const fallbackResponse = {
