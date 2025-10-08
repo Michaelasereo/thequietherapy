@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { CheckCircle, XCircle, Clock, AlertCircle, CreditCard, RefreshCw } from "lucide-react"
-import { formatAmountForDisplay } from "@/lib/paystack-enhanced"
+import { formatAmountForDisplay } from "@/lib/paystack-client"
 
 interface PaymentStatusProps {
   onSuccess?: (data: any) => void

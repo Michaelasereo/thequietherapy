@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { CreditCard, CheckCircle, AlertCircle, Loader2, Star } from "lucide-react"
-import { formatAmountForDisplay, generatePaymentReference } from "@/lib/paystack-enhanced"
+import { formatAmountForDisplay, generatePaymentReference } from "@/lib/paystack-client"
 import { useAuth } from "@/context/auth-context"
 
 interface CreditPackage {

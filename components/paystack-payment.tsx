@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
-import { formatAmountForDisplay } from "@/lib/paystack"
+import { formatAmountForDisplay } from "@/lib/paystack-client"
 
 interface PaystackPaymentProps {
   amount: number

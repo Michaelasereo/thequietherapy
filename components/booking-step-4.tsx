@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import PaystackPayment from "@/components/paystack-payment"
-import { formatAmountForDisplay } from "@/lib/paystack"
+import { formatAmountForDisplay } from "@/lib/paystack-client"
 import { CheckCircle, Clock, User } from "lucide-react"
 
 interface TimeSlot {
