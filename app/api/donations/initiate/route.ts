@@ -52,7 +52,10 @@ export async function POST(request: NextRequest) {
         ]
       },
       callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/support/success`,
-      channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer']
+      // Use only card for test mode, add other channels for production
+      channels: process.env.NODE_ENV === 'production' 
+        ? ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer']
+        : ['card'] // Card only for testing
     }
 
     // Initialize Paystack payment
