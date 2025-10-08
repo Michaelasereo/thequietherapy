@@ -44,7 +44,7 @@ export function RealTimeProgress({
           console.log('📊 Stats updated:', {
             raised: liveStats.raised,
             donors: liveStats.donors,
-            progress: `${liveStats.progressPercentage.toFixed(1)}%`
+            progress: `${(liveStats.progressPercentage || 0).toFixed(1)}%`
           })
           return liveStats
         }

@@ -34,15 +34,18 @@ export async function GET() {
     // Calculate stats from successful donations only
     const totalRaised = donations?.reduce((sum, d) => sum + (Number(d.amount) || 0), 0) || 0
     const donorCount = new Set(donations?.map(d => d.email).filter(Boolean)).size
+    const target = 120000000
+    const progressPercentage = target > 0 ? (totalRaised / target) * 100 : 0
 
     const response = {
       success: true,
       data: {
         raised: totalRaised,
         donors: donorCount,
-        target: 120000000,
+        target: target,
         daysLeft: 45,
         averageDonation: donorCount > 0 ? Math.round(totalRaised / donorCount) : 0,
+        progressPercentage: progressPercentage,
         totalRecords: count || 0,
         recentDonations: (donations || []).slice(0, 5).map(d => ({
           amount: d.amount,
@@ -75,6 +78,7 @@ export async function GET() {
         target: 120000000,
         daysLeft: 45,
         averageDonation: 0,
+        progressPercentage: 0,
         totalRecords: 0,
         recentDonations: []
       },
