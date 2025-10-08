@@ -44,21 +44,23 @@ function DonationSuccessContent() {
               donor_name: verifyResult.donation.donor_name
             })
             setLoading(false)
-            return
+            return null
           }
           
           // Fallback: fetch donation data from database
           return fetch(`/api/donations/verify?reference=${reference}`)
         })
-        .then(response => response.json())
+        .then(response => response ? response.json() : null)
         .then(data => {
-          if (data.success && data.donation) {
+          if (data && data.success && data.donation) {
             setDonationData({
               reference: data.donation.paystack_reference,
               amount: data.donation.amount,
               status: data.donation.status,
               donor_name: data.donation.donor_name
             })
+          } else if (data === null) {
+            // Already handled in previous .then(), do nothing
           } else {
             // Fallback to URL parameters if database lookup fails
             setDonationData({
