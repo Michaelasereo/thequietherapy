@@ -22,8 +22,34 @@ function DonationSuccessContent() {
     console.log('🔍 Success page URL params:', { reference, amount, status })
 
     if (reference) {
-      // Try to fetch donation data from database
-      fetch(`/api/donations/verify?reference=${reference}`)
+      // First, verify the donation payment with Paystack and update database status
+      console.log('🔄 Verifying donation payment with Paystack...')
+      fetch('/api/donations/verify-and-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reference })
+      })
+        .then(response => response.json())
+        .then(verifyResult => {
+          console.log('✅ Donation verification result:', verifyResult)
+          
+          if (verifyResult.success && verifyResult.donation) {
+            // Use verified donation data directly
+            setDonationData({
+              reference: verifyResult.donation.paystack_reference,
+              amount: verifyResult.donation.amount,
+              status: verifyResult.donation.status,
+              donor_name: verifyResult.donation.donor_name
+            })
+            setLoading(false)
+            return
+          }
+          
+          // Fallback: fetch donation data from database
+          return fetch(`/api/donations/verify?reference=${reference}`)
+        })
         .then(response => response.json())
         .then(data => {
           if (data.success && data.donation) {
@@ -43,7 +69,7 @@ function DonationSuccessContent() {
           }
         })
         .catch(error => {
-          console.error('Error fetching donation data:', error)
+          console.error('Error verifying/fetching donation data:', error)
           // Fallback to URL parameters
           setDonationData({
             reference,
