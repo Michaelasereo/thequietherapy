@@ -114,14 +114,10 @@ async function runVerification() {
   results.total++
   statsResult ? results.passed++ : results.failed++
   
-  // Test Debug API
-  const debugResult = await verifyEndpoint(
-    'Donation Debug API',
-    `${PRODUCTION_URL}/api/donations/debug`,
-    ['success', 'timestamp', 'summary', 'donations']
-  )
-  results.total++
-  debugResult ? results.passed++ : results.failed++
+  // Debug API removed - skip test
+  console.log('\n📡 Testing: Donation Debug API')
+  console.log(`   URL: ${PRODUCTION_URL}/api/donations/debug`)
+  console.log('   ℹ️  SKIPPED - Debug API removed from production')
   
   console.log('\n\n📱 TESTING PAGES')
   console.log('=' .repeat(80))
