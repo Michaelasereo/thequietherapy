@@ -20,6 +20,7 @@ export async function GET() {
       throw new Error('Supabase client creation failed')
     }
 
+    // Fetch ONLY successful donations (verified payments)
     const { data: donations, error, count } = await supabase
       .from('donations')
       .select('amount, email, donor_name, status, created_at', { count: 'exact' })
@@ -30,7 +31,7 @@ export async function GET() {
       throw error
     }
 
-    // Your proven calculation logic
+    // Calculate stats from successful donations only
     const totalRaised = donations?.reduce((sum, d) => sum + (Number(d.amount) || 0), 0) || 0
     const donorCount = new Set(donations?.map(d => d.email).filter(Boolean)).size
 

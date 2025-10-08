@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 
 // Create Brevo SMTP transporter
-function createTransporter() {
+export function createTransporter() {
   if (!process.env.BREVO_SMTP_USER || !process.env.BREVO_SMTP_PASS) {
     console.warn('Brevo SMTP credentials not configured - email sending will be disabled');
     return null;

@@ -32,14 +32,22 @@ export async function POST(request: NextRequest) {
 
     const event = JSON.parse(body)
     
-    console.log('🔔 Donation webhook received:', event.event, 'ID:', event.id)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🔔 DONATION WEBHOOK RECEIVED')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('Event Type:', event.event)
+    console.log('Event ID:', event.id)
+    console.log('Timestamp:', new Date().toISOString())
 
     // Handle successful donation
     if (event.event === 'charge.success') {
       const paymentData = event.data
       const reference = paymentData.reference
 
-      console.log('✅ Processing successful donation:', reference)
+      console.log('✅ Processing successful donation')
+      console.log('Reference:', reference)
+      console.log('Amount:', paymentData.amount / 100, 'NGN')
+      console.log('Customer Email:', paymentData.customer?.email)
 
       // Update donation status to success
       const { error: updateError } = await supabase
@@ -52,11 +60,17 @@ export async function POST(request: NextRequest) {
         .eq('paystack_reference', reference)
 
       if (updateError) {
-        console.error('❌ Error updating donation status:', updateError)
+        console.error('❌ ERROR UPDATING DONATION STATUS')
+        console.error('Error details:', updateError)
+        console.error('Reference:', reference)
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
         return NextResponse.json({ error: 'Failed to update donation' }, { status: 500 })
       }
 
-      console.log('✅ Donation status updated to success for reference:', reference)
+      console.log('✅ DONATION VERIFIED & UPDATED TO SUCCESS')
+      console.log('Reference:', reference)
+      console.log('Database updated successfully')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
       // Invalidate donation stats cache
       try {
