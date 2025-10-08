@@ -274,9 +274,16 @@ export default function BookingStep1({ onNext, initialData, userData }: BookingS
         {/* Contact Information Section */}
         <div className="space-y-4">
           <h4 className="text-lg font-medium text-gray-900">Contact Information</h4>
-          <p className="text-sm text-gray-600">
-            Your name and email are pre-filled from your account and cannot be changed here.
-          </p>
+          {userData?.full_name && userData?.email && (
+            <p className="text-sm text-gray-600">
+              Your name and email are pre-filled from your account and cannot be changed here.
+            </p>
+          )}
+          {(!userData?.full_name || !userData?.email) && (
+            <p className="text-sm text-gray-600">
+              Please provide your contact information to continue with booking.
+            </p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -288,8 +295,8 @@ export default function BookingStep1({ onNext, initialData, userData }: BookingS
                     <Input 
                       placeholder="John" 
                       {...field} 
-                      disabled
-                      className="bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed" 
+                      disabled={!!(userData?.full_name)}
+                      className={userData?.full_name ? "bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed" : ""} 
                     />
                   </FormControl>
                   <FormMessage />
@@ -307,8 +314,8 @@ export default function BookingStep1({ onNext, initialData, userData }: BookingS
                       type="email" 
                       placeholder="john@example.com" 
                       {...field} 
-                      disabled
-                      className="bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed" 
+                      disabled={!!(userData?.email)}
+                      className={userData?.email ? "bg-gray-100 border-gray-300 text-gray-700 cursor-not-allowed" : ""} 
                     />
                   </FormControl>
                   <FormMessage />
