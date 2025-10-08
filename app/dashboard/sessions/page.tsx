@@ -55,7 +55,21 @@ export default function SessionsPage() {
         if (dashboardState.upcomingSessions.length > 0 || dashboardState.pastSessions.length > 0) {
           const allSessions = [...dashboardState.upcomingSessions, ...dashboardState.pastSessions]
           console.log('🔍 Using dashboard context sessions:', allSessions)
-          setSessions(allSessions)
+          // Convert Session[] to SessionData[] format
+          const convertedSessions: SessionData[] = allSessions.map(session => ({
+            id: session.id,
+            user_id: user.id,
+            therapist_id: '', // Not available in dashboard context
+            status: session.status,
+            duration: 60, // Default duration
+            start_time: session.date,
+            end_time: session.time,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            therapist_name: session.therapist,
+            title: session.topic
+          }))
+          setSessions(convertedSessions)
         } else {
           // Fallback to direct API call
           const allSessions = await getUserSessions(user.id)

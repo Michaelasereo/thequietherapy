@@ -225,7 +225,13 @@ export function handleApiError(error: any, requestId?: string): Response {
 
   // Add request ID if provided
   if (requestId) {
-    appError.details = { ...appError.details, requestId };
+    appError = new AppError(
+      appError.code,
+      appError.message,
+      appError.statusCode,
+      { ...appError.details, requestId },
+      appError.userAction
+    );
   }
 
   // Log error for monitoring (sanitized)

@@ -21,7 +21,7 @@ export async function GET() {
       'contributions'
     ]
 
-    const tableResults = {}
+    const tableResults: any = {}
 
     for (const tableName of possibleTables) {
       try {
@@ -35,7 +35,7 @@ export async function GET() {
           error: error?.message,
           sampleData: data?.[0] || null
         }
-      } catch (err) {
+      } catch (err: any) {
         tableResults[tableName] = {
           exists: false,
           error: err.message
@@ -66,7 +66,7 @@ export async function GET() {
       timestamp: new Date().toISOString()
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error checking database:', error)
     
     return NextResponse.json({

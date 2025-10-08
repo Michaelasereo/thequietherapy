@@ -376,7 +376,7 @@ function DashboardContent() {
                     try {
                       if (user && typeof user === 'object') {
                         // Try different name fields in order of preference
-                        const name = user.full_name || user.name || user.email?.split('@')[0] || 'User';
+                        const name = user.full_name || user.email?.split('@')[0] || 'User';
                         const firstName = name.trim().split(' ')[0];
                         return firstName || 'User';
                       }
@@ -450,10 +450,10 @@ function DashboardContent() {
                     <CalendarIcon className="h-6 w-6 text-primary" />
                     <div className="grid gap-0.5">
                       <p className="font-medium">
-                        {format(new Date(session.scheduled_date || session.date), "PPP")} at {session.scheduled_time || session.time}
+                        {format(new Date(session.date), "PPP")} at {session.time}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {session.therapist_name || session.therapist?.full_name || 'Therapist'} • {session.title || session.topic || 'Therapy Session'}
+                        {session.therapist} • {session.topic}
                       </p>
                     </div>
                     <div className="ml-auto flex gap-2">
@@ -511,10 +511,10 @@ function DashboardContent() {
                   <CheckCircle className="h-6 w-6 text-green-500" />
                   <div className="grid gap-0.5">
                     <p className="font-medium">
-                      {format(new Date(session.scheduled_date || session.date), "PPP")} at {session.scheduled_time || session.time}
+                      {format(new Date(session.date), "PPP")} at {session.time}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {session.therapist_name || session.therapist?.full_name || 'Therapist'} • {session.title || session.topic || 'Therapy Session'}
+                      {session.therapist} • {session.topic}
                     </p>
                   </div>
                   <div className="ml-auto">
@@ -541,7 +541,7 @@ function DashboardContent() {
         <CardContent>
           <div className="space-y-2 text-muted-foreground">
             {state.upcomingSessions.length > 0 ? (
-              <p>• Reminder: Your next session is scheduled for {format(new Date(state.upcomingSessions[0].scheduled_date || state.upcomingSessions[0].date), "PPP")}.</p>
+              <p>• Reminder: Your next session is scheduled for {format(new Date(state.upcomingSessions[0].date), "PPP")}.</p>
             ) : (
               <p>• No upcoming sessions scheduled. Book your first session to get started!</p>
             )}

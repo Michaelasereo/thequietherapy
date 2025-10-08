@@ -122,7 +122,7 @@ export async function getTherapistDashboardData(therapistId: string): Promise<Th
       isVerified: therapist.is_verified,
       isApproved: profile?.verification_status === 'approved',
       specialization: typeof profile?.specialization === 'string' 
-        ? profile?.[0]?.specialization.split(', ').filter(Boolean) 
+        ? profile?.specialization.split(', ').filter(Boolean) 
         : (profile?.specializations || []),
       licenseNumber: profile?.mdcn_code || '',
       hourlyRate: 5000,
@@ -202,7 +202,7 @@ export async function getUserDashboardData(userId: string): Promise<UserDashboar
     },
     upcomingSession: upcomingSession ? {
       id: upcomingSession.id,
-      therapist_name: upcomingSession.therapist?.full_name || 'Unknown',
+      therapist_name: upcomingSession.therapist?.[0]?.full_name || 'Unknown',
       start_time: upcomingSession.start_time,
       room_url: upcomingSession.room_url
     } : null,

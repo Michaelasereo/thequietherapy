@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Upload, Download, Users, Calendar, Clock, CreditCard, Plus, Mail, CheckCircle } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import CSVUpload from "@/components/csv-upload"
 
 interface PartnerMember {
   id: string

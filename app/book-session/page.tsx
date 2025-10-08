@@ -12,6 +12,7 @@ import BookingStep1 from "@/components/booking-step-1"
 import BookingStep2 from "@/components/booking-step-2"
 import BookingStep3 from "@/components/booking-step-3"
 import BookingStep4 from "@/components/booking-step-4"
+import { TimeSlot } from "@/lib/services/availabilityService"
 
 // Types for the booking data
 interface PatientBiodata {
@@ -25,18 +26,6 @@ interface PatientBiodata {
   maritalStatus: "Single" | "Married" | "Divorced" | "Widowed" | "Other"
   therapistGenderPreference?: string
   therapistSpecializationPreference?: string
-}
-
-interface TimeSlot {
-  id: string
-  date: string
-  day_name: string
-  start_time: string
-  end_time: string
-  session_duration: number
-  session_title: string
-  session_type: 'individual' | 'group'
-  is_available: boolean
 }
 
 export default function BookSessionPage() {

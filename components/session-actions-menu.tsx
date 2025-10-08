@@ -323,14 +323,14 @@ export default function SessionActionsMenu({ session, onSessionUpdate, userType 
               <p className="text-sm text-muted-foreground">{session.session_type}</p>
             </div>
             
-            {session.session_summary || "" && (
+            {session.session_summary && (
               <div>
                 <Label className="text-sm font-medium">Summary</Label>
                 <p className="text-sm text-muted-foreground">{session.session_summary || ""}</p>
               </div>
             )}
             
-            {session.reschedule_reason || "" && (
+            {session.reschedule_reason && (
               <div>
                 <Label className="text-sm font-medium">Reschedule Reason</Label>
                 <p className="text-sm text-muted-foreground">{session.reschedule_reason || ""}</p>

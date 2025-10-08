@@ -29,7 +29,7 @@ export async function POST() {
     console.log(`📊 Found ${partners.length} partners`)
 
     // Show current status breakdown
-    const statusCounts = partners.reduce((acc, partner) => {
+    const statusCounts = partners.reduce((acc: Record<string, number>, partner) => {
       acc[partner.partner_status] = (acc[partner.partner_status] || 0) + 1
       return acc
     }, {})
@@ -85,9 +85,9 @@ export async function POST() {
       .select('partner_status, is_verified, is_active')
       .eq('user_type', 'partner')
 
-    let finalStatusCounts = {}
+    let finalStatusCounts: Record<string, number> = {}
     if (!finalError && finalPartners) {
-      finalStatusCounts = finalPartners.reduce((acc, partner) => {
+      finalStatusCounts = finalPartners.reduce((acc: Record<string, number>, partner) => {
         const status = partner.partner_status
         acc[status] = (acc[status] || 0) + 1
         return acc
@@ -115,7 +115,7 @@ export async function POST() {
     return NextResponse.json({ 
       success: false, 
       error: 'Internal server error',
-      details: error.message 
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }
@@ -136,7 +136,7 @@ export async function GET() {
       }, { status: 500 })
     }
 
-    const statusCounts = partners.reduce((acc, partner) => {
+    const statusCounts = partners.reduce((acc: Record<string, number>, partner) => {
       acc[partner.partner_status] = (acc[partner.partner_status] || 0) + 1
       return acc
     }, {})

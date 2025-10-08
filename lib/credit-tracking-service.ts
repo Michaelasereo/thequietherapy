@@ -223,7 +223,7 @@ export async function getUserCreditAnalytics(userId: string): Promise<CreditAnal
     sessions?.forEach(session => {
       if (session.therapist_id && session.therapists) {
         const therapistId = session.therapist_id
-        const therapistName = session.therapists.full_name
+        const therapistName = session.therapists?.[0]?.full_name || 'Unknown Therapist'
         if (!therapistCounts[therapistId]) {
           therapistCounts[therapistId] = { name: therapistName, count: 0 }
         }

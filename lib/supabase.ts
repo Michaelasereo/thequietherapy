@@ -5,11 +5,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 // Client-side Supabase client with real-time disabled to prevent WebSocket errors
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-  realtime: {
-    enabled: false
-  }
-})
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Server-side Supabase client with service role key
 export const createServerClient = () => {

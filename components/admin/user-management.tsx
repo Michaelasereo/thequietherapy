@@ -277,7 +277,7 @@ export function UserManagement({ userType = 'all' }: UserManagementProps) {
           </div>
           
           <div className="w-full md:w-48">
-            <Select value={selectedUserType} onValueChange={setSelectedUserType}>
+            <Select value={selectedUserType} onValueChange={(value) => setSelectedUserType(value as "individual" | "therapist" | "partner" | "all")}>
               <SelectTrigger>
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Filter by type" />

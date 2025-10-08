@@ -142,7 +142,7 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h4 className="font-medium text-red-900 mb-2">Failed to Load Time Slots</h4>
           <p className="text-sm text-red-700 mb-4">{error}</p>
-          <Button onClick={fetchTimeSlots} variant="outline" className="border-red-300 text-red-700">
+          <Button onClick={() => fetchTimeSlots()} variant="outline" className="border-red-300 text-red-700">
             <RefreshCw className="h-4 w-4 mr-2" />
             Try Again
           </Button>
@@ -192,7 +192,7 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
           </div>
           <Button 
             variant="outline" 
-            onClick={fetchTimeSlots}
+            onClick={() => fetchTimeSlots()}
             className="mt-4 border-orange-300 text-orange-700"
           >
             <RefreshCw className="h-4 w-4 mr-2" />

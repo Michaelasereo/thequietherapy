@@ -66,7 +66,7 @@ export default function ProgressiveBookingStep3({
     console.log('🔍 DEBUG: Booking confirmation set, calling onNext...')
     // Call the original onNext with the selected slot and mark that booking is already complete
     if (selectedSlot) {
-      onNext({ ...selectedSlot, bookingAlreadyComplete: true, confirmation })
+      onNext(selectedSlot)
     }
   }
 
@@ -178,7 +178,7 @@ export default function ProgressiveBookingStep3({
             therapistId={selectedTherapistId}
             selectedDate={selectedDate}
             onSlotSelect={handleSlotSelect}
-            selectedSlot={selectedSlot}
+            selectedSlot={selectedSlot || undefined}
           />
         )}
 
@@ -186,7 +186,7 @@ export default function ProgressiveBookingStep3({
           <BookingConfirmation
             therapistId={selectedTherapistId}
             therapistInfo={selectedTherapistData}
-            selectedSlot={selectedSlot}
+            selectedSlot={selectedSlot || undefined}
             onBookingComplete={handleBookingComplete}
             onBack={() => setCurrentStep('time')}
           />

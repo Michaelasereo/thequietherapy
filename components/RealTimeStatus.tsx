@@ -131,7 +131,7 @@ export function DetailedRealTimeStatus({
       </div>
 
       {/* Real-time Updates */}
-      {showUpdateCount !== undefined && showUpdateCount && (
+      {realTimeUpdates > 0 && (
         <div className="flex items-center space-x-1">
           <span className="text-xs text-muted-foreground">Updates:</span>
           <Badge variant="outline" className="text-xs">

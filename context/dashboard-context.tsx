@@ -619,26 +619,28 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           {
             id: 'mock-1',
             title: 'Follow-up Session',
+            topic: 'Follow-up Session',
             therapist: 'Dr. Sarah Johnson',
             date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
             time: '10:00 AM',
-            status: 'scheduled',
+            status: 'scheduled' as const,
             type: 'video',
             duration: 50
           },
           {
             id: 'mock-2', 
             title: 'Progress Review',
+            topic: 'Progress Review',
             therapist: 'Dr. Michael Chen',
             date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
             time: '2:30 PM',
-            status: 'scheduled',
+            status: 'scheduled' as const,
             type: 'video',
             duration: 45
           }
         ]
         
-        dispatch({ type: 'SET_UPCOMING_SESSIONS', payload: mockUpcomingSessions })
+        dispatch({ type: 'SET_SESSIONS', payload: { upcoming: mockUpcomingSessions, past: [] } })
       }
       
       // Get fresh credits from API - use same endpoint as header

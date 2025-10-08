@@ -8,12 +8,11 @@ async function validateDeepSeekConfiguration() {
   const stats = getAIServiceStats();
   
   console.log('AI Provider Status:');
-  console.log(`- DeepSeek: ${stats.configuration.deepseek.configured ? '✅ Configured' : '❌ Not configured'}`);
-  console.log(`- OpenAI: ${stats.configuration.openai.configured ? '✅ Configured' : '❌ Not configured'}`);
-  console.log(`- Fallback: ${stats.configuration.fallback.configured ? '✅ Available' : '❌ Not available'}`);
   console.log(`- Default Provider: ${stats.defaultProvider}`);
+  console.log(`- Available Providers: ${stats.availableProviders.join(', ')}`);
+  console.log(`- Status: ${stats.status}`);
 
-  if (!stats.configuration.deepseek.configured) {
+  if (!process.env.DEEPSEEK_API_KEY) {
     console.log('\n❌ DEEPSEEK_API_KEY is not set in environment variables');
     console.log('Please add your DeepSeek API key to .env.local:');
     console.log('DEEPSEEK_API_KEY=sk-your-api-key-here');
@@ -21,8 +20,7 @@ async function validateDeepSeekConfiguration() {
   }
 
   console.log('\n✅ DEEPSEEK_API_KEY is present');
-  console.log(`   Key Length: ${stats.configuration.deepseek.keyLength} characters`);
-  console.log(`   API Base: ${stats.configuration.deepseek.baseURL}`);
+  console.log(`   Key Length: ${process.env.DEEPSEEK_API_KEY?.length || 0} characters`);
 
   // Test DeepSeek client initialization
   try {
@@ -107,13 +105,14 @@ async function validateDeepSeekConfiguration() {
 
       } catch (soapError) {
         console.log('❌ SOAP notes generation failed:');
-        console.log(`   Error: ${soapError.message}`);
+        const errorMessage = soapError instanceof Error ? soapError.message : 'Unknown error';
+        console.log(`   Error: ${errorMessage}`);
         
-        if (soapError.message.includes('401')) {
+        if (errorMessage.includes('401')) {
           console.log('   → API key is invalid or expired');
-        } else if (soapError.message.includes('429')) {
+        } else if (errorMessage.includes('429')) {
           console.log('   → Rate limit exceeded, this is normal for testing');
-        } else if (soapError.message.includes('quota')) {
+        } else if (errorMessage.includes('quota')) {
           console.log('   → API quota exceeded');
         }
       }
@@ -147,7 +146,13 @@ async function validateDeepSeekConfiguration() {
 
   // Show recommendations
   console.log('\n📋 Recommendations:');
-  stats.recommendations.forEach(rec => {
+  const recommendations = [
+    'Ensure DEEPSEEK_API_KEY is set in production',
+    'Monitor API usage and costs',
+    'Test error handling with invalid requests',
+    'Set up proper logging for AI operations'
+  ];
+  recommendations.forEach(rec => {
     console.log(`   • ${rec}`);
   });
 

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
         user: {
           id: unifiedSession.id,
           email: unifiedSession.email,
-          full_name: unifiedSession.full_name,
+          full_name: unifiedSession.name,
           user_type: unifiedSession.role,
           is_authenticated: true
         }

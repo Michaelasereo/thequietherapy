@@ -96,16 +96,16 @@ export default function TherapistSettingsPage() {
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: therapistUser?.name ?? "",
+      name: therapistUser?.full_name ?? "",
       email: therapistUser?.email ?? "",
-      phone: therapistUser?.phone ?? "",
-      mdcnCode: therapistUser?.licenseNumber ?? "",
+      phone: "",
+      mdcnCode: therapistUser?.license_number ?? "",
       bio: therapistUser?.bio ?? "",
-      specialization: therapistUser?.specialization ?? [],
-      languages: therapistUser?.languages ?? [],
-      gender: therapistUser?.gender ?? "",
-      maritalStatus: therapistUser?.maritalStatus ?? "",
-      age: therapistUser?.age ?? "",
+      specialization: therapistUser?.specialization ? [therapistUser.specialization] : [],
+      languages: [],
+      gender: "",
+      maritalStatus: "",
+      age: "",
       sessionReminders: true,
       newClientAlerts: true,
       payoutNotifications: true,
@@ -118,24 +118,24 @@ export default function TherapistSettingsPage() {
     if (therapistUser) {
       console.log('🔍 Settings: therapistUser data:', therapistUser)
       form.reset({
-        name: therapistUser.name ?? "",
+        name: therapistUser.full_name ?? "",
         email: therapistUser.email ?? "",
-        phone: therapistUser.phone ?? "",
-        mdcnCode: therapistUser.licenseNumber ?? "",
+        phone: "",
+        mdcnCode: therapistUser.license_number ?? "",
         bio: therapistUser.bio ?? "",
-        specialization: therapistUser.specialization ?? [],
-        languages: therapistUser.languages ?? [],
-        gender: therapistUser.gender ?? "",
-        maritalStatus: therapistUser.maritalStatus ?? "",
-        age: therapistUser.age ?? "",
+        specialization: therapistUser.specialization ? [therapistUser.specialization] : [],
+        languages: [],
+        gender: "",
+        maritalStatus: "",
+        age: "",
         sessionReminders: true,
         newClientAlerts: true,
         payoutNotifications: true,
       })
       
       // Set profile image if available
-      if (therapistUser.profileImage) {
-        setProfileImage(therapistUser.profileImage)
+      if (therapistUser.avatar_url) {
+        setProfileImage(therapistUser.avatar_url)
       }
     } else {
       console.log('🔍 Settings: therapistUser is null/undefined')
@@ -590,11 +590,13 @@ export default function TherapistSettingsPage() {
                 <div className="space-y-2">
                   <FormLabel>Specializations</FormLabel>
                   <div className="flex flex-wrap gap-2">
-                    {therapistUser?.specialization?.map((spec, index) => (
-                      <Badge key={index} variant="secondary">
-                        {spec}
+                    {therapistUser?.specialization ? (
+                      <Badge variant="secondary">
+                        {therapistUser.specialization}
                       </Badge>
-                    )) || <p className="text-sm text-muted-foreground">No specializations listed</p>}
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No specializations listed</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -676,11 +678,7 @@ export default function TherapistSettingsPage() {
                 <div className="space-y-2">
                   <FormLabel>Languages</FormLabel>
                   <div className="flex flex-wrap gap-2">
-                    {therapistUser?.languages?.map((lang, index) => (
-                      <Badge key={index} variant="outline">
-                        {lang}
-                      </Badge>
-                    )) || <p className="text-sm text-muted-foreground">No languages listed</p>}
+                    <p className="text-sm text-muted-foreground">No languages listed</p>
                   </div>
                 </div>
               )}
@@ -747,16 +745,16 @@ export default function TherapistSettingsPage() {
                         // Reset form to original values
                         if (therapistUser) {
                           form.reset({
-                            name: therapistUser.name ?? "",
+                            name: therapistUser.full_name ?? "",
                             email: therapistUser.email ?? "",
-                            phone: therapistUser.phone ?? "",
-                            mdcnCode: therapistUser.licenseNumber ?? "",
+                            phone: "",
+                            mdcnCode: therapistUser.license_number ?? "",
                             bio: therapistUser.bio ?? "",
-                            specialization: therapistUser.specialization ?? [],
-                            languages: therapistUser.languages ?? [],
-                            gender: therapistUser.gender ?? "",
-                            maritalStatus: therapistUser.maritalStatus ?? "",
-                            age: therapistUser.age ?? "",
+                            specialization: therapistUser.specialization ? [therapistUser.specialization] : [],
+                            languages: [],
+                            gender: "",
+                            maritalStatus: "",
+                            age: "",
                             sessionReminders: true,
                             newClientAlerts: true,
                             payoutNotifications: true,

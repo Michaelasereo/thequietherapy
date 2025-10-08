@@ -2,14 +2,18 @@ import { supabase } from '@/lib/supabase';
 import { availabilityCache } from '@/lib/availability-cache';
 
 export interface TimeSlot {
+  id: string;
   date: string;
   day_of_week: number;
+  day_name: string;
   start_time: string;
   end_time: string;
   session_duration: number;
-  session_type: string;
+  session_type: 'individual' | 'group';
+  session_title: string;
   max_sessions: number;
   is_override: boolean;
+  is_available: boolean;
   reason?: string;
 }
 

@@ -80,8 +80,8 @@ function VideoSessionPage() {
     if (session && sessionTime === 0) {
       const now = new Date()
       let sessionStartTime
-      if (session.scheduled_date && session.scheduled_time) {
-        sessionStartTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
+      if (session.start_time && session.end_time) {
+        sessionStartTime = new Date(`${session.start_time}T${session.end_time}`)
       } else {
         sessionStartTime = new Date(session.start_time)
       }
@@ -95,8 +95,8 @@ function VideoSessionPage() {
         therapyEnd: therapyEndTime.toISOString(),
         sessionData: {
           start_time: session.start_time,
-        scheduled_date: session.scheduled_date,
-        scheduled_time: session.scheduled_time,
+        scheduled_date: session.start_time,
+        scheduled_time: session.end_time,
         duration_minutes: 30 // Force 30 minutes for therapy session
         }
       })
@@ -204,8 +204,8 @@ function VideoSessionPage() {
       
       // Get session start time consistently
       let sessionStartTime
-      if (session.scheduled_date && session.scheduled_time) {
-        sessionStartTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
+      if (session.start_time && session.end_time) {
+        sessionStartTime = new Date(`${session.start_time}T${session.end_time}`)
       } else {
         sessionStartTime = new Date(session.start_time)
       }

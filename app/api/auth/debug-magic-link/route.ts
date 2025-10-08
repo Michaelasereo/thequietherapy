@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
       appUrl: process.env.NEXT_PUBLIC_APP_URL,
       
       // Supabase connection test
-      supabaseConnection: null,
-      emailServiceStatus: null
+      supabaseConnection: null as any,
+      emailServiceStatus: null as any
     }
 
     // Test Supabase connection
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         error: error?.message || null,
         hasData: !!data
       }
-    } catch (error) {
+    } catch (error: any) {
       diagnostics.supabaseConnection = {
         connected: false,
         error: error.message,
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         configured: !!transporter,
         error: transporter ? null : 'Email service not configured'
       }
-    } catch (error) {
+    } catch (error: any) {
       diagnostics.emailServiceStatus = {
         configured: false,
         error: error.message
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       recommendations: generateRecommendations(diagnostics)
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Magic link debug error:', error)
     return NextResponse.json({
       success: false,

@@ -50,8 +50,10 @@ export class SessionFingerprint {
       }
     }
 
-    // Fallback to request IP
-    return request.ip || 'unknown'
+    // Fallback to request IP from headers
+    return request.headers.get('x-forwarded-for') || 
+           request.headers.get('x-real-ip') || 
+           'unknown'
   }
 
   /**

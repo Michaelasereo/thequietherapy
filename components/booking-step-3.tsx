@@ -8,19 +8,7 @@ import { Calendar, Clock, CheckCircle, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 import ProgressiveBookingStep3 from "./booking/ProgressiveBookingStep3"
 import TestDateSelection from "./booking/TestDateSelection"
-
-interface TimeSlot {
-  id: string
-  date: string
-  day_name: string
-  start_time: string
-  end_time: string
-  session_duration: number
-  session_title: string
-  session_type: 'individual' | 'group'
-  is_available: boolean
-  booking_status?: 'available' | 'booked'
-}
+import { TimeSlot } from "@/lib/services/availabilityService"
 
 interface BookingStep3Props {
   onNext: (selectedSlot: TimeSlot) => void

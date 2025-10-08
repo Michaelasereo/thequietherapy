@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
       secretKeyLength: process.env.PAYSTACK_SECRET_KEY?.length || 0,
       publicKeyLength: process.env.PAYSTACK_PUBLIC_KEY?.length || 0,
       environment: process.env.NODE_ENV,
+      mode: 'unknown' as 'live' | 'test' | 'unknown',
       isValid: false,
       error: null as string | null,
       paystackLibrary: false
@@ -39,6 +40,13 @@ export async function GET(request: NextRequest) {
     if (!publicKey.startsWith('pk_')) {
       config.error = 'Invalid PAYSTACK_PUBLIC_KEY format (should start with pk_)'
       return NextResponse.json(config, { status: 400 })
+    }
+
+    // Determine mode without exposing keys
+    if (secretKey.startsWith('sk_live') && publicKey.startsWith('pk_live')) {
+      config.mode = 'live'
+    } else if (secretKey.startsWith('sk_test') && publicKey.startsWith('pk_test')) {
+      config.mode = 'test'
     }
 
     // Check if Paystack library is available

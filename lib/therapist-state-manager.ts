@@ -398,7 +398,7 @@ export class TherapistStateManager {
     }
 
     const allowedTransitions = validTransitions[currentStatus];
-    if (!allowedTransitions.includes(newStatus)) {
+    if (!newStatus || !allowedTransitions.includes(newStatus)) {
       throw new Error(`Invalid transition from ${currentStatus} to ${newStatus}`);
     }
   }
@@ -431,7 +431,7 @@ export class TherapistStateManager {
       throw new Error('Therapist is not active');
     }
 
-    if (therapist.therapist_profiles.verification_status === 'verified') {
+    if (therapist.therapist_profiles?.[0]?.verification_status === 'verified') {
       throw new Error('Therapist is already verified');
     }
 

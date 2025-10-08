@@ -42,8 +42,7 @@ export default function TherapistDashboardSidebar() {
   // For now, we'll check for admin emails or you can add an admin role field to the user data
   const isAdmin = therapistUser?.email === 'admin@trpi.com' || 
                   therapistUser?.email === 'admin@example.com' ||
-                  therapistUser?.email?.includes('admin') ||
-                  therapistUser?.role === 'admin'
+                  therapistUser?.email?.includes('admin')
 
   // Memoize hover handlers to prevent unnecessary re-renders
   const handleMouseEnter = useCallback(() => {

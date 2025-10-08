@@ -43,9 +43,9 @@ export async function GET() {
     // Transform the data to match the expected interface
     const transformedSessions = sessions?.map(session => ({
       id: session.id,
-      memberName: session.users?.full_name || 'Unknown Member',
-      memberEmail: session.users?.email || 'unknown@example.com',
-      therapistName: session.therapist_profiles?.full_name || 'Unknown Therapist',
+      memberName: session.users?.[0]?.full_name || 'Unknown Member',
+      memberEmail: session.users?.[0]?.email || 'unknown@example.com',
+      therapistName: session.therapist_profiles?.[0]?.full_name || 'Unknown Therapist',
       scheduledDate: session.scheduled_date,
       scheduledTime: session.scheduled_time,
       status: session.status || 'scheduled',

@@ -145,8 +145,8 @@ export default function TestVideoFlowPage() {
     ]
   })
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const sessionTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const timerRef = useRef<number | null>(null)
+  const sessionTimerRef = useRef<number | null>(null)
 
   // Simulate session timer
   useEffect(() => {
@@ -173,7 +173,7 @@ export default function TestVideoFlowPage() {
 
   // Auto-advance steps for demo
   useEffect(() => {
-    let timeout: NodeJS.Timeout
+    let timeout: number
 
     switch (state.currentStep) {
       case 'waiting':
