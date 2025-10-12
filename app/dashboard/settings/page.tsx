@@ -11,10 +11,11 @@ import { useAuth } from '@/context/auth-context'
 import { useToast } from "@/components/ui/use-toast"
 
 export default function SettingsPage() {
-  const { user, loading } = useAuth()
+  const { user, loading, refreshUser } = useAuth()
   const { toast } = useToast()
   const [therapyPreferences, setTherapyPreferences] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [name, setName] = useState("")
 
   // Default data in case context is not available during build
   const defaultUser = {
@@ -23,12 +24,15 @@ export default function SettingsPage() {
   }
 
   const currentUser = user || defaultUser
-  const name = (currentUser as any).full_name || (currentUser as any).name || currentUser.email?.split('@')[0] || "User"
   const email = currentUser.email || "user@example.com"
 
   // Load user preferences on mount
   useEffect(() => {
     if (user?.id) {
+      // Set the current name from user data
+      const currentName = (user as any).full_name || (user as any).name || user.email?.split('@')[0] || "User"
+      setName(currentName)
+      
       // Load therapy preferences from user profile or API
       setTherapyPreferences("CBT, stress management, anxiety.") // Default for now
     }
@@ -39,15 +43,43 @@ export default function SettingsPage() {
     setIsSaving(true)
     
     try {
-      // TODO: Implement profile update API call
-      toast({
-        title: "Profile Updated",
-        description: "Your profile information has been saved successfully.",
+      if (!user?.id) {
+        toast({
+          title: "Error",
+          description: "No user found. Please log in again.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const response = await fetch('/api/user/update-profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          full_name: name.trim(),
+        }),
       })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        toast({
+          title: "Profile Updated",
+          description: "Your profile information has been saved successfully.",
+        })
+        
+        // Refresh user data to update the dashboard header
+        await refreshUser()
+      } else {
+        throw new Error(data.error || 'Failed to update profile')
+      }
     } catch (error) {
+      console.error('Profile update error:', error)
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to update profile. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -81,7 +113,7 @@ export default function SettingsPage() {
       <div className="space-y-6">
         <h2 className="text-2xl font-bold">Settings</h2>
         <div className="flex items-center justify-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
           <span className="ml-2">Loading settings...</span>
         </div>
       </div>
@@ -100,7 +132,11 @@ export default function SettingsPage() {
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" defaultValue={name} />
+              <Input 
+                id="name" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>

@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight, Calendar, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ChevronLeft, ChevronRight, Calendar, AlertCircle, AlertTriangle } from "lucide-react"
 import { AvailabilityService } from "@/lib/services/availabilityService"
 
 interface DatePickerProps {
@@ -37,10 +38,7 @@ export default function DatePicker({ therapistId, onDateSelect, selectedDate }: 
       const year = currentMonth.getFullYear()
       const month = currentMonth.getMonth() + 1
       
-      console.log('🗓️ Fetching available dates for:', therapistId, 'month:', month, 'year:', year)
       const dates = await AvailabilityService.getAvailableDays(therapistId, month, year)
-      console.log('🗓️ Available dates received:', dates)
-      
       setAvailableDates(dates)
     } catch (err) {
       console.error('Error fetching available dates:', err)
@@ -69,7 +67,6 @@ export default function DatePicker({ therapistId, onDateSelect, selectedDate }: 
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const result = `${year}-${month}-${day}`
-    console.log('🗓️ formatDateForAPI input:', date, 'output:', result)
     return result
   }
 
@@ -78,21 +75,19 @@ export default function DatePicker({ therapistId, onDateSelect, selectedDate }: 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     
-    // Only disable past dates - let all future dates be clickable
+    // Only disable past dates
     const isPast = date < today
     
+    // Limit patient booking to 7 days in the future
+    const sevenDaysFromNow = new Date(today)
+    sevenDaysFromNow.setDate(today.getDate() + 7)
+    const isBeyond7Days = date > sevenDaysFromNow
+    
     // Check if this date is in the therapist's disabled dates (from API)
+    // If availableDates is empty, allow all future dates within 7-day window
     const isDisabledByTherapist = availableDates.length > 0 && !availableDates.includes(dateStr)
     
-    // Debug logging
-    console.log('🗓️ Checking date:', dateStr, {
-      isPast,
-      isDisabledByTherapist,
-      availableDates: availableDates.slice(0, 5),
-      finalResult: !isPast && !isDisabledByTherapist
-    })
-    
-    return !isPast && !isDisabledByTherapist
+    return !isPast && !isBeyond7Days && !isDisabledByTherapist
   }
 
   const isDateSelected = (date: Date) => {
@@ -112,36 +107,15 @@ export default function DatePicker({ therapistId, onDateSelect, selectedDate }: 
     const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate())
     const dateLocal = new Date(date.getFullYear(), date.getMonth(), date.getDate())
     
-    console.log('🗓️ isDatePast check:', {
-      date: date.toISOString(),
-      dateLocal: dateLocal.toISOString(),
-      today: today.toISOString(),
-      todayLocal: todayLocal.toISOString(),
-      isPast: dateLocal < todayLocal
-    })
-    
     return dateLocal < todayLocal
   }
 
   const handleDateClick = (date: Date) => {
-    console.log('🗓️ Date clicked (raw):', date)
-    console.log('🗓️ Date clicked (toString):', date.toString())
-    console.log('🗓️ Date clicked (toISOString):', date.toISOString())
-    console.log('🗓️ Date clicked (toDateString):', date.toDateString())
-    console.log('🗓️ Is past:', isDatePast(date))
-    console.log('🗓️ Is available:', isDateAvailable(date))
-    console.log('🗓️ Available dates from API:', availableDates)
-    console.log('🗓️ Loading state:', loading)
-    console.log('🗓️ Error state:', error)
-    
     if (isDatePast(date) || !isDateAvailable(date)) {
-      console.log('🗓️ Date click blocked - past or not available')
       return
     }
     
     const dateStr = formatDateForAPI(date)
-    console.log('🗓️ Selecting date (formatted):', dateStr)
-    console.log('🗓️ Calling onDateSelect with:', dateStr)
     onDateSelect(dateStr)
   }
 
@@ -170,18 +144,6 @@ export default function DatePicker({ therapistId, onDateSelect, selectedDate }: 
       const dateStr = formatDateForAPI(currentDate)
       const dayNumber = currentDate.getDate()
       
-      // Debug logging for the first few days
-      if (i < 10) {
-        console.log(`🗓️ Day ${i}:`, {
-          currentDate: currentDate.toString(),
-          dateStr,
-          dayNumber,
-          isCurrentMonth,
-          isAvailable,
-          isSelected
-        })
-      }
-      
       days.push(
         <button
           key={dateStr}
@@ -191,10 +153,10 @@ export default function DatePicker({ therapistId, onDateSelect, selectedDate }: 
             relative h-10 w-10 rounded-lg text-sm font-medium transition-all duration-200
             ${!isCurrentMonth ? 'text-gray-400' : ''}
             ${isPast ? 'text-gray-300 cursor-not-allowed' : ''}
-            ${isAvailable && !isPast && isCurrentMonth ? 'hover:bg-blue-100 cursor-pointer' : ''}
-            ${isSelected ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+            ${isAvailable && !isPast && isCurrentMonth ? 'hover:bg-gray-100 cursor-pointer' : ''}
+            ${isSelected ? 'bg-black text-white hover:bg-gray-800' : ''}
             ${!isAvailable && !isPast && isCurrentMonth ? 'text-gray-400 cursor-not-allowed' : ''}
-            ${isToday && !isSelected ? 'ring-2 ring-blue-200' : ''}
+            ${isToday && !isSelected ? 'ring-2 ring-gray-300' : ''}
           `}
           title={
             isPast ? 'Past date' : 
@@ -231,17 +193,36 @@ export default function DatePicker({ therapistId, onDateSelect, selectedDate }: 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-600" />
+            <Calendar className="h-5 w-5 text-gray-900" />
             <h3 className="text-lg font-semibold">Select a Date</h3>
           </div>
         </div>
         
         {/* Availability Info */}
-        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-sm text-gray-700">
-            <strong>Click any future date</strong> to see available time slots. Past dates and therapist-disabled dates are not selectable.
-          </p>
-        </div>
+        <Alert className="mb-4 border-brand-gold bg-brand-gold/10">
+          <AlertCircle className="h-4 w-4 text-brand-gold" />
+          <AlertDescription className="text-gray-900 text-sm">
+            <strong>Booking Window:</strong> You can book sessions up to 7 days in advance.
+          </AlertDescription>
+        </Alert>
+        
+        {!loading && availableDates.length === 0 && !error && (
+          <Alert className="mb-4 border-orange-200 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <strong>Limited Availability:</strong> This therapist hasn't configured their availability calendar yet. 
+              Please contact support or try another therapist.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {availableDates.length > 0 && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-700">
+              <strong>✓ {availableDates.length} days available</strong> this month. Click a highlighted date to see available time slots.
+            </p>
+          </div>
+        )}
         
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -292,22 +273,6 @@ export default function DatePicker({ therapistId, onDateSelect, selectedDate }: 
               {renderCalendarDays()}
             </div>
           )}
-        </div>
-
-        {/* Debug Panel */}
-        <div className="mt-4 p-3 bg-gray-100 rounded-lg text-xs">
-          <h4 className="font-medium mb-2">Debug Info:</h4>
-          <div className="space-y-1">
-            <p><strong>Therapist ID:</strong> {therapistId}</p>
-            <p><strong>Loading:</strong> {loading ? 'Yes' : 'No'}</p>
-            <p><strong>Error:</strong> {error || 'None'}</p>
-            <p><strong>Selected Date:</strong> {selectedDate || 'None'}</p>
-            <p><strong>Current Month:</strong> {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}</p>
-            <p><strong>Therapist Available Dates:</strong> {availableDates.length} dates from API</p>
-            {availableDates.length > 0 && (
-              <p><strong>Available Dates:</strong> {availableDates.slice(0, 10).join(', ')}{availableDates.length > 10 ? '...' : ''}</p>
-            )}
-          </div>
         </div>
 
         {/* Legend */}

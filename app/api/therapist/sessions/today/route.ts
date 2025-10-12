@@ -22,21 +22,7 @@ export async function GET(request: NextRequest) {
     // Query for today's sessions
     const { data: sessions, error } = await supabase
       .from('sessions')
-      .select(`
-        id,
-        scheduled_date,
-        scheduled_time,
-        duration_minutes,
-        status,
-        daily_room_name,
-        daily_room_url,
-        therapist_id,
-        user_id,
-        users (
-          full_name,
-          email
-        )
-      `)
+      .select('*')
       .eq('therapist_id', therapistId)
       .eq('scheduled_date', today)
       .order('scheduled_time', { ascending: true })
@@ -46,17 +32,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
-    // Format the session data
-    const formattedSessions = sessions?.map(session => ({
-      id: session.id,
-      patient_name: session.users?.[0]?.full_name || 'Unknown Patient',
-      patient_email: session.users?.[0]?.email || '',
-      start_time: `${session.scheduled_date}T${session.scheduled_time}`,
-      duration: session.duration_minutes || 50,
-      room_url: session.daily_room_url,
-      room_name: session.daily_room_name,
-      status: session.status
-    })) || []
+    // Fetch user data for each session
+    const formattedSessions = await Promise.all((sessions || []).map(async (session) => {
+      let patientData = { full_name: 'Unknown Patient', email: '' }
+      
+      if (session.user_id) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('full_name, email')
+          .eq('id', session.user_id)
+          .single()
+        
+        if (user) {
+          patientData = user
+        }
+      }
+      
+      return {
+        id: session.id,
+        patient_name: patientData.full_name,
+        patient_email: patientData.email,
+        start_time: `${session.scheduled_date}T${session.scheduled_time}`,
+        duration: session.duration_minutes || 50,
+        room_url: session.daily_room_url,
+        room_name: session.daily_room_name,
+        status: session.status
+      }
+    }))
 
     console.log('✅ Found today\'s sessions:', formattedSessions.length, 'sessions')
     return successResponse({ sessions: formattedSessions })

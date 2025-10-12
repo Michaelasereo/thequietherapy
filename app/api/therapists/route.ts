@@ -164,6 +164,14 @@ export async function GET(request: NextRequest) {
 // POST endpoint for creating therapist profiles
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Only admins can create therapist profiles via API
+    // Therapists should use the enrollment flow
+    const { requireApiAuth } = await import('@/lib/server-auth')
+    const authResult = await requireApiAuth(['admin'])
+    if ('error' in authResult) {
+      return authResult.error
+    }
+
     const body = await request.json()
     const { 
       user_id,

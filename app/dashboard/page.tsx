@@ -15,6 +15,7 @@ import BookingProgress from "@/components/booking-progress"
 import BookingStep1 from "@/components/booking-step-1"
 import BookingStep2 from "@/components/booking-step-2"
 import BookingStep3 from "@/components/booking-step-3"
+import PostSessionModal from "@/components/post-session-modal"
 import { useDashboard } from "@/context/dashboard-context"
 import { useCrossDashboardBroadcast } from '@/hooks/useCrossDashboardSync';
 import { useAuth } from '@/context/auth-context'
@@ -173,6 +174,10 @@ function DashboardContent() {
   })
   const [selectedTherapistId, setSelectedTherapistId] = useState<string>("")
   const [showBiodataPrompt, setShowBiodataPrompt] = useState(false)
+  
+  // Post-session modal state
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   
   // Default data for new users
   const defaultStats = {
@@ -333,6 +338,18 @@ function DashboardContent() {
     }
   }
 
+  const handleOpenPostSession = (sessionId: string) => {
+    setSelectedSessionId(sessionId)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedSessionId(null)
+    // Refresh sessions when modal closes
+    fetchSessions()
+  }
+
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 1:
@@ -364,11 +381,19 @@ function DashboardContent() {
   }
 
   return (
-    <div className="grid gap-6">
-      {!showBooking ? (
-        // Dashboard View
-        <>
-          <div className="flex items-center justify-between">
+    <>
+      <PostSessionModal 
+        sessionId={selectedSessionId}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onComplete={handleCloseModal}
+      />
+      
+      <div className="grid gap-6">
+        {!showBooking ? (
+          // Dashboard View
+          <>
+            <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-semibold text-foreground">
@@ -445,6 +470,15 @@ function DashboardContent() {
           <CardContent>
             {state.upcomingSessions.length > 0 ? (
               <div className="space-y-4">
+                {/* Info about credits */}
+                <Alert className="border-brand-gold bg-brand-gold/10">
+                  <AlertCircle className="h-4 w-4 text-brand-gold" />
+                  <AlertDescription className="text-gray-900 text-sm">
+                    💳 <strong>Credit Requirement:</strong> Sessions scheduled by your therapist will use 1 credit when you join. 
+                    Make sure you have available credits before the session starts.
+                  </AlertDescription>
+                </Alert>
+                
                 {state.upcomingSessions.map((session) => (
                   <div key={session.id} className="flex items-center gap-4 p-3 rounded-md bg-muted/50">
                     <CalendarIcon className="h-6 w-6 text-primary" />
@@ -507,7 +541,11 @@ function DashboardContent() {
           {state.pastSessions.length > 0 ? (
             <div className="space-y-4">
               {state.pastSessions.map((session) => (
-                <div key={session.id} className="flex items-center gap-4 p-3 rounded-md bg-muted/30">
+                <div 
+                  key={session.id} 
+                  className="flex items-center gap-4 p-3 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleOpenPostSession(session.id)}
+                >
                   <CheckCircle className="h-6 w-6 text-green-500" />
                   <div className="grid gap-0.5">
                     <p className="font-medium">
@@ -517,8 +555,18 @@ function DashboardContent() {
                       {session.therapist} • {session.topic}
                     </p>
                   </div>
-                  <div className="ml-auto">
+                  <div className="ml-auto flex items-center gap-2">
                     <span className="text-sm text-green-600 font-medium">Completed</span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleOpenPostSession(session.id)
+                      }}
+                    >
+                      View Details
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -594,9 +642,10 @@ function DashboardContent() {
               </CardContent>
             </Card>
           </div>
-        </>
-      )}
-    </div>
+          </>
+        )}
+      </div>
+    </>
   )
 }
 

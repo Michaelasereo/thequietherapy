@@ -18,6 +18,7 @@ import {
   Monitor, 
   MonitorOff,
   MessageSquare,
+  FileText,
   Settings,
   Users,
   Clock,
@@ -32,6 +33,7 @@ import Link from 'next/link'
 import DailyIframe from '@daily-co/daily-js'
 import DailyAudioRecorder from '@/components/daily-audio-recorder'
 import SessionChat from '@/components/session-chat'
+import SessionNotesPanel from '@/components/session-notes-panel'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth-context'
 
@@ -138,6 +140,7 @@ function VideoSessionPage() {
   const [isAudioOn, setIsAudioOn] = useState(true)
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [showChat, setShowChat] = useState(false)
+  const [showNotes, setShowNotes] = useState(false)
   const [chatMessages, setChatMessages] = useState<Array<{id: string, sender: string, message: string, timestamp: string}>>([])
   const [newMessage, setNewMessage] = useState('')
   
@@ -618,15 +621,30 @@ function VideoSessionPage() {
             size="sm"
             onClick={() => setShowChat(!showChat)}
             className="text-white hover:bg-gray-700"
+            title="Toggle Chat"
           >
             <MessageSquare className="h-4 w-4" />
           </Button>
+          
+          {/* Session Notes Button - Therapist Only */}
+          {session && user && user.id === session.therapist_id && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowNotes(!showNotes)}
+              className="text-white hover:bg-gray-700"
+              title="Toggle Session Notes"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+          )}
           
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push('/dashboard')}
             className="text-white hover:bg-gray-700"
+            title="Back to Dashboard"
           >
             <Home className="h-4 w-4" />
           </Button>
@@ -635,7 +653,7 @@ function VideoSessionPage() {
 
       <div className="flex h-[calc(100vh-80px)]">
         {/* Main Video Area */}
-        <div className={`flex-1 relative ${showChat ? 'mr-80' : ''}`}>
+        <div className={`flex-1 relative ${showChat || showNotes ? 'mr-80' : ''}`}>
           {!isConnected ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center max-w-md">
@@ -683,7 +701,7 @@ function VideoSessionPage() {
                 <Button 
                   onClick={joinSession} 
                   size="lg" 
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-black hover:bg-gray-800"
                   disabled={isConnecting}
                 >
                   {isConnecting ? 'Connecting...' : 'Start Session'}
@@ -693,22 +711,22 @@ function VideoSessionPage() {
           ) : sessionPhase === 'buffer' ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center max-w-md">
-                <div className="bg-blue-700 p-6 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                  <Clock className="h-10 w-10 text-blue-300" />
+                <div className="bg-gray-800 p-6 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                  <Clock className="h-10 w-10 text-gray-300" />
                 </div>
                 <h2 className="text-2xl font-semibold mb-4">Therapy Session Ended</h2>
                 <p className="text-gray-400 mb-6">
                   The 30-minute therapy session has ended at 2:30 AM. The video call is now closed.
                 </p>
-                <div className="bg-blue-800 rounded-lg p-4 mb-6">
-                  <div className="text-sm text-blue-200">
+                <div className="bg-gray-700 rounded-lg p-4 mb-6">
+                  <div className="text-sm text-gray-300">
                     <strong>Buffer Period:</strong> 30 minutes to prevent double booking of the next time slot
                   </div>
                 </div>
                 <Button 
                   onClick={leaveSession} 
                   size="lg" 
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-black hover:bg-gray-800"
                 >
                   Leave Session
                 </Button>
@@ -806,7 +824,7 @@ function VideoSessionPage() {
                     variant="ghost"
                     size="sm"
                     onClick={toggleScreenShare}
-                    className={`rounded-full p-3 ${isScreenSharing ? 'bg-blue-600' : 'bg-gray-600'}`}
+                    className={`rounded-full p-3 ${isScreenSharing ? 'bg-brand-gold' : 'bg-gray-600'}`}
                   >
                     {isScreenSharing ? <MonitorOff className="h-5 w-5" /> : <Monitor className="h-5 w-5" />}
                   </Button>
@@ -827,7 +845,7 @@ function VideoSessionPage() {
         </div>
 
         {/* Chat Sidebar */}
-        {showChat && session && user && (
+        {showChat && session && user && !showNotes && (
           <div className="w-80 bg-white border-l border-gray-200">
             <SessionChat
               sessionId={sessionId}
@@ -836,6 +854,13 @@ function VideoSessionPage() {
               userType={user.id === session.therapist_id ? 'therapist' : 'patient'}
               isActive={sessionPhase === 'therapy' && isConnected}
             />
+          </div>
+        )}
+        
+        {/* Session Notes Sidebar - Therapist Only */}
+        {showNotes && session && user && user.id === session.therapist_id && (
+          <div className="w-80 bg-white border-l border-gray-200">
+            <SessionNotesPanel sessionId={sessionId} />
           </div>
         )}
       </div>

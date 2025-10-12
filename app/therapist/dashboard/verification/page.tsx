@@ -96,141 +96,58 @@ export default function TherapistVerificationPage() {
         <Info className="h-5 w-5 text-muted-foreground" />
       </div>
 
-      {/* Manual Verification Notice */}
-      <Alert className="border-blue-200 bg-blue-50">
-        <Info className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-blue-800">
-          <strong>Manual Verification Process:</strong> Your ID and license verification will be reviewed manually by our admin team. 
-          This process typically takes 1-3 business days. You'll be notified via email once your verification is complete.
+      {/* Verification Notice */}
+      <Alert className="border-brand-gold bg-brand-gold/10">
+        <Info className="h-4 w-4 text-brand-gold" />
+        <AlertDescription className="text-gray-900">
+          <strong>Manual Verification:</strong> Your license and ID verification information has been collected with your registration form and will be reviewed manually by our admin team. 
+          Complete your bio information below to finish setting up your therapist profile.
         </AlertDescription>
       </Alert>
 
-      {/* License Verification */}
-      <Card className="shadow-sm">
+      {/* License Verification - Manual Process */}
+      <Card className="shadow-sm opacity-50 pointer-events-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             License Verification
-            <Badge variant={verificationData?.license_verified ? "default" : "secondary"}>
-              {verificationData?.license_verified ? "Verified" : "Pending Review"}
-            </Badge>
+            <Badge variant="secondary">Manual Verification</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm text-muted-foreground">
-            Upload your professional license or certification document for manual review by our admin team.
+            Your license information was collected during registration and is being verified manually.
           </div>
           
-          {verificationData?.license_document ? (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-800">License document uploaded</span>
-              </div>
-              <p className="text-xs text-green-700 mt-1">Submitted on {new Date(verificationData.license_uploaded_at).toLocaleDateString()}</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <Input 
-                type="file" 
-                accept=".pdf,.jpg,.jpeg,.png" 
-                placeholder="Upload license document"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) {
-                    handleDocumentUpload('license', file)
-                  }
-                }}
-                disabled={uploading === 'license'}
-              />
-              <Button 
-                variant="outline" 
-                className="w-full"
-                disabled={uploading === 'license'}
-                onClick={() => {
-                  const input = document.querySelector('input[type="file"]') as HTMLInputElement
-                  input?.click()
-                }}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                {uploading === 'license' ? 'Uploading...' : 'Upload License Document'}
-              </Button>
-            </div>
-          )}
-          
-          {verificationData?.license_verified === false && (
-            <Alert className="border-red-200 bg-red-50">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">
-                License verification failed. Please upload a valid license document.
-              </AlertDescription>
-            </Alert>
-          )}
+          <Alert className="border-gray-200 bg-gray-50">
+            <Info className="h-4 w-4 text-gray-600" />
+            <AlertDescription className="text-gray-800">
+              License verification is handled manually by our admin team using the information submitted in your registration form. No additional uploads are required.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
-      {/* ID Verification */}
-      <Card className="shadow-sm">
+      {/* ID Verification - Manual Process */}
+      <Card className="shadow-sm opacity-50 pointer-events-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             ID Verification
-            <Badge variant={verificationData?.id_verified ? "default" : "secondary"}>
-              {verificationData?.id_verified ? "Verified" : "Pending Review"}
-            </Badge>
+            <Badge variant="secondary">Manual Verification</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm text-muted-foreground">
-            Upload a valid government-issued ID (passport, driver's license, or national ID) for manual verification.
+            Your identification information was collected during registration and is being verified manually.
           </div>
           
-          {verificationData?.id_document ? (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-800">ID document uploaded</span>
-              </div>
-              <p className="text-xs text-green-700 mt-1">Submitted on {new Date(verificationData.id_uploaded_at).toLocaleDateString()}</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <Input 
-                type="file" 
-                accept=".pdf,.jpg,.jpeg,.png" 
-                placeholder="Upload ID document"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) {
-                    handleDocumentUpload('id', file)
-                  }
-                }}
-                disabled={uploading === 'id'}
-              />
-              <Button 
-                variant="outline" 
-                className="w-full"
-                disabled={uploading === 'id'}
-                onClick={() => {
-                  const inputs = document.querySelectorAll('input[type="file"]')
-                  const idInput = inputs[1] as HTMLInputElement
-                  idInput?.click()
-                }}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                {uploading === 'id' ? 'Uploading...' : 'Upload ID Document'}
-              </Button>
-            </div>
-          )}
-          
-          {verificationData?.id_verified === false && (
-            <Alert className="border-red-200 bg-red-50">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">
-                ID verification failed. Please upload a valid government-issued ID.
-              </AlertDescription>
-            </Alert>
-          )}
+          <Alert className="border-gray-200 bg-gray-50">
+            <Info className="h-4 w-4 text-gray-600" />
+            <AlertDescription className="text-gray-800">
+              ID verification is handled manually by our admin team using the information submitted in your registration form. No additional uploads are required.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
@@ -239,33 +156,20 @@ export default function TherapistVerificationPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5" />
-            Overall Verification Status
+            Profile Status
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-3">
-            <Badge variant={verificationData?.fully_verified ? "default" : "secondary"} className="text-lg px-4 py-2">
-              {verificationData?.fully_verified ? "Fully Verified" : "Pending Verification"}
-            </Badge>
-            {!verificationData?.fully_verified && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>Review in progress</span>
-              </div>
-            )}
-          </div>
-          
-          {verificationData?.fully_verified && (
-            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-800">Your account has been fully verified!</span>
-              </div>
-              <p className="text-xs text-green-700 mt-1">
-                Verified on {new Date(verificationData.verified_at).toLocaleDateString()}
-              </p>
+          <div className="mt-3 p-3 bg-brand-gold/10 border border-brand-gold rounded-md">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 text-brand-gold" />
+              <span className="text-sm text-gray-900 font-medium">Manual Verification In Progress</span>
             </div>
-          )}
+            <p className="text-xs text-gray-900 mt-2">
+              Your license and ID information submitted during registration is being verified manually by our admin team. 
+              Complete the Bio section below to finish setting up your therapist profile.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -276,13 +180,34 @@ export default function TherapistVerificationPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input placeholder="Full name" defaultValue="Demo Therapist" />
-            <Input placeholder="Age" defaultValue="40" />
-            <Input placeholder="Gender" defaultValue="Male" />
-            <Input placeholder="Marital status" defaultValue="Married" />
-            <Input placeholder="Specialty" defaultValue="CBT, Trauma-Informed" />
+            <div>
+              <label className="text-sm font-medium mb-1 block">Full Name</label>
+              <Input placeholder="Enter your full name" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Age</label>
+              <Input type="number" placeholder="Enter your age" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Gender</label>
+              <Input placeholder="e.g., Male, Female, Non-binary" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Marital Status</label>
+              <Input placeholder="e.g., Single, Married, Divorced" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-sm font-medium mb-1 block">Specialization</label>
+              <Input placeholder="e.g., CBT, Trauma-Informed Therapy, Depression" />
+            </div>
           </div>
-          <Textarea placeholder="Short bio summary" defaultValue="Licensed therapist with MBA in Psychology. Passionate about client-centered care and evidence-based practice." />
+          <div>
+            <label className="text-sm font-medium mb-1 block">Professional Bio</label>
+            <Textarea 
+              placeholder="Write a brief professional bio describing your experience, approach, and areas of expertise..." 
+              className="min-h-[100px]"
+            />
+          </div>
           <div className="flex justify-end">
             <Button>Save Bio</Button>
           </div>

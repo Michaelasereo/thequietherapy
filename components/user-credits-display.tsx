@@ -123,9 +123,9 @@ export function UserCreditsDisplay({ className = "", showPurchaseButton = true }
 
             {/* Next Session Info */}
             {nextSessionDuration > 0 && (
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-300">
                 <div className="flex items-center">
-                  <Clock className="w-4 h-4 mr-2 text-blue-500" />
+                  <Clock className="w-4 h-4 mr-2 text-gray-900" />
                   <span className="text-sm font-medium">Next Session:</span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -152,9 +152,9 @@ export function UserCreditsDisplay({ className = "", showPurchaseButton = true }
                   </div>
                 )}
                 {credits.paid_credits > 0 && (
-                  <div className="text-center p-2 bg-blue-50 rounded border">
-                    <div className="font-semibold text-blue-700">{credits.paid_credits}</div>
-                    <div className="text-blue-600">Paid ({credits.paid_duration}min)</div>
+                  <div className="text-center p-2 bg-gray-50 rounded border">
+                    <div className="font-semibold text-gray-900">{credits.paid_credits}</div>
+                    <div className="text-gray-700">Paid ({credits.paid_duration}min)</div>
                   </div>
                 )}
               </div>

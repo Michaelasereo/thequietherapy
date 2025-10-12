@@ -1,14 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/components/ui/use-toast"
 import PaystackPayment from "@/components/paystack-payment"
 import { formatAmountForDisplay } from "@/lib/paystack-client"
-import { CheckCircle, Clock, User } from "lucide-react"
+import { CheckCircle, Clock, User, ShoppingCart, Star } from "lucide-react"
 
 interface TimeSlot {
   id: string
@@ -20,6 +20,16 @@ interface TimeSlot {
   session_title: string
   session_type: 'individual' | 'group'
   is_available: boolean
+}
+
+interface Package {
+  package_type: string
+  name: string
+  description: string
+  sessions_included: number
+  price_kobo: number
+  savings_kobo: number
+  session_duration_minutes: number
 }
 
 interface BookingStep4Props {
@@ -40,12 +50,55 @@ export default function BookingStep4({
   patientData 
 }: BookingStep4Props) {
   const { toast } = useToast()
-  const [paymentMethod, setPaymentMethod] = useState<"credits" | "paystack">("credits")
-  const [userCredits, setUserCredits] = useState(15) // Mock user credits
-  const [userEmail, setUserEmail] = useState("user@example.com") // Mock user email
+  const [packages, setPackages] = useState<Package[]>([])
+  const [selectedPackage, setSelectedPackage] = useState<string>("")
+  const [loading, setLoading] = useState(true)
+  
+  // Use patient's email from the form
+  const userEmail = patientData?.email || ""
 
-  const sessionCost = 1 // Credits per session
-  const sessionPrice = therapistInfo?.hourly_rate || 5000 // ₦5,000 per session
+  // Load packages on mount
+  useEffect(() => {
+    loadPackages()
+  }, [])
+
+  const loadPackages = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/credit-packages')
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          // Filter out free signup package and sort by price
+          const paidPackages = data.data?.packages
+            ?.filter((pkg: Package) => pkg.package_type !== 'signup_free' && pkg.price_kobo > 0)
+            ?.sort((a: Package, b: Package) => a.price_kobo - b.price_kobo) || []
+          
+          setPackages(paidPackages)
+          
+          // Auto-select the single session package if available
+          const singlePackage = paidPackages.find((pkg: Package) => pkg.package_type === 'single')
+          if (singlePackage) {
+            setSelectedPackage(singlePackage.package_type)
+          } else if (paidPackages.length > 0) {
+            setSelectedPackage(paidPackages[0].package_type)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading packages:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load packages. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const selectedPackageData = packages.find(pkg => pkg.package_type === selectedPackage)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -64,168 +117,195 @@ export default function BookingStep4({
     return `${displayHour}:${minutes} ${ampm}`
   }
 
-  const handleCheckout = () => {
-    if (paymentMethod === "credits" && userCredits < sessionCost) {
-      toast({
-        title: "Insufficient Credits",
-        description: "You need more credits to book this session.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Handle credit payment
-    if (paymentMethod === "credits") {
-      setUserCredits(prev => prev - sessionCost)
-      toast({
-        title: "Payment Successful!",
-        description: "Session booked using credits.",
-      })
-      onCheckout()
-    }
-    // Paystack payment is handled by the PaystackPayment component
-  }
-
   const handlePaystackSuccess = (data: any) => {
-    toast({
-      title: "Payment Successful!",
-      description: "Session booked successfully via Paystack.",
-    })
+    // Payment successful - trigger the verification modal
     onCheckout()
   }
 
   const handlePaystackError = (error: string) => {
     console.error('Paystack payment error:', error)
+    toast({
+      title: "Payment Failed",
+      description: "There was an error processing your payment. Please try again.",
+      variant: "destructive",
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6 p-4 md:p-6">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading packages...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Complete Your Booking</h3>
+      <div className="text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <ShoppingCart className="h-6 w-6 text-gray-900" />
+          <h3 className="text-xl font-semibold">Purchase Session Package</h3>
+        </div>
         <p className="text-sm text-muted-foreground">
-          Review your session details and choose your payment method
+          You need to purchase a session package to book this appointment. Choose from the options below and pay to get credits.
         </p>
       </div>
 
+      {/* Package Selection */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {packages.map((pkg) => (
+          <Card 
+            key={pkg.package_type}
+            className={`cursor-pointer transition-all hover:shadow-md ${
+              selectedPackage === pkg.package_type 
+                ? 'ring-2 ring-brand-gold bg-brand-gold/10' 
+                : 'hover:bg-gray-50'
+            }`}
+            onClick={() => setSelectedPackage(pkg.package_type)}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">{pkg.name}</CardTitle>
+                {pkg.package_type === 'bronze' && (
+                  <Star className="h-5 w-5 text-yellow-500 fill-current" />
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">{pkg.description}</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">
+                  {pkg.sessions_included} {pkg.sessions_included === 1 ? 'session' : 'sessions'}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {pkg.session_duration_minutes} minutes each
+                </div>
+              </div>
+              
+              {pkg.savings_kobo > 0 && (
+                <div className="text-center">
+                  <div className="text-sm text-green-600 font-medium">
+                    Save {formatAmountForDisplay(pkg.savings_kobo)}
+                  </div>
+                </div>
+              )}
+              
+              <div className="text-center">
+                <div className="text-3xl font-bold">
+                  {formatAmountForDisplay(pkg.price_kobo)}
+                </div>
+                {pkg.sessions_included > 1 && (
+                  <div className="text-sm text-muted-foreground">
+                    {formatAmountForDisplay(pkg.price_kobo / pkg.sessions_included)} per session
+                  </div>
+                )}
+              </div>
+
+              {selectedPackage === pkg.package_type && (
+                <div className="flex items-center justify-center text-brand-gold">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  <span className="text-sm font-medium">Selected</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Session Summary */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-900">
-            <CheckCircle className="h-5 w-5" />
-            Session Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Patient Info */}
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <User className="h-5 w-5 text-blue-700" />
+      {selectedPackageData && (
+        <Card className="bg-gray-50 border-gray-300">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <CheckCircle className="h-5 w-5" />
+              Booking Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Patient Info */}
+            <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                <User className="h-5 w-5 text-gray-900" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">{patientData.firstName}</h4>
+                <p className="text-sm text-gray-600">{patientData.age} years, {patientData.gender}</p>
+              </div>
             </div>
-            <div>
-              <h4 className="font-medium text-gray-900">{patientData.name}</h4>
-              <p className="text-sm text-gray-600">{patientData.age} years, {patientData.gender}</p>
-            </div>
-          </div>
 
-          {/* Therapist Info */}
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-green-700 font-semibold text-sm">
-                {therapistInfo?.name?.charAt(0)}
-              </span>
+            {/* Therapist Info */}
+            <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-green-700 font-semibold text-sm">
+                  {therapistInfo?.name?.charAt(0)}
+                </span>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">{therapistInfo?.name}</h4>
+                <p className="text-sm text-gray-600">{therapistInfo?.specialization}</p>
+              </div>
             </div>
-            <div>
-              <h4 className="font-medium text-gray-900">{therapistInfo?.name}</h4>
-              <p className="text-sm text-gray-600">{therapistInfo?.specialization}</p>
-            </div>
-          </div>
 
-          {/* Session Details */}
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
-            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-              <Clock className="h-5 w-5 text-purple-700" />
+            {/* Session Details */}
+            <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <Clock className="h-5 w-5 text-purple-700" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">{selectedSlot.session_title}</h4>
+                <p className="text-sm text-gray-600">
+                  {formatDate(selectedSlot.date)} at {formatTime(selectedSlot.start_time)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {selectedPackageData.session_duration_minutes} minutes • Individual Session
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="font-medium text-gray-900">{selectedSlot.session_title}</h4>
-              <p className="text-sm text-gray-600">
-                {formatDate(selectedSlot.date)} at {formatTime(selectedSlot.start_time)} - {formatTime(selectedSlot.end_time)}
-              </p>
-              <p className="text-sm text-gray-600">
-                {selectedSlot.session_duration} minutes • {selectedSlot.session_type === 'individual' ? 'Individual Session' : 'Group Session'}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Payment Method */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment Method</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RadioGroup value={paymentMethod} onValueChange={(value: "credits" | "paystack") => setPaymentMethod(value)}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="credits" id="credits" />
-              <Label htmlFor="credits" className="flex items-center justify-between w-full">
-                <span>Pay with Credits</span>
-                <span className="text-sm text-muted-foreground">Balance: {userCredits} credits</span>
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="paystack" id="paystack" />
-              <Label htmlFor="paystack">Pay with Paystack</Label>
-            </div>
-          </RadioGroup>
-        </CardContent>
-      </Card>
-
-      {/* Cost Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Cost Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between">
-            <span>Session Cost:</span>
-            <span>{paymentMethod === "credits" ? `${sessionCost} credits` : formatAmountForDisplay(sessionPrice)}</span>
-          </div>
-          {paymentMethod === "credits" && (
-            <div className="flex justify-between">
-              <span>Credits Remaining:</span>
-              <span>{userCredits - sessionCost} credits</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Navigation */}
       <div className="flex justify-between gap-4 pt-4">
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        {paymentMethod === "credits" ? (
-          <Button onClick={handleCheckout} className="bg-green-600 hover:bg-green-700">
-            Confirm & Book
-          </Button>
-        ) : (
+        {selectedPackageData ? (
           <PaystackPayment
-            amount={sessionPrice}
+            amount={selectedPackageData.price_kobo}
             email={userEmail}
-            reference={`session_${selectedTherapistId}_${Date.now()}`}
+            reference={`package_${selectedPackage}_${Date.now()}`}
             metadata={{
-              type: 'session',
+              type: 'package_purchase',
+              package_type: selectedPackage,
+              sessions_included: selectedPackageData.sessions_included,
               therapistId: selectedTherapistId,
               timeSlotId: selectedSlot.id,
-              patientData: patientData,
-              // We'll create the session after payment is successful
-              createSession: true
+              sessionDate: selectedSlot.date,
+              sessionTime: selectedSlot.start_time,
+              patientData: {
+                firstName: patientData.firstName,
+                email: patientData.email,
+                phone: patientData.phone,
+                country: patientData.country,
+                complaints: patientData.complaints,
+                age: patientData.age,
+                gender: patientData.gender,
+                maritalStatus: patientData.maritalStatus,
+              },
             }}
             onSuccess={handlePaystackSuccess}
             onError={handlePaystackError}
-            buttonText="Pay for Session"
-            className="bg-blue-600 hover:bg-blue-700"
+            buttonText="Buy Credits & Book Session"
+            className="bg-black hover:bg-gray-800"
           />
+        ) : (
+          <Button disabled className="bg-gray-400">
+            Select a Package
+          </Button>
         )}
       </div>
     </div>

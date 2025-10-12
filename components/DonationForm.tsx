@@ -220,8 +220,8 @@ export default function DonationForm({
         </Button>
 
         {/* Security Note */}
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <p className="text-sm text-blue-800">
+        <div className="bg-brand-gold/10 p-4 rounded-lg">
+          <p className="text-sm text-gray-900">
             <strong>Secure Payment:</strong> Your donation is processed securely through Paystack. 
             We never store your payment information.
           </p>

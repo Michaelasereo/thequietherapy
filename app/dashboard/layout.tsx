@@ -10,7 +10,6 @@ import { ClientSessionManager } from '@/lib/client-session-manager';
 import { useRouter } from 'next/navigation'
 import DashboardHeader from "@/components/dashboard-header"
 import { OnboardingWrapper } from "@/components/onboarding-wrapper"
-import { DevSessionSetup } from "@/components/dev-session-setup"
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -45,7 +44,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>
@@ -57,8 +56,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     return null
   }
 
+  // Extract only the needed fields to avoid passing the entire session object
   const userInfo = { 
-    name: session.full_name || session.name || session.email?.split('@')[0] || 'User', 
+    name: session.name || session.full_name || session.email?.split('@')[0] || 'User',
+    full_name: session.full_name || session.name || '',
     email: session.email || '' 
   }
 
@@ -81,9 +82,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       
       {/* Onboarding Modal - Shows for new users */}
       <OnboardingWrapper user={userInfo} />
-      
-      {/* Development Tools - Only visible in development */}
-      <DevSessionSetup />
     </SidebarProvider>
   )
 }

@@ -363,7 +363,7 @@ export default function PartnerMembersPage() {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
-                          className="bg-blue-600 h-2 rounded-full" 
+                          className="bg-brand-gold h-2 rounded-full" 
                           style={{ width: `${(member.creditsAssigned > 0 ? (member.creditsUsed / member.creditsAssigned) * 100 : 0)}%` }}
                         ></div>
                       </div>

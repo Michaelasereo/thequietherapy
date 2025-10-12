@@ -4,10 +4,13 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { CalendarIcon, Video, History, Loader2, FileText, Brain, Eye, EyeOff } from "lucide-react"
+import { CalendarIcon, Video, History, Loader2, FileText, Brain, Eye, EyeOff, Clock } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import PostSessionModal from "@/components/post-session-modal"
+import AddToCalendarButton from "@/components/add-to-calendar-button"
+import SessionDetailsModal from "@/components/session-details-modal"
 // import { supabase } from "@/lib/supabase" // Removed - not used and causing WebSocket connection attempts
 // import { useRealtimeData } from "@/hooks/useRealtimeData" // Disabled - causing connection errors
 
@@ -15,13 +18,18 @@ export default function TherapistClientSessionsPage() {
   const { user } = useAuth()
   const router = useRouter()
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([])
+  const [scheduledSessions, setScheduledSessions] = useState<any[]>([])
   const [pastSessions, setPastSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("upcoming")
+  const [activeTab, setActiveTab] = useState("scheduled")
   const [joiningSession, setJoiningSession] = useState<string | null>(null)
   const [realTimeUpdates, setRealTimeUpdates] = useState(0)
   const [isOnline, setIsOnline] = useState(true)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedDetailsSessionId, setSelectedDetailsSessionId] = useState<string | null>(null)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
 
   // Fetch sessions data
   const fetchSessions = async () => {
@@ -38,23 +46,36 @@ export default function TherapistClientSessionsPage() {
       const data = await response.json()
       
       console.log('🔍 TherapistClientSessionsPage: API response:', data)
+      console.log('🔍 TherapistClientSessionsPage: data.data:', data.data)
+      console.log('🔍 TherapistClientSessionsPage: data.data.sessions:', data.data?.sessions)
       
       if (data.success && data.data) {
         const sessions = data.data.sessions || []
         
+        console.log('🔍 TherapistClientSessionsPage: Raw sessions:', sessions)
+        console.log('🔍 TherapistClientSessionsPage: Sessions count:', sessions.length)
+        
         // Filter sessions by status
-        const upcoming = sessions.filter((s: any) => s.status === 'scheduled' || s.status === 'in_progress')
+        const scheduled = sessions.filter((s: any) => s.status === 'scheduled')
+        const upcoming = sessions.filter((s: any) => s.status === 'in_progress')
         const past = sessions.filter((s: any) => s.status === 'completed' || s.status === 'cancelled')
         
+        console.log('🔍 TherapistClientSessionsPage: Scheduled sessions:', scheduled)
+        console.log('🔍 TherapistClientSessionsPage: Upcoming sessions:', upcoming)
+        console.log('🔍 TherapistClientSessionsPage: Past sessions:', past)
+        
+        setScheduledSessions(scheduled)
         setUpcomingSessions(upcoming)
         setPastSessions(past)
       } else {
         console.warn('🔍 TherapistClientSessionsPage: No sessions data in response')
+        setScheduledSessions([])
         setUpcomingSessions([])
         setPastSessions([])
       }
     } catch (error) {
       console.error('❌ TherapistClientSessionsPage: Error fetching sessions:', error)
+      setScheduledSessions([])
       setUpcomingSessions([])
       setPastSessions([])
     } finally {
@@ -224,6 +245,33 @@ export default function TherapistClientSessionsPage() {
     })
   }
 
+  const handleOpenPostSession = (sessionId: string) => {
+    setSelectedSessionId(sessionId)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedSessionId(null)
+    fetchSessions() // Refresh sessions when modal closes
+  }
+
+  const handleOpenSessionDetails = (sessionId: string) => {
+    console.log('🔍 Opening session details for:', sessionId)
+    // Find the session in our current list to check what data we have
+    const session = scheduledSessions.find(s => s.id === sessionId)
+    console.log('📋 Session from list:', session)
+    console.log('📋 Session users from list:', session?.users)
+    
+    setSelectedDetailsSessionId(sessionId)
+    setIsDetailsModalOpen(true)
+  }
+
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false)
+    setSelectedDetailsSessionId(null)
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -251,28 +299,43 @@ export default function TherapistClientSessionsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <History className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Client Sessions</h1>
-            <p className="text-muted-foreground">Manage your therapy sessions</p>
+    <>
+      <PostSessionModal 
+        sessionId={selectedSessionId}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onComplete={handleCloseModal}
+      />
+      
+      <SessionDetailsModal
+        sessionId={selectedDetailsSessionId}
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        userType="therapist"
+      />
+      
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <History className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">Client Sessions</h1>
+              <p className="text-muted-foreground">Manage your therapy sessions</p>
+            </div>
           </div>
-        </div>
-        
-        {/* Real-time Status Indicator */}
-        <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${
-            isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-          }`}></div>
-          <span className={`text-sm ${
-            isOnline ? 'text-green-600' : 'text-red-600'
-          }`}>
-            {isOnline ? 'Live' : 'Offline'}
-          </span>
+          
+          {/* Real-time Status Indicator */}
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${
+              isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+            }`}></div>
+            <span className={`text-sm ${
+              isOnline ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {isOnline ? 'Live' : 'Offline'}
+            </span>
           {realTimeUpdates > 0 && (
-            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+            <span className="text-xs text-gray-900 bg-gray-100 px-2 py-1 rounded-full">
               {realTimeUpdates} updates
             </span>
           )}
@@ -281,9 +344,89 @@ export default function TherapistClientSessionsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
+          <TabsTrigger value="scheduled">Scheduled ({scheduledSessions.length})</TabsTrigger>
           <TabsTrigger value="upcoming">Active ({upcomingSessions.length})</TabsTrigger>
           <TabsTrigger value="past">Past ({pastSessions.length})</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="scheduled" className="mt-4">
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Scheduled Sessions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {scheduledSessions.length > 0 ? (
+                <div className="space-y-4">
+                  {scheduledSessions.map((session) => (
+                    <div key={session.id} className="flex items-center gap-4 p-3 rounded-md bg-blue-50 border border-blue-200">
+                      <Clock className="h-6 w-6 text-blue-600" />
+                      <div className="grid gap-0.5 flex-1">
+                        <p className="font-medium">
+                          {formatDate(session.start_time || session.scheduled_date)} at {formatTime(session.start_time || `${session.scheduled_date}T${session.scheduled_time}`)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Client: {session.users?.full_name || 'Unknown Client'} • {session.title || 'Follow-up Session'}
+                        </p>
+                        {session.notes && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            Note: {session.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <AddToCalendarButton
+                          session={{
+                            id: session.id,
+                            title: session.title || 'Therapy Session',
+                            start_time: session.start_time || `${session.scheduled_date}T${session.scheduled_time}`,
+                            end_time: session.end_time || new Date(new Date(session.start_time || `${session.scheduled_date}T${session.scheduled_time}`).getTime() + 30 * 60000).toISOString(),
+                            patient_name: session.users?.full_name,
+                            patient_email: session.users?.email,
+                            session_url: session.daily_room_url
+                          }}
+                          variant="outline"
+                          size="sm"
+                        />
+                        {canJoinSession(session) && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="bg-transparent"
+                            onClick={() => handleJoinSession(session.id)}
+                            disabled={joiningSession === session.id}
+                          >
+                            {joiningSession === session.id ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Joining...
+                              </>
+                            ) : (
+                              <>
+                                <Video className="mr-2 h-4 w-4" />
+                                Join Session
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenSessionDetails(session.id)}
+                          className="flex items-center gap-2"
+                        >
+                          <FileText className="h-4 w-4" />
+                          View Details
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No scheduled sessions.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="upcoming" className="mt-4">
           <Card className="shadow-sm">
@@ -294,37 +437,35 @@ export default function TherapistClientSessionsPage() {
               {upcomingSessions.length > 0 ? (
                 <div className="space-y-4">
                   {upcomingSessions.map((session) => (
-                    <div key={session.id} className="flex items-center gap-4 p-3 rounded-md bg-muted/50">
-                      <CalendarIcon className="h-6 w-6 text-primary" />
+                    <div key={session.id} className="flex items-center gap-4 p-3 rounded-md bg-green-50 border border-green-200">
+                      <Video className="h-6 w-6 text-green-600" />
                       <div className="grid gap-0.5">
                         <p className="font-medium">
                           {formatDate(session.start_time || session.scheduled_date)} at {formatTime(session.start_time || `${session.scheduled_date}T${session.scheduled_time}`)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Client: {session.users?.full_name || 'Unknown Client'} • {session.session_type || 'Therapy Session'}
+                          Client: {session.users?.full_name || 'Unknown Client'} • Session in progress
                         </p>
                       </div>
-                      {canJoinSession(session) && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="ml-auto bg-transparent"
-                          onClick={() => handleJoinSession(session.id)}
-                          disabled={joiningSession === session.id}
-                        >
-                          {joiningSession === session.id ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Joining...
-                            </>
-                          ) : (
-                            <>
-                              <Video className="mr-2 h-4 w-4" />
-                              {session.status === 'in_progress' ? 'Join Video Call' : 'Join Session'}
-                            </>
-                          )}
-                        </Button>
-                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="ml-auto bg-transparent"
+                        onClick={() => handleJoinSession(session.id)}
+                        disabled={joiningSession === session.id}
+                      >
+                        {joiningSession === session.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Joining...
+                          </>
+                        ) : (
+                          <>
+                            <Video className="mr-2 h-4 w-4" />
+                            Join Video Call
+                          </>
+                        )}
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -364,8 +505,8 @@ export default function TherapistClientSessionsPage() {
                               {/* AI Notes Status */}
                               {hasAINotes && (
                                 <div className="flex items-center gap-2 text-sm">
-                                  <Brain className="h-4 w-4 text-blue-600" />
-                                  <span className="text-blue-600 font-medium">AI Notes Available</span>
+                                  <Brain className="h-4 w-4 text-gray-900" />
+                                  <span className="text-gray-900 font-medium">AI Notes Available</span>
                                   {session.ai_notes_generated_at && (
                                     <span className="text-muted-foreground">
                                       Generated: {formatAIDate(session.ai_notes_generated_at)}
@@ -409,7 +550,7 @@ export default function TherapistClientSessionsPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => router.push(`/sessions/${session.id}/post-session`)}
+                                  onClick={() => handleOpenPostSession(session.id)}
                                   className="flex items-center gap-2"
                                 >
                                   <FileText className="h-4 w-4" />
@@ -442,6 +583,7 @@ export default function TherapistClientSessionsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </>
   )
 }

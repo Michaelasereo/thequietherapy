@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get therapist sessions separately
+    console.log('🔍 DEBUG: Querying sessions for therapist:', therapistId)
     const { data: rawSessions, error: sessionsError } = await supabase
       .from('sessions')
       .select(`
@@ -71,12 +72,8 @@ export async function GET(request: NextRequest) {
         end_time,
         created_at,
         title,
-        description,
-        duration_minutes,
-        soap_notes,
-        ai_notes_generated,
-        ai_notes_generated_at,
-        recording_url
+        notes,
+        duration_minutes
       `)
       .eq('therapist_id', therapistId)
       .order('scheduled_date', { ascending: false })
@@ -85,8 +82,12 @@ export async function GET(request: NextRequest) {
     if (sessionsError) {
       console.error('🔍 DEBUG: Sessions query error:', sessionsError)
       console.error('🔍 DEBUG: Sessions query error details:', JSON.stringify(sessionsError, null, 2))
+      console.error('🔍 DEBUG: Sessions query error message:', sessionsError.message)
+      console.error('🔍 DEBUG: Sessions query error code:', sessionsError.code)
       // Continue with empty sessions instead of failing completely
       console.log('⚠️ Continuing with empty sessions due to query error')
+    } else {
+      console.log('✅ DEBUG: Sessions query successful, found:', rawSessions?.length || 0)
     }
 
     // Get user details for each session
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
     const therapist = therapistData
     
     console.log('🔍 DEBUG: Raw sessions found:', rawSessions?.length || 0)
-    console.log('🔍 DEBUG: Raw sessions data:', rawSessions)
+    console.log('🔍 DEBUG: Raw sessions data:', JSON.stringify(rawSessions, null, 2))
 
     // Transform sessions to match frontend expectations
     const sessions = rawSessions?.map(session => {
@@ -139,6 +140,9 @@ export async function GET(request: NextRequest) {
 
     // Calculate earnings (₦5,000 per session)
     const earningsThisMonth = completedSessions * 5000
+
+    console.log('🔍 DEBUG: Transformed sessions count:', sessions.length)
+    console.log('🔍 DEBUG: Returning response with sessions:', sessions)
 
     return successResponse({
       therapist: {

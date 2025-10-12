@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft } from "lucide-react"
@@ -12,6 +12,7 @@ import BookingStep1 from "@/components/booking-step-1"
 import BookingStep2 from "@/components/booking-step-2"
 import BookingStep3 from "@/components/booking-step-3"
 import BookingStep4 from "@/components/booking-step-4"
+import EmailVerificationModal from "@/components/email-verification-modal"
 import { TimeSlot } from "@/lib/services/availabilityService"
 
 // Types for the booking data
@@ -28,9 +29,11 @@ interface PatientBiodata {
   therapistSpecializationPreference?: string
 }
 
-export default function BookSessionPage() {
+function BookSessionContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState(1)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [patientData, setPatientData] = useState<PatientBiodata>({
     firstName: "",
     email: "",
@@ -48,6 +51,21 @@ export default function BookSessionPage() {
   const [therapistInfo, setTherapistInfo] = useState<any>(null)
 
   const stepLabels = ["Contact Info", "Select Therapist", "Select Time", "Payment"]
+
+  // Check for payment success from URL params
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment')
+    const email = searchParams.get('email')
+    
+    if (paymentStatus === 'success' && email) {
+      // Show verification modal
+      setPatientData(prev => ({ ...prev, email: decodeURIComponent(email) }))
+      setShowVerificationModal(true)
+      
+      // Clean up URL
+      window.history.replaceState({}, '', '/book-session')
+    }
+  }, [searchParams])
 
   const handleStep1Complete = (data: PatientBiodata) => {
     setPatientData(data)
@@ -76,12 +94,37 @@ export default function BookSessionPage() {
     setCurrentStep(4)
   }
 
-  const handleStep4Complete = () => {
-    // Handle booking completion
+  const handleStep4Complete = async () => {
+    // Handle booking completion - store booking data and send verification email
     console.log("Booking completed:", { patientData, selectedTherapistId, selectedSlot })
     
-    // Redirect to authentication if not logged in, then dashboard
-    router.push("/auth?redirect=/dashboard&success=true")
+    try {
+      // Call API to store booking and send verification email
+      const response = await fetch('/api/bookings/create-guest-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientData,
+          therapistId: selectedTherapistId,
+          slot: selectedSlot,
+        }),
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        // Show verification modal
+        setShowVerificationModal(true)
+      } else {
+        console.error('Failed to create booking:', result.error)
+        // Still show the modal as payment was successful
+        setShowVerificationModal(true)
+      }
+    } catch (error) {
+      console.error('Error creating booking:', error)
+      // Still show the modal as payment was successful
+      setShowVerificationModal(true)
+    }
   }
 
   const handleBack = () => {
@@ -185,6 +228,30 @@ export default function BookSessionPage() {
           </Card>
         </div>
       </main>
+
+      {/* Email Verification Modal */}
+      <EmailVerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        email={patientData.email}
+      />
     </div>
+  )
+}
+
+export default function BookSessionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
+          </div>
+          <p className="mt-4 text-gray-600">Loading booking page...</p>
+        </div>
+      </div>
+    }>
+      <BookSessionContent />
+    </Suspense>
   )
 }

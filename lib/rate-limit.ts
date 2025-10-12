@@ -1,196 +1,205 @@
-import { createClient } from '@supabase/supabase-js'
+/**
+ * Rate Limiting Implementation
+ * 
+ * EMERGENCY IMPLEMENTATION using in-memory cache
+ * TODO: Replace with Redis (@upstash/ratelimit) in production for multi-instance support
+ */
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
+interface RateLimitEntry {
+  count: number
+  resetAt: number
+}
 
-interface RateLimitConfig {
-  maxAttempts: number
+// In-memory store (use Redis in production!)
+const rateLimitStore = new Map<string, RateLimitEntry>()
+
+// Clean up expired entries every 5 minutes
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (entry.resetAt < now) {
+      rateLimitStore.delete(key)
+    }
+  }
+}, 5 * 60 * 1000)
+
+export interface RateLimitConfig {
+  maxRequests: number
   windowMs: number
-  identifier: string
-  action: string
+}
+
+export interface RateLimitResult {
+  success: boolean
+  limit: number
+  remaining: number
+  reset: Date
 }
 
 /**
- * Rate limiting system for authentication endpoints
- * Prevents brute force attacks and abuse
+ * Check rate limit for a given identifier
+ * 
+ * @param identifier - Unique identifier (IP address, user ID, email, etc.)
+ * @param endpoint - Endpoint name for separate rate limits
+ * @param maxRequests - Maximum requests allowed
+ * @param windowMs - Time window in milliseconds
+ */
+export async function checkRateLimit(
+  identifier: string,
+  endpoint: string,
+  maxRequests: number,
+  windowMs: number
+): Promise<RateLimitResult> {
+  const key = `${endpoint}:${identifier}`
+  const now = Date.now()
+  
+  let entry = rateLimitStore.get(key)
+  
+  // Create new entry if doesn't exist or expired
+  if (!entry || entry.resetAt < now) {
+    entry = {
+      count: 0,
+      resetAt: now + windowMs
+    }
+  }
+  
+  // Increment count
+  entry.count++
+  rateLimitStore.set(key, entry)
+  
+  const remaining = Math.max(0, maxRequests - entry.count)
+  const success = entry.count <= maxRequests
+  
+  return {
+    success,
+    limit: maxRequests,
+    remaining,
+    reset: new Date(entry.resetAt)
+  }
+}
+
+/**
+ * Get client identifier from request (IP address or user ID)
+ */
+export function getClientIdentifier(request: Request): string {
+  // Try to get real IP from headers (for deployments behind proxies)
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  const realIp = request.headers.get('x-real-ip')
+  
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim()
+  }
+  
+  if (realIp) {
+    return realIp
+  }
+  
+  // Fallback - this won't work in production behind proxy
+  return 'unknown-client'
+}
+
+/**
+ * Rate limit configurations for different endpoints
+ */
+export const RATE_LIMITS = {
+  AUTH_LOGIN: { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 min
+  AUTH_REGISTER: { maxRequests: 3, windowMs: 60 * 60 * 1000 }, // 3 per hour
+  ADMIN_LOGIN: { maxRequests: 3, windowMs: 15 * 60 * 1000 }, // 3 per 15 min
+  MAGIC_LINK: { maxRequests: 5, windowMs: 60 * 60 * 1000 }, // 5 per hour
+  BOOKING: { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
+  PAYMENT: { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
+  PUBLIC_API: { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 per hour
+} as const
+
+/**
+ * Helper function to apply rate limit to API route
+ * 
+ * @example
+ * export async function POST(request: NextRequest) {
+ *   const rateLimit = await applyRateLimit(request, 'AUTH_LOGIN')
+ *   if (!rateLimit.success) {
+ *     return NextResponse.json(
+ *       { error: 'Too many requests' },
+ *       { 
+ *         status: 429,
+ *         headers: {
+ *           'X-RateLimit-Limit': rateLimit.limit.toString(),
+ *           'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+ *           'X-RateLimit-Reset': rateLimit.reset.toISOString()
+ *         }
+ *       }
+ *     )
+ *   }
+ *   // ... rest of handler
+ * }
+ */
+export async function applyRateLimit(
+  request: Request,
+  limitType: keyof typeof RATE_LIMITS
+): Promise<RateLimitResult> {
+  const identifier = getClientIdentifier(request)
+  const config = RATE_LIMITS[limitType]
+  
+  return checkRateLimit(
+    identifier,
+    limitType,
+    config.maxRequests,
+    config.windowMs
+  )
+}
+
+/**
+ * Create rate limit headers for response
+ */
+export function createRateLimitHeaders(result: RateLimitResult): Record<string, string> {
+  return {
+    'X-RateLimit-Limit': result.limit.toString(),
+    'X-RateLimit-Remaining': result.remaining.toString(),
+    'X-RateLimit-Reset': result.reset.toISOString(),
+    ...(result.success ? {} : { 'Retry-After': Math.ceil((result.reset.getTime() - Date.now()) / 1000).toString() })
+  }
+}
+
+/**
+ * RateLimiter class for backward compatibility
+ * Wraps the rate limiting functions in a class interface
  */
 export class RateLimiter {
   /**
-   * Check if rate limit is exceeded
-   * Returns true if allowed, false if rate limited
-   */
-  static async checkLimit(config: RateLimitConfig): Promise<boolean> {
-    const { maxAttempts, windowMs, identifier, action } = config
-    const now = new Date()
-    const windowStart = new Date(now.getTime() - windowMs)
-
-    try {
-      // Count recent attempts
-      const { data: attempts, error } = await supabase
-        .from('rate_limit_attempts')
-        .select('id')
-        .eq('identifier', identifier)
-        .eq('action', action)
-        .gte('created_at', windowStart.toISOString())
-
-      if (error) {
-        console.error('❌ Rate limit check error:', error)
-        // On error, allow request (fail open for better UX)
-        return true
-      }
-
-      const attemptCount = attempts?.length || 0
-      console.log(`🔍 Rate limit check: ${attemptCount}/${maxAttempts} attempts for ${action} by ${identifier}`)
-
-      if (attemptCount >= maxAttempts) {
-        console.warn(`⚠️ Rate limit exceeded: ${action} by ${identifier}`)
-        return false
-      }
-
-      // Log this attempt
-      await supabase
-        .from('rate_limit_attempts')
-        .insert({
-          identifier,
-          action,
-          created_at: now.toISOString(),
-          ip_address: identifier.includes('.') ? identifier : null // Store IP if identifier is an IP
-        })
-
-      return true
-    } catch (error) {
-      console.error('❌ Rate limit error:', error)
-      // Fail open - allow request if rate limiting fails
-      return true
-    }
-  }
-
-  /**
-   * Check magic link requests
-   * 10 requests per hour per email
+   * Check if magic link request is allowed for this email
    */
   static async checkMagicLinkRequest(email: string): Promise<boolean> {
-    return this.checkLimit({
-      identifier: email.toLowerCase(),
-      action: 'magic_link_request',
-      maxAttempts: 10,
-      windowMs: 60 * 60 * 1000 // 1 hour
-    })
+    const result = await checkRateLimit(
+      email,
+      'magic_link_request',
+      10, // 10 magic links
+      60 * 60 * 1000 // per hour
+    );
+    return result.success;
   }
 
   /**
-   * Check authentication attempts from IP
-   * 100 attempts per hour per IP
-   */
-  static async checkAuthAttempts(ipAddress: string): Promise<boolean> {
-    return this.checkLimit({
-      identifier: ipAddress,
-      action: 'auth_attempt',
-      maxAttempts: 100,
-      windowMs: 60 * 60 * 1000 // 1 hour
-    })
-  }
-
-  /**
-   * Check failed validation attempts
-   * 5 failures per minute per session
-   */
-  static async checkFailedValidation(sessionId: string): Promise<boolean> {
-    return this.checkLimit({
-      identifier: sessionId,
-      action: 'failed_validation',
-      maxAttempts: 5,
-      windowMs: 60 * 1000 // 1 minute
-    })
-  }
-
-  /**
-   * Check magic link verification attempts
-   * 3 attempts per token (prevent brute force)
+   * Check if magic link verification is allowed for this token
    */
   static async checkMagicLinkVerification(token: string): Promise<boolean> {
-    return this.checkLimit({
-      identifier: `token_${token}`,
-      action: 'magic_link_verify',
-      maxAttempts: 3,
-      windowMs: 60 * 60 * 1000 // 1 hour
-    })
+    const result = await checkRateLimit(
+      token,
+      'magic_link_verification',
+      5, // 5 attempts
+      15 * 60 * 1000 // per 15 minutes
+    );
+    return result.success;
   }
 
   /**
-   * Clean up old rate limit records
-   * Should be run periodically (e.g., via cron job)
+   * Check general rate limit
    */
-  static async cleanup(): Promise<void> {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-
-    try {
-      const { error } = await supabase
-        .from('rate_limit_attempts')
-        .delete()
-        .lt('created_at', oneDayAgo.toISOString())
-
-      if (error) {
-        console.error('❌ Rate limit cleanup error:', error)
-      } else {
-        console.log('✅ Rate limit records cleaned up')
-      }
-    } catch (error) {
-      console.error('❌ Rate limit cleanup failed:', error)
-    }
-  }
-
-  /**
-   * Get remaining attempts for an action
-   * Useful for showing users how many attempts they have left
-   */
-  static async getRemainingAttempts(config: RateLimitConfig): Promise<number> {
-    const { maxAttempts, windowMs, identifier, action } = config
-    const windowStart = new Date(Date.now() - windowMs)
-
-    try {
-      const { data: attempts, error } = await supabase
-        .from('rate_limit_attempts')
-        .select('id')
-        .eq('identifier', identifier)
-        .eq('action', action)
-        .gte('created_at', windowStart.toISOString())
-
-      if (error) {
-        return maxAttempts // On error, assume full attempts available
-      }
-
-      const attemptCount = attempts?.length || 0
-      return Math.max(0, maxAttempts - attemptCount)
-    } catch (error) {
-      return maxAttempts
-    }
+  static async check(
+    identifier: string,
+    endpoint: string,
+    maxRequests: number,
+    windowMs: number
+  ): Promise<boolean> {
+    const result = await checkRateLimit(identifier, endpoint, maxRequests, windowMs);
+    return result.success;
   }
 }
-
-/**
- * Middleware helper for rate limiting in API routes
- */
-export async function withRateLimit<T>(
-  identifier: string,
-  action: string,
-  maxAttempts: number,
-  windowMs: number,
-  handler: () => Promise<T>
-): Promise<T> {
-  const allowed = await RateLimiter.checkLimit({
-    identifier,
-    action,
-    maxAttempts,
-    windowMs
-  })
-
-  if (!allowed) {
-    throw new Error('RATE_LIMIT_EXCEEDED: Too many requests. Please try again later.')
-  }
-
-  return handler()
-}
-

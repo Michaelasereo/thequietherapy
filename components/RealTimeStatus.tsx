@@ -44,7 +44,7 @@ export function RealTimeStatus({
 
       {/* Update Count Badge */}
       {showUpdateCount && realTimeUpdates > 0 && (
-        <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+        <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-900">
           {realTimeUpdates} update{realTimeUpdates !== 1 ? 's' : ''}
         </Badge>
       )}
@@ -73,7 +73,7 @@ export function CompactRealTimeStatus({
         {isOnline ? 'Live' : 'Off'}
       </span>
       {realTimeUpdates > 0 && (
-        <span className="text-xs text-blue-600 font-medium">
+        <span className="text-xs text-gray-900 font-medium">
           +{realTimeUpdates}
         </span>
       )}

@@ -405,26 +405,29 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(dashboardReducer, initialState)
 
-  // Fetch user data
+  // Fetch user data from the session API
   const fetchUserData = async () => {
     try {
       console.log('🔍 DashboardContext: fetchUserData called')
       dispatch({ type: 'SET_LOADING', payload: true })
       
-      // Get user data from cookies or API
-      const userCookie = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('quiet_user='))
-        ?.split('=')[1]
+      // Get user data from the session API (JWT-based auth)
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       
-      console.log('🔍 DashboardContext: userCookie found:', !!userCookie)
+      console.log('🔍 DashboardContext: Session API response status:', response.status)
       
-      if (userCookie) {
-        try {
-          const userData = JSON.parse(decodeURIComponent(userCookie))
-          console.log('🔍 DashboardContext: userData parsed:', userData)
+      if (response.ok) {
+        const data = await response.json()
+        
+        if (data.success && data.user) {
+          const userData = data.user
           
-          // Fetch fresh credits from API instead of using stale cookie data
+          // Fetch fresh credits from API
           let freshCredits = 1 // Default fallback
           console.log('🔍 DashboardContext: Fetching fresh credits from API...')
           try {
@@ -434,13 +437,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
                 'Cache-Control': 'no-cache'
               }
             })
-            console.log('🔍 DashboardContext: Credits API response status:', creditsResponse.status)
             if (creditsResponse.ok) {
               const creditsData = await creditsResponse.json()
-              console.log('🔍 DashboardContext: Credits API data:', creditsData)
               if (creditsData.success && creditsData.credits) {
                 freshCredits = creditsData.credits.balance || 1
-                console.log('🔍 Fresh credits fetched:', freshCredits)
               }
             }
           } catch (creditsError) {
@@ -451,21 +451,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           const sanitizedUserData = {
             id: typeof userData.id === 'string' ? userData.id : '',
             email: typeof userData.email === 'string' ? userData.email : '',
-            full_name: typeof userData.name === 'string' ? userData.name : (typeof userData.full_name === 'string' ? userData.full_name : ''),
+            full_name: typeof userData.full_name === 'string' ? userData.full_name : (typeof userData.name === 'string' ? userData.name : ''),
             user_type: ['individual', 'therapist', 'partner', 'admin'].includes(userData.user_type) ? userData.user_type : 'individual',
             is_verified: typeof userData.is_verified === 'boolean' ? userData.is_verified : false,
             credits: freshCredits, // Use fresh credits from API
             package_type: typeof userData.package_type === 'string' ? userData.package_type : 'basic',
             is_active: typeof userData.is_active === 'boolean' ? userData.is_active : true
           }
-          console.log('🔍 DashboardContext: Setting user data with credits:', freshCredits)
-          console.log('🔍 DashboardContext: sanitizedUserData:', sanitizedUserData)
           dispatch({ type: 'SET_USER', payload: sanitizedUserData })
-        } catch (error) {
-          console.error('Error parsing user data:', error)
-          dispatch({ type: 'SET_ERROR', payload: 'Failed to parse user data' })
+        } else {
+          console.error('🔍 DashboardContext: Invalid session response')
+          dispatch({ type: 'SET_ERROR', payload: 'Invalid session data' })
         }
       } else {
+        console.error('🔍 DashboardContext: Session API failed with status:', response.status)
         dispatch({ type: 'SET_ERROR', payload: 'User not authenticated' })
       }
     } catch (error) {
@@ -504,20 +503,34 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         
         if (response.ok) {
           const data = await response.json()
-          console.log('🔍 DashboardContext: Sessions API response:', data)
           
           if (data.success && data.sessions && Array.isArray(data.sessions)) {
-            // Validate session data structure
-            const validatedSessions = data.sessions.filter((session: any) => 
-              session.id && 
-              session.status && 
-              (session.scheduled_date || session.start_time)
-            )
+            // Validate and transform session data structure
+            const validatedSessions = data.sessions
+              .filter((session: any) => 
+                session.id && 
+                session.status && 
+                (session.scheduled_date || session.start_time)
+              )
+              .map((session: any) => ({
+                id: session.id,
+                date: session.scheduled_date || session.start_time?.split('T')[0] || new Date().toISOString().split('T')[0],
+                time: session.scheduled_time || session.start_time?.split('T')[1]?.substring(0, 5) || '00:00',
+                // Handle therapist - could be string or object with full_name
+                therapist: typeof session.therapist === 'string' 
+                  ? session.therapist 
+                  : session.therapist?.full_name || session.therapist_name || 'Therapist',
+                topic: typeof session.topic === 'string'
+                  ? session.topic
+                  : session.title || session.session_type || 'Therapy Session',
+                status: session.status,
+                dailyRoomUrl: session.daily_room_url || session.session_url
+              }))
             
             // Properly categorize sessions by status and time
             const now = new Date()
             const upcoming = validatedSessions.filter((session: any) => {
-              const sessionDate = new Date(session.scheduled_date || session.start_time)
+              const sessionDate = new Date(session.date)
               return (session.status === 'scheduled' || session.status === 'in_progress') && 
                      sessionDate >= now
             })
@@ -590,58 +603,45 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         return
       }
       
-      console.log('🔍 DashboardContext: Calculating real dashboard stats from sessions...')
+      console.log('🔍 DashboardContext: Fetching real dashboard stats from API...')
       
-      // Calculate stats from actual session data - NO MOCK DATA
+      // Fetch stats from the dedicated API endpoint that queries the database
+      const response = await fetch('/api/dashboard/stats', {
+        credentials: 'include',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        if (data.success && data.data) {
+          const apiStats = data.data
+          const realStats: DashboardStats = {
+            totalSessions: apiStats.totalSessions || 0,
+            upcomingSessions: apiStats.upcomingSessions || 0,
+            progressScore: apiStats.progressScore || 0,
+            averageSessionTime: apiStats.averageSessionTime || 0,
+            totalCredits: apiStats.totalCredits || 0,
+            usedCredits: apiStats.usedCredits || 0
+          }
+          
+          dispatch({ type: 'UPDATE_STATS', payload: realStats })
+          
+          // Also fetch sessions if we haven't loaded them yet
+          if (state.upcomingSessions.length === 0 && state.pastSessions.length === 0 && apiStats.totalSessions > 0) {
+            console.log('🔍 DashboardContext: Stats show sessions exist, fetching session details...')
+            fetchSessions()
+          }
+          return // Success - exit early
+        }
+      }
+      
+      // If API fails, fallback to calculating from local state
+      console.warn('🔍 DashboardContext: API failed, calculating from local state as fallback')
       const totalSessions = state.upcomingSessions.length + state.pastSessions.length
       const upcomingSessions = state.upcomingSessions.length
       const completedSessions = state.pastSessions.filter(s => s.status === 'completed').length
       const progressScore = Math.min(100, Math.max(0, completedSessions * 10))
-      
-      console.log('🔍 DashboardContext: Session counts:', {
-        totalSessions,
-        upcomingSessions,
-        completedSessions,
-        pastSessionsLength: state.pastSessions.length,
-        upcomingSessionsLength: state.upcomingSessions.length
-      })
-      
-      // Only refresh sessions if we don't have any data yet
-      if (state.upcomingSessions.length === 0 && state.pastSessions.length === 0) {
-        console.log('🔍 DashboardContext: No sessions data, fetching sessions...')
-        fetchSessions()
-      }
-      
-      // Add some mock upcoming sessions if none exist
-      if (state.upcomingSessions.length === 0 && state.pastSessions.length > 0) {
-        console.log('🔍 DashboardContext: Adding mock upcoming sessions for better UX')
-        const mockUpcomingSessions = [
-          {
-            id: 'mock-1',
-            title: 'Follow-up Session',
-            topic: 'Follow-up Session',
-            therapist: 'Dr. Sarah Johnson',
-            date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
-            time: '10:00 AM',
-            status: 'scheduled' as const,
-            type: 'video',
-            duration: 50
-          },
-          {
-            id: 'mock-2', 
-            title: 'Progress Review',
-            topic: 'Progress Review',
-            therapist: 'Dr. Michael Chen',
-            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
-            time: '2:30 PM',
-            status: 'scheduled' as const,
-            type: 'video',
-            duration: 45
-          }
-        ]
-        
-        dispatch({ type: 'SET_SESSIONS', payload: { upcoming: mockUpcomingSessions, past: [] } })
-      }
       
       // Get fresh credits from API - use same endpoint as header
       let totalCredits = 0
@@ -653,10 +653,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         
         if (creditsResponse.ok) {
           const creditsData = await creditsResponse.json()
-          console.log('🔍 DashboardContext: Credits API response:', creditsData)
           if (creditsData.success && creditsData.credits) {
             totalCredits = creditsData.credits.balance || 0
-            console.log('🔍 DashboardContext: Credits balance:', totalCredits)
           }
         }
       } catch (creditsError) {
@@ -672,13 +670,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         usedCredits: Math.max(0, completedSessions)
       }
       
-      console.log('🔍 DashboardContext: Real stats calculated:', realStats)
-      console.log('🔍 DashboardContext: Credits details:', {
-        totalCredits,
-        creditsFromAPI: totalCredits,
-        completedSessions,
-        usedCredits: Math.max(0, completedSessions)
-      })
       dispatch({ type: 'UPDATE_STATS', payload: realStats })
       
     } catch (error) {

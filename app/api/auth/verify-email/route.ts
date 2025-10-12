@@ -116,7 +116,93 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=verification-failed', request.url))
     }
 
-    // Step 7: Redirect to dashboard with session cookie
+    // Step 7: Check if there's booking data and handle package purchase or session booking
+    if (verification.metadata?.booking_data) {
+      console.log('📅 Processing booking data...')
+      const bookingData = verification.metadata.booking_data
+      
+      // Handle package purchase - transfer credits from temp user to verified user
+      if (bookingData.packageData) {
+        console.log('💳 Processing package purchase and transferring credits...')
+        try {
+          // Find the temporary user who made the package purchase
+          const { data: tempUser, error: tempUserError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email.toLowerCase())
+            .eq('temp_for_package', true)
+            .single()
+
+          if (tempUserError || !tempUser) {
+            console.log('❌ Temp user not found for package transfer:', tempUserError?.message)
+          } else {
+            // Transfer the package purchase to the verified user
+            const { error: transferPurchaseError } = await supabase
+              .from('user_purchases')
+              .update({ user_id: userId })
+              .eq('user_id', tempUser.id)
+
+            if (transferPurchaseError) {
+              console.log('❌ Error transferring package purchase:', transferPurchaseError.message)
+            }
+
+            // Transfer the credits to the verified user
+            const { error: transferCreditsError } = await supabase
+              .from('user_session_credits')
+              .update({ user_id: userId })
+              .eq('user_id', tempUser.id)
+
+            if (transferCreditsError) {
+              console.log('❌ Error transferring credits:', transferCreditsError.message)
+            }
+
+            // Delete the temporary user
+            const { error: deleteTempUserError } = await supabase
+              .from('users')
+              .delete()
+              .eq('id', tempUser.id)
+
+            if (deleteTempUserError) {
+              console.log('❌ Error deleting temp user:', deleteTempUserError.message)
+            } else {
+              console.log('✅ Package purchase and credits transferred successfully')
+            }
+          }
+        } catch (packageTransferError) {
+          console.error('❌ Error transferring package purchase:', packageTransferError)
+        }
+      }
+
+      // Handle session booking - create therapy session
+      if (bookingData.slot && bookingData.therapistId) {
+        console.log('📅 Creating therapy session from booking data...')
+        try {
+          const { error: sessionError } = await supabase
+            .from('therapy_sessions')
+            .insert({
+              user_id: userId,
+              therapist_id: bookingData.therapistId,
+              session_date: bookingData.slot.date,
+              start_time: bookingData.slot.start_time,
+              duration: bookingData.slot.session_duration || 60,
+              status: 'scheduled',
+              session_type: 'video',
+              notes: `Patient: ${bookingData.patientData.firstName} (${bookingData.patientData.email})${bookingData.patientData.phone ? `, Phone: ${bookingData.patientData.phone}` : ''}, Concerns: ${bookingData.patientData.complaints || 'N/A'}`,
+              payment_status: 'paid'
+            })
+
+          if (sessionError) {
+            console.log('❌ Error creating therapy session:', sessionError.message)
+          } else {
+            console.log('✅ Therapy session created successfully')
+          }
+        } catch (sessionCreateError) {
+          console.error('❌ Error creating therapy session:', sessionCreateError)
+        }
+      }
+    }
+
+    // Step 8: Redirect to dashboard with session cookie
     const response = NextResponse.redirect(new URL('/dashboard', request.url))
     
     response.cookies.set("quiet_user", JSON.stringify({

@@ -31,12 +31,12 @@ export function AnimatedProgress({
     <div className={`space-y-2 ${className}`}>
       <Progress 
         value={displayValue} 
-        className="h-3 bg-blue-200 transition-all duration-1000 ease-out" 
+        className="h-3 bg-brand-gold/30 transition-all duration-1000 ease-out" 
       />
       {showPercentage && (
         <div className="flex justify-between text-sm text-gray-600">
           <span>{displayValue.toFixed(1)}% complete</span>
-          <span className="text-blue-600 font-medium">
+          <span className="text-gray-900 font-medium">
             {displayValue > previousValue ? "↗" : ""} 
             {displayValue.toFixed(1)}%
           </span>

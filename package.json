@@ -16,7 +16,11 @@
     "test:video": "echo 'Visit http://localhost:3000/test-video-complete-flow to test video features'",
     "test:production": "node scripts/test-production-readiness.js",
     "test:browser": "echo 'Open browser console and run: testPlatform()'",
-    "test:all": "npm run test:production && echo 'Run browser tests manually'"
+    "test:all": "npm run test:production && echo 'Run browser tests manually'",
+    "test:e2e": "node tests/run-all-tests.js",
+    "test:auth": "node tests/e2e-auth-test.js",
+    "test:video:e2e": "node tests/e2e-video-test.js",
+    "test:booking": "node tests/e2e-booking-test.js"
   },
   "dependencies": {
     "@daily-co/daily-js": "^0.84.0",

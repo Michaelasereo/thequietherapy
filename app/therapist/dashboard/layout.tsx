@@ -13,7 +13,6 @@ import { TherapistDashboardProvider } from "@/context/therapist-dashboard-contex
 import { GlobalStateProvider } from '@/context/global-state-context';
 import { useCrossDashboardSync } from '@/hooks/useCrossDashboardSync';
 import { DebugToggle } from "@/components/ui/debug-panel"
-import { DevSessionSetup } from "@/components/dev-session-setup"
 import { cookies } from 'next/headers'
 
 async function TherapistDashboardLayoutContent({ children }: { children: React.ReactNode }) {
@@ -72,7 +71,6 @@ async function TherapistDashboardLayoutContent({ children }: { children: React.R
         </SidebarInset>
       </div>
       <DebugToggle dashboardType="therapist" />
-      <DevSessionSetup />
     </SidebarProvider>
   );
 }

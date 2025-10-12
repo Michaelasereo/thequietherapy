@@ -17,10 +17,10 @@ async function getCookieStore(): Promise<Store> {
 
 const baseOpts = {
   httpOnly: true,
-  sameSite: 'lax' as const,
+  sameSite: 'strict' as const, // SECURITY: Changed from 'lax' to prevent CSRF
   secure: SECURE,
   path: '/',
-  maxAge: 60 * 60 * 24 * 7, // 7 days
+  maxAge: 60 * 60 * 24, // SECURITY: Changed from 7 days to 24 hours for healthcare app
 };
 
 export async function writeSessionCookie(token: string) {

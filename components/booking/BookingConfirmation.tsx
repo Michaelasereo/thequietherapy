@@ -203,7 +203,8 @@ export default function BookingConfirmation({
     try {
       setPaymentLoading(true)
       
-      const response = await fetch('/api/payments/initiate', {
+      // Try main endpoint first
+      let response = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -213,8 +214,25 @@ export default function BookingConfirmation({
         }),
       })
 
-      const result = await response.json()
+      let result = await response.json()
       console.log('🔍 Payment initiation response:', result)
+
+      // If main endpoint fails with permission error, try fallback
+      if (!response.ok && result.error?.includes('permissions')) {
+        console.log('🔄 Main endpoint failed, trying fallback...')
+        response = await fetch('/api/payments/initiate-fallback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            package_type: selectedPackage
+          }),
+        })
+
+        result = await response.json()
+        console.log('🔍 Fallback payment initiation response:', result)
+      }
 
       if (response.ok && result.success) {
         // Store booking information in sessionStorage for after payment
@@ -228,7 +246,13 @@ export default function BookingConfirmation({
         sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData))
         
         console.log('🔍 Redirecting to payment URL:', result.data?.payment_url)
-        // Redirect to Paystack payment page
+        
+        // Show note if using fallback
+        if (result.data?.note) {
+          toast.info("Please run the database setup to enable full payment functionality.")
+        }
+        
+        // Redirect to payment page
         window.location.href = result.data?.payment_url
       } else {
         throw new Error(result.error || 'Payment initialization failed')
@@ -855,13 +879,13 @@ export default function BookingConfirmation({
       )}
 
       {/* Important Notes */}
-      <Card className="border-blue-200 bg-blue-50">
+      <Card className="border-brand-gold bg-brand-gold/10">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div className="text-sm text-blue-800">
+            <AlertCircle className="h-5 w-5 text-brand-gold mt-0.5" />
+            <div className="text-sm text-gray-900">
               <p className="font-medium mb-1">Important Information:</p>
-              <ul className="space-y-1 text-blue-700">
+              <ul className="space-y-1 text-gray-900">
                 <li>• You will receive a confirmation email with session details</li>
                 <li>• A calendar invite will be sent to your email</li>
                 <li>• You can join the session 5 minutes before the scheduled time</li>

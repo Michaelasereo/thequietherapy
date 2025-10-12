@@ -1,0 +1,33 @@
+// Add this at the TOP of your /app/dashboard/page.tsx
+
+"use client"
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/auth-context'
+
+export default function DashboardPage() {
+  const router = useRouter()
+  const { user, loading, userType } = useAuth()
+
+  // Auto-redirect based on user type
+  useEffect(() => {
+    if (!loading && user) {
+      if (userType === 'therapist') {
+        router.replace('/therapist/dashboard')
+        return
+      }
+      if (userType === 'admin') {
+        router.replace('/admin/dashboard')
+        return
+      }
+      if (userType === 'partner') {
+        router.replace('/partner/dashboard')
+        return
+      }
+    }
+  }, [user, loading, userType, router])
+
+  // Rest of your dashboard code for patients...
+}
+

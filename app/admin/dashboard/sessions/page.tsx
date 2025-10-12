@@ -139,7 +139,7 @@ export default function AdminSessionsPage() {
 
   const getTypeBadge = (type: string) => {
     const colors = {
-      "Cognitive Behavioral Therapy": "bg-blue-100 text-blue-800",
+      "Cognitive Behavioral Therapy": "bg-gray-100 text-gray-900",
       "Family Therapy": "bg-purple-100 text-purple-800",
       "Trauma Therapy": "bg-red-100 text-red-800",
       "Child Psychology": "bg-yellow-100 text-yellow-800",

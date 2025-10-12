@@ -6,6 +6,7 @@ export interface SessionData {
   id: string
   email: string
   name: string
+  full_name?: string
   role: 'individual' | 'therapist' | 'partner' | 'admin'
   user_type: string
   is_verified: boolean

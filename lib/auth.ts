@@ -69,20 +69,21 @@ export async function createMagicLinkForAuthType(
       return { success: false, error: 'Too many requests. Please try again in an hour.' }
     }
 
-    // Check if user exists for login attempts
+    // Check if user exists - regardless of login or signup
+    console.log('🔍 Checking if user exists with this email...')
+    const { data: existingUser, error: userError } = await supabase
+      .from('users')
+      .select('id, email, user_type, is_verified, is_active')
+      .eq('email', email)
+      .single()
+
+    if (userError && userError.code !== 'PGRST116') {
+      console.error('❌ Error checking user existence:', userError)
+      return { success: false, error: 'Error checking user account' }
+    }
+
+    // For LOGIN attempts
     if (type === 'login') {
-      console.log('🔍 Checking if user exists for login...')
-      const { data: existingUser, error: userError } = await supabase
-        .from('users')
-        .select('id, email, user_type, is_verified, is_active')
-        .eq('email', email)
-        .single()
-
-      if (userError && userError.code !== 'PGRST116') {
-        console.error('❌ Error checking user existence:', userError)
-        return { success: false, error: 'Error checking user account' }
-      }
-
       if (!existingUser) {
         console.log('❌ User not found for login attempt')
         return { 
@@ -95,14 +96,28 @@ export async function createMagicLinkForAuthType(
       // Verify user type matches
       if (existingUser.user_type !== authType) {
         console.log('❌ User type mismatch for login:', existingUser.user_type, 'vs', authType)
+        
         return { 
           success: false, 
-          error: 'Invalid user type for this login.',
-          redirectTo: `/register?user_type=${authType}&error=wrong_user_type&email=${encodeURIComponent(email)}`
+          error: `This email is registered with a different account type. Please use the correct login portal.`
         }
       }
 
       console.log('✅ User found and verified for login:', existingUser.email)
+    }
+
+    // For SIGNUP attempts - prevent duplicate emails
+    if (type === 'signup') {
+      if (existingUser) {
+        console.log('❌ Email already exists with user_type:', existingUser.user_type)
+        
+        return {
+          success: false,
+          error: `This email is already registered. Please login instead or use a different email.`
+        }
+      }
+      
+      console.log('✅ Email available for new signup')
     }
 
     const token = randomUUID()
@@ -305,7 +320,17 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
       console.log('✅ Existing user found for login:', user.email)
       if (user.user_type !== authType) {
         console.log('❌ User type mismatch:', user.user_type, 'vs', authType)
-        return { success: false, error: 'Invalid user type for this login' }
+        return { 
+          success: false, 
+          error: `This email is registered with a different account type. Please use the correct login portal.`
+        }
+      }
+    } else if (user && magicLink.type === 'signup') {
+      // User already exists - prevent duplicate signup
+      console.log('❌ User already exists, cannot signup again')
+      return {
+        success: false,
+        error: `This email is already registered. Please login instead or use a different email.`
       }
     }
 

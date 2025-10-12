@@ -16,7 +16,10 @@ import {
 import { useAuth } from '@/context/auth-context'
 import { useDashboard } from '@/context/dashboard-context'
 import SessionActionsMenu from '@/components/session-actions-menu'
+import PostSessionModal from '@/components/post-session-modal'
 import { formatTime, formatDate, getSessionStartTime } from '@/lib/utils'
+import AddToCalendarButton from '@/components/add-to-calendar-button'
+import SessionDetailsModal from '@/components/session-details-modal'
 // import { supabase } from "@/lib/supabase" // Removed - not used and causing WebSocket connection attempts
 // import { useRealtimeData } from "@/hooks/useRealtimeData" // Disabled - causing connection errors
 
@@ -28,6 +31,10 @@ export default function SessionsPage() {
   const [loading, setLoading] = useState(true)
   const [realTimeUpdates, setRealTimeUpdates] = useState(0) // Disabled - realtime functionality removed
   const [isOnline, setIsOnline] = useState(true)
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedDetailsSessionId, setSelectedDetailsSessionId] = useState<string | null>(null)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
 
   // Categorize sessions by status and time
   const categorizedSessions = {
@@ -241,23 +248,52 @@ export default function SessionsPage() {
     return (minutesDiff >= -15 && session.status === 'scheduled') || session.status === 'in_progress'
   }
 
+  const handleOpenPostSession = (sessionId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation()
+    }
+    setSelectedSessionId(sessionId)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedSessionId(null)
+    // Refresh sessions when modal closes
+    fetchSessions()
+  }
+
+  const handleOpenSessionDetails = (sessionId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation()
+    }
+    setSelectedDetailsSessionId(sessionId)
+    setIsDetailsModalOpen(true)
+  }
+
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false)
+    setSelectedDetailsSessionId(null)
+  }
+
   const renderSessionCard = (session: SessionData, showActions: boolean = true) => {
     const isCompletedSession = session.status === 'completed' || session.status === 'cancelled' || session.status === 'no_show';
     
     const CardWrapper = isCompletedSession ? 
       ({ children }: { children: React.ReactNode }) => (
         <div 
+          key={session.id}
           className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => router.push(`/sessions/${session.id}/post-session`)}
+          onClick={() => handleOpenPostSession(session.id!)}
         >
           {children}
         </div>
       ) : 
-      ({ children }: { children: React.ReactNode }) => <>{children}</>;
+      ({ children }: { children: React.ReactNode }) => <div key={session.id}>{children}</div>;
 
     return (
       <CardWrapper>
-        <Card key={session.id} className={`shadow-sm ${isCompletedSession ? 'border-blue-200 hover:border-blue-300' : ''}`}>
+        <Card className={`shadow-sm ${isCompletedSession ? 'border-brand-gold hover:border-brand-gold-dark' : ''}`}>
           <CardContent className="p-6">
             {isCompletedSession && (
               <div className="flex items-center justify-end mb-2">
@@ -265,7 +301,24 @@ export default function SessionsPage() {
                   variant="outline" 
                   size="sm"
                   className="bg-black text-white hover:bg-gray-800 border-black"
-                  onClick={() => router.push(`/dashboard/sessions/${session.id}`)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleOpenPostSession(session.id!)
+                  }}
+                >
+                  View Session Review
+                </Button>
+              </div>
+            )}
+            {!isCompletedSession && session.status === 'scheduled' && (
+              <div className="flex items-center justify-end mb-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleOpenSessionDetails(session.id!)
+                  }}
                 >
                   View Details
                 </Button>
@@ -285,7 +338,15 @@ export default function SessionsPage() {
               </p>
             </div>
           </div>
-          {getStatusBadge(session)}
+          <div className="flex flex-col items-end gap-2">
+            {getStatusBadge(session)}
+            {/* Credit Required Badge for therapist-scheduled sessions */}
+            {session.status === 'scheduled' && !session.credit_used_id && (
+              <Badge variant="outline" className="bg-orange-50 border-orange-300 text-orange-700 text-xs">
+                💳 Credit Required
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -308,7 +369,7 @@ export default function SessionsPage() {
             {session.session_notes.soap_notes && (
               <div className="mb-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">AI Generated</span>
+                  <span className="text-xs font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">AI Generated</span>
                   {session.session_notes.ai_notes_generated_at && (
                     <span className="text-xs text-gray-500">
                       {new Date(session.session_notes.ai_notes_generated_at).toLocaleDateString()}
@@ -340,6 +401,22 @@ export default function SessionsPage() {
 
         {showActions && (
           <div className="flex gap-2">
+            {/* Add to Calendar button for upcoming sessions */}
+            {session.status === 'scheduled' && (
+              <AddToCalendarButton
+                session={{
+                  id: session.id!,
+                  title: session.title || 'Therapy Session',
+                  start_time: session.start_time || session.scheduled_date || '',
+                  end_time: session.end_time || '',
+                  therapist_name: session.therapist_name || session.therapist?.full_name,
+                  therapist_email: session.therapist_email || session.therapist?.email,
+                  session_url: session.daily_room_url
+                }}
+                variant="outline"
+                size="sm"
+              />
+            )}
             {canJoinSession(session) && session.id && (
               <Button 
                 onClick={() => handleJoinSession(session.id!)}
@@ -383,33 +460,48 @@ export default function SessionsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">My Sessions</h2>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Total: {sessions.length}</span>
-          </div>
-          
-          {/* Status Indicator */}
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${
-              isOnline ? 'bg-green-500' : 'bg-red-500'
-            }`}></div>
-            <span className={`text-sm ${
-              isOnline ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {isOnline ? 'Online' : 'Offline'}
-            </span>
+    <>
+      <PostSessionModal 
+        sessionId={selectedSessionId}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onComplete={handleCloseModal}
+      />
+      
+      <SessionDetailsModal
+        sessionId={selectedDetailsSessionId}
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        userType="patient"
+      />
+      
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">My Sessions</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Total: {sessions.length}</span>
+            </div>
+            
+            {/* Status Indicator */}
+            <div className="flex items-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${
+                isOnline ? 'bg-green-500' : 'bg-red-500'
+              }`}></div>
+              <span className={`text-sm ${
+                isOnline ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {isOnline ? 'Online' : 'Offline'}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Session Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="shadow-sm">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{categorizedSessions.upcoming.length}</div>
+            <div className="text-2xl font-bold text-gray-900">{categorizedSessions.upcoming.length}</div>
             <div className="text-sm text-muted-foreground">Upcoming</div>
           </CardContent>
         </Card>
@@ -516,20 +608,21 @@ export default function SessionsPage() {
       )}
 
 
-      {/* No sessions message */}
-      {sessions.length === 0 && !loading && (
-        <div className="text-center py-12 text-muted-foreground">
-          <Clock className="h-16 w-16 mx-auto mb-4 opacity-50" />
-          <h3 className="text-lg font-semibold mb-2">No sessions found</h3>
-          <p className="text-sm mb-4">Book your first session to get started with therapy</p>
-          <Button 
-            onClick={() => router.push('/dashboard/book')}
-            size="lg"
-          >
-            Book Your First Session
-          </Button>
-        </div>
-      )}
-    </div>
+        {/* No sessions message */}
+        {sessions.length === 0 && !loading && (
+          <div className="text-center py-12 text-muted-foreground">
+            <Clock className="h-16 w-16 mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">No sessions found</h3>
+            <p className="text-sm mb-4">Book your first session to get started with therapy</p>
+            <Button 
+              onClick={() => router.push('/dashboard/book')}
+              size="lg"
+            >
+              Book Your First Session
+            </Button>
+          </div>
+        )}
+      </div>
+    </>
   )
 }

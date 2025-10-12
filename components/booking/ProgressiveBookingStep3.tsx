@@ -29,9 +29,6 @@ export default function ProgressiveBookingStep3({
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
   const [bookingConfirmation, setBookingConfirmation] = useState<any>(null)
 
-  // Debug current step
-  console.log('🗓️ Current step:', currentStep, 'selectedDate:', selectedDate)
-
   // Safety check - don't render if props are missing
   if (!onNext || !onBack || !selectedTherapistId) {
     console.error('Missing required props:', { onNext: !!onNext, onBack: !!onBack, selectedTherapistId: !!selectedTherapistId })
@@ -46,13 +43,8 @@ export default function ProgressiveBookingStep3({
   }
 
   const handleDateSelect = (date: string) => {
-    console.log('🗓️ Date selected in ProgressiveBookingStep3:', date)
-    console.log('🗓️ Current step before change:', currentStep)
-    console.log('🗓️ Selected date before change:', selectedDate)
     setSelectedDate(date)
     setCurrentStep('time')
-    console.log('🗓️ Step changed to time')
-    console.log('🗓️ New selected date:', date)
   }
 
   const handleSlotSelect = (slot: TimeSlot) => {
@@ -143,7 +135,7 @@ export default function ProgressiveBookingStep3({
               <div className={`
                 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
                 ${isCompleted ? 'bg-green-600 text-white' : ''}
-                ${isActive ? 'bg-blue-600 text-white' : ''}
+                ${isActive ? 'bg-black text-white' : ''}
                 ${!isActive && !isCompleted ? 'bg-gray-200 text-gray-600' : ''}
               `}>
                 {isCompleted ? (
@@ -195,23 +187,23 @@ export default function ProgressiveBookingStep3({
 
       {/* Therapist Summary (Always visible) */}
       {selectedTherapistData && (
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-gray-50 border-gray-300">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-700 font-semibold text-lg">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                <span className="text-gray-900 font-semibold text-lg">
                   {selectedTherapistData.name?.charAt(0)}
                 </span>
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-blue-900">{selectedTherapistData.name}</h4>
-                <p className="text-sm text-blue-700">{selectedTherapistData.specialization}</p>
+                <h4 className="font-semibold text-gray-900">{selectedTherapistData.name}</h4>
+                <p className="text-sm text-gray-700">{selectedTherapistData.specialization}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-medium text-blue-900">
+                <p className="text-sm font-medium text-gray-900">
                   ₦{selectedTherapistData.hourly_rate?.toLocaleString() || '5,000'}/hr
                 </p>
-                <p className="text-xs text-blue-600">Session Rate</p>
+                <p className="text-xs text-gray-600">Session Rate</p>
               </div>
             </div>
           </CardContent>

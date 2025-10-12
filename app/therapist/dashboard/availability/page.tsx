@@ -10,7 +10,6 @@ import { Clock, AlertTriangle, CheckCircle2, Calendar as CalendarIcon } from "lu
 import { useTherapistData } from "@/hooks/useTherapistDashboardState"
 import { AvailabilityManager } from "@/components/availability/AvailabilityManager"
 import { AvailabilityOverrides } from "@/components/availability-overrides"
-import { AvailabilityDebug } from "@/components/availability/AvailabilityDebug"
 
 export default function TherapistAvailabilityPage() {
   const { therapistInfo, fetchTherapistData } = useTherapistData()
@@ -94,16 +93,6 @@ export default function TherapistAvailabilityPage() {
             size="sm"
           >
             Refresh Data
-          </Button>
-          <Button 
-            onClick={() => {
-              console.log('🔍 Manual global event triggered')
-              window.dispatchEvent(new CustomEvent('therapist-data-refresh'))
-            }}
-            variant="outline"
-            size="sm"
-          >
-            Test Global Event
           </Button>
         </div>
       </div>
@@ -258,11 +247,6 @@ export default function TherapistAvailabilityPage() {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Debug Component - Only show in development */}
-      {process.env.NODE_ENV === 'development' && therapistInfo?.id && (
-        <AvailabilityDebug therapistId={therapistInfo.id} />
       )}
     </div>
   )

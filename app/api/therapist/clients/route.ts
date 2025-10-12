@@ -12,7 +12,10 @@ export async function GET(request: Request) {
     const therapistId = searchParams.get('therapistId')
     const clientId = searchParams.get('clientId')
 
+    console.log('📋 Clients API called with:', { therapistId, clientId })
+
     if (!therapistId) {
+      console.error('❌ Therapist ID missing')
       return NextResponse.json({ error: 'Therapist ID is required' }, { status: 400 })
     }
 
@@ -23,7 +26,7 @@ export async function GET(request: Request) {
         .from('users')
         .select('*')
         .eq('id', clientId)
-        .eq('user_type', 'user')
+        .in('user_type', ['user', 'individual']) // Support both types
         .single()
 
       if (clientError) throw clientError
@@ -97,7 +100,7 @@ export async function GET(request: Request) {
           .from('users')
           .select('*')
           .eq('id', clientId)
-          .eq('user_type', 'user')
+          .in('user_type', ['user', 'individual']) // Support both types
           .single()
 
         if (clientError) return null
@@ -133,11 +136,18 @@ export async function GET(request: Request) {
       clients: validClients
     })
 
-  } catch (error) {
-    console.error('Error fetching therapist clients:', error)
+  } catch (error: any) {
+    console.error('❌ Error fetching therapist clients:', error)
+    console.error('❌ Error details:', {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint
+    })
     return NextResponse.json({
       clients: [],
-      error: 'Failed to fetch client data'
+      error: 'Failed to fetch client data',
+      details: error?.message || 'Unknown error'
     }, { status: 500 })
   }
 }

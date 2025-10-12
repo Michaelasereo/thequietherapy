@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
+import PostSessionModal from "@/components/post-session-modal"
 import { 
   Video, 
   Calendar, 
@@ -41,6 +42,8 @@ export default function TherapistVideoCallPage() {
   const [upcomingSession, setUpcomingSession] = useState<TherapistSession | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     fetchSessionData()
@@ -149,12 +152,23 @@ export default function TherapistVideoCallPage() {
     }
   }
 
+  const handleOpenPostSession = (sessionId: string) => {
+    setSelectedSessionId(sessionId)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedSessionId(null)
+    fetchSessionData() // Refresh sessions when modal closes
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold">Video Call Dashboard</h2>
         <div className="flex items-center justify-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
           <span className="ml-2">Loading your sessions...</span>
         </div>
       </div>
@@ -162,13 +176,21 @@ export default function TherapistVideoCallPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Video Call Dashboard</h2>
-        <Button onClick={fetchSessionData} variant="outline" size="sm">
-          Refresh
-        </Button>
-      </div>
+    <>
+      <PostSessionModal 
+        sessionId={selectedSessionId}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onComplete={handleCloseModal}
+      />
+      
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Video Call Dashboard</h2>
+          <Button onClick={fetchSessionData} variant="outline" size="sm">
+            Refresh
+          </Button>
+        </div>
 
       {error && (
         <Alert variant="destructive">
@@ -179,7 +201,7 @@ export default function TherapistVideoCallPage() {
 
       {/* Next Session Alert */}
       {upcomingSession && (
-        <Alert className="border-blue-200 bg-blue-50">
+        <Alert className="border-brand-gold bg-brand-gold/10">
           <Video className="h-4 w-4" />
           <AlertDescription>
             <div className="flex items-center justify-between">
@@ -287,11 +309,13 @@ export default function TherapistVideoCallPage() {
 
                       {session.status === 'completed' && (
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" asChild>
-                            <Link href={`/sessions/${session.id}/post-session`}>
-                              <FileText className="h-4 w-4 mr-2" />
-                              Review Session
-                            </Link>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleOpenPostSession(session.id)}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Review Session
                           </Button>
                           <Button size="sm" variant="outline" asChild>
                             <Link href={`/therapist/dashboard/sessions/${session.id}/feedback`}>
@@ -378,19 +402,19 @@ export default function TherapistVideoCallPage() {
               <h4 className="font-medium mb-3">Before Each Session:</h4>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                  <div className="w-2 h-2 bg-brand-gold rounded-full"></div>
                   Test your audio and video equipment
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                  <div className="w-2 h-2 bg-brand-gold rounded-full"></div>
                   Review patient notes and history
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                  <div className="w-2 h-2 bg-brand-gold rounded-full"></div>
                   Ensure a quiet, private environment
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                  <div className="w-2 h-2 bg-brand-gold rounded-full"></div>
                   Have session materials ready
                 </li>
               </ul>
@@ -420,7 +444,8 @@ export default function TherapistVideoCallPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   )
 }
 

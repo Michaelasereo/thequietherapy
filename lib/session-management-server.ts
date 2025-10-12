@@ -190,19 +190,59 @@ export async function joinSession(sessionId: string, userId: string): Promise<{ 
       return { success: false, error: 'Session not ready yet. You can join 30 minutes before the start time.' }
     }
 
-    // Check if user has credits (for patients)
+    // Check if user has credits (for patients joining therapist-scheduled sessions)
     const { data: user } = await supabase
       .from('users')
       .select('user_type')
       .eq('id', userId)
       .single()
 
-    // Skip credit check for already-booked sessions - credits were consumed during booking
-    console.log('🔍 Session status check - Status:', session.status, 'User type:', user?.user_type)
-    if (user?.user_type === 'individual' && session.status === 'scheduled') {
-      console.log('✅ Skipping credit check - Session already booked, credits were consumed during booking')
+    // For patients: Check and deduct credits if this is a therapist-scheduled session
+    if (user?.user_type === 'individual' && session.status === 'scheduled' && !session.credit_used_id) {
+      console.log('💳 Therapist-scheduled session detected - checking patient credits')
+      
+      // Check available credits
+      const { data: availableCredits, error: creditsError } = await supabase
+        .rpc('get_available_credits', { p_user_id: userId })
+
+      if (creditsError || !availableCredits || availableCredits.length === 0) {
+        console.error('❌ No credits available for patient')
+        return { 
+          success: false, 
+          error: 'You need to purchase credits to join this session. Please visit your dashboard to buy session credits.' 
+        }
+      }
+
+      // Use the first available credit
+      const creditToUse = availableCredits[0]
+      console.log('✅ Using credit:', creditToUse.credit_id, 'for session')
+
+      // Mark the credit as used
+      const { error: useCreditError } = await supabase
+        .from('user_credits')
+        .update({ 
+          used: true,
+          used_at: new Date().toISOString(),
+          session_id: sessionId
+        })
+        .eq('id', creditToUse.credit_id)
+
+      if (useCreditError) {
+        console.error('❌ Error marking credit as used:', useCreditError)
+        return { success: false, error: 'Failed to process session credit' }
+      }
+
+      // Update session with credit info
+      await supabase
+        .from('sessions')
+        .update({ credit_used_id: creditToUse.credit_id })
+        .eq('id', sessionId)
+
+      console.log('✅ Credit deducted successfully for therapist-scheduled session')
+    } else if (session.credit_used_id) {
+      console.log('✅ Credit already used for this session - allowing join')
     } else {
-      console.log('✅ Skipping credit check - User can join existing session')
+      console.log('✅ User is therapist or session already processed - allowing join')
     }
 
     // Create Daily.co room if it doesn't exist

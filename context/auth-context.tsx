@@ -53,17 +53,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const lastValidationRef = useRef<number>(0)
 
   // Validate session using SessionManager
-  const validateSession = async (retryCount = 0): Promise<boolean> => {
-    // Prevent concurrent validation calls
-    if (isValidatingRef.current) {
-      console.log('🔍 Validation already in progress, skipping...')
+  const validateSession = async (retryCount = 0, forceRefresh = false): Promise<boolean> => {
+    // Prevent concurrent validation calls (unless forcing refresh)
+    if (isValidatingRef.current && !forceRefresh) {
       return !!user
     }
 
-    // Cache validation results for 10 seconds
+    // Cache validation results for 10 seconds (unless forcing refresh)
     const now = Date.now()
-    if (now - lastValidationRef.current < 10000 && user) {
-      console.log('🔍 Using cached validation result')
+    if (!forceRefresh && now - lastValidationRef.current < 10000 && user) {
       return true
     }
 
@@ -92,11 +90,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userProfile)
         setUserType(sessionData.user_type as 'individual' | 'therapist' | 'partner' | 'admin')
         lastValidationRef.current = now
-        console.log('✅ Magic link session validated for user:', sessionData.email, 'type:', sessionData.user_type)
         isValidatingRef.current = false
         return true
       } else {
-        console.log('❌ No valid session found')
         setUser(null)
         setUserType(null)
         isValidatingRef.current = false
@@ -104,7 +100,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
     } catch (error: unknown) {
-      console.error('❌ Magic link session validation error:', error)
       setUser(null)
       setUserType(null)
       isValidatingRef.current = false
@@ -112,9 +107,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Refresh user data
+  // Refresh user data (force a fresh fetch from the API)
   const refreshUser = async () => {
-    const isValid = await validateSession()
+    // Force a fresh validation, bypassing the cache
+    const isValid = await validateSession(0, true)
     if (!isValid) {
       setUser(null)
       setUserType(null)
@@ -173,8 +169,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Logout function - clears session
   const logout = async () => {
     try {
-      console.log('🔐 Starting magic link logout...')
-      
       // Clear session using ClientSessionManager
       ClientSessionManager.clearSession()
       
@@ -182,14 +176,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null)
       setUserType(null)
       
-      console.log('✅ Magic link logout completed')
-      
       // Redirect to login page
       if (typeof window !== 'undefined') {
         window.location.href = '/login'
       }
     } catch (error) {
-      console.error('❌ Magic link logout error:', error)
+      console.error('Logout error:', error)
       
       // Fallback: clear local state and redirect
       setUser(null)
@@ -207,10 +199,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       
       try {
-        console.log('🔍 Initializing magic link auth...')
         await validateSession()
       } catch (error) {
-        console.error('❌ Auth initialization error:', error)
+        console.error('Auth initialization error:', error)
         setUser(null)
         setUserType(null)
       }
@@ -223,9 +214,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up periodic session refresh (every 30 minutes, less aggressive)
     const refreshInterval = setInterval(() => {
       if (!isValidatingRef.current && user) {
-        console.log('🔄 Periodic magic link session refresh...')
-        validateSession().catch(error => {
-          console.log('Session refresh failed (non-critical):', error)
+        validateSession().catch(() => {
+          // Session refresh failed (non-critical)
         })
       }
     }, 30 * 60 * 1000) // 30 minutes

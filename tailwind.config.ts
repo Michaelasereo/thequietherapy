@@ -26,6 +26,12 @@ const config = {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        // Brand colors
+        brand: {
+          gold: "#A66B24",
+          "gold-light": "#C89750",
+          "gold-dark": "#8B5A1F",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))", // Changed to use a solid color
           foreground: "hsl(var(--primary-foreground))",

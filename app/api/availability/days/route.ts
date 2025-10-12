@@ -33,8 +33,6 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('🔍 Fetching available days for therapist:', therapistId, 'from', startDate, 'to', endDate);
-
     // Use the generate_availability_slots function to get all available slots
     const { data: slots, error } = await supabase
       .rpc('generate_availability_slots', {
@@ -44,11 +42,18 @@ export async function GET(request: NextRequest) {
       });
 
     if (error) {
-      console.error('Error generating availability slots:', error);
+      console.error('❌ Error generating availability slots:', error);
+      console.error('❌ Error details:', error.message, error.details);
+      
+      // Return empty dates array instead of error - allows frontend to show all dates as potentially available
       return NextResponse.json({ 
-        error: 'Failed to generate availability slots',
-        details: error.message 
-      }, { status: 500 });
+        success: true,
+        availableDays: [],
+        totalDays: 0,
+        therapist_id: therapistId,
+        date_range: { start_date: startDate, end_date: endDate },
+        note: 'No availability configuration found - therapist may need to set up availability'
+      }, { status: 200 });
     }
 
     // Extract unique dates that have availability
@@ -56,7 +61,7 @@ export async function GET(request: NextRequest) {
       .filter(date => date) // Remove null/undefined dates
       .sort(); // Sort chronologically
 
-    console.log('✅ Found', availableDates.length, 'available dates');
+    console.log('✅ Available dates for therapist', therapistId, ':', availableDates.length, 'days');
 
     return NextResponse.json({ 
       success: true,

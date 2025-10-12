@@ -34,6 +34,10 @@ export interface SessionData {
   created_at: string
   updated_at: string
   
+  // Credit management
+  credit_used_id?: string | null
+  is_free_session?: boolean
+  
   // Alternative field names for compatibility
   client_id?: string
   

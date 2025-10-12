@@ -167,7 +167,7 @@ export default function CreditPurchase({ onSuccess, onError, className = "" }: C
             key={pkg.id} 
             className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
               selectedPackage?.id === pkg.id 
-                ? 'ring-2 ring-blue-500 bg-blue-50' 
+                ? 'ring-2 ring-brand-gold bg-brand-gold/10' 
                 : 'hover:bg-gray-50'
             }`}
             onClick={() => handlePackageSelect(pkg)}
@@ -185,7 +185,7 @@ export default function CreditPurchase({ onSuccess, onError, className = "" }: C
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">
+                <div className="text-3xl font-bold text-gray-900">
                   {pkg.credits === -1 ? '∞' : pkg.credits}
                 </div>
                 <div className="text-sm text-gray-500">credits</div>
@@ -264,8 +264,8 @@ export default function CreditPurchase({ onSuccess, onError, className = "" }: C
       )}
 
       {/* Features */}
-      <div className="bg-blue-50 rounded-lg p-6">
-        <h3 className="font-semibold mb-4 text-blue-900">What you get with credits:</h3>
+      <div className="bg-gray-50 rounded-lg p-6">
+        <h3 className="font-semibold mb-4 text-gray-900">What you get with credits:</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div className="flex items-start gap-2">
             <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />

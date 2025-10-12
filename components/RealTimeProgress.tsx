@@ -110,7 +110,7 @@ export function RealTimeProgress({
           </div>
         </div>
         <div className="h-3 bg-gray-200 rounded-full">
-          <div className="h-3 bg-blue-600 rounded-full w-0 transition-all duration-1000" />
+          <div className="h-3 bg-brand-gold rounded-full w-0 transition-all duration-1000" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (

@@ -53,9 +53,44 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Fetch therapist information separately
+    let therapistData = null;
+    if (sessionData.therapist_id) {
+      const { data: therapist } = await supabase
+        .from('users')
+        .select('id, email, full_name')
+        .eq('id', sessionData.therapist_id)
+        .single();
+      therapistData = therapist;
+    }
+
+    // Fetch user information separately
+    let userData = null;
+    if (sessionData.user_id) {
+      const { data: user } = await supabase
+        .from('users')
+        .select('id, email, full_name')
+        .eq('id', sessionData.user_id)
+        .single();
+      userData = user;
+    }
+
+    // Combine the data
+    const enrichedSession = {
+      ...sessionData,
+      therapist: therapistData,
+      user: userData
+    };
+
+    console.log('✅ Enriched session data:', {
+      sessionId: enrichedSession.id,
+      therapist: therapistData,
+      user: userData
+    });
+
     return NextResponse.json({
       success: true,
-      session: sessionData,
+      session: enrichedSession,
       notes: notesData || null,
       message: 'Session notes fetched successfully'
     });

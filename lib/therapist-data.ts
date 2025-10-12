@@ -335,12 +335,13 @@ export const therapistDashboardSidebarGroups = [
       { name: "Video Call", href: "/therapist/dashboard/video-call", icon: Video },
     ],
   },
-  {
-    label: "Communication",
-    items: [
-      { name: "Notifications", href: "/therapist/dashboard/notifications", icon: Bell },
-    ],
-  },
+  // Communication section disabled - using Google Calendar notifications instead
+  // {
+  //   label: "Communication",
+  //   items: [
+  //     { name: "Notifications", href: "/therapist/dashboard/notifications", icon: Bell },
+  //   ],
+  // },
   {
     label: "Admin",
     items: [

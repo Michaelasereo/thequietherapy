@@ -156,7 +156,7 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
       <Card>
         <CardContent className="p-8">
           <div className="flex items-center gap-2 mb-8">
-            <Clock className="h-6 w-6 text-blue-600" />
+            <Clock className="h-6 w-6 text-gray-900" />
             <h3 className="text-xl font-semibold">Loading Time Slots...</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -221,7 +221,7 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
         <CardContent className="p-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
-            <Clock className="h-6 w-6 text-blue-600" />
+            <Clock className="h-6 w-6 text-gray-900" />
             <h3 className="text-xl font-semibold">
               Available Times for {new Date(selectedDate).toLocaleDateString('en-US', { 
                 weekday: 'long', 
@@ -246,7 +246,7 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
           {Object.entries(groupedSlots).map(([timeOfDay, timeSlots]) => (
             <div key={timeOfDay} className="space-y-4">
               <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2 text-lg">
-                <span className="w-3 h-3 bg-blue-600 rounded-full"></span>
+                <span className="w-3 h-3 bg-brand-gold rounded-full"></span>
                 {timeOfDay} ({timeSlots.length} slots)
               </h4>
               
@@ -263,8 +263,8 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
                         h-20 flex flex-col items-center justify-center p-4 text-sm font-medium
                         transition-all duration-200 min-w-[120px]
                         ${isSelected 
-                          ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md' 
-                          : 'hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm'
+                          ? 'bg-black text-white hover:bg-gray-800 shadow-md' 
+                          : 'hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm'
                         }
                       `}
                     >
@@ -289,12 +289,12 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
         <div className="mt-8 p-6 bg-gray-50 rounded-lg border">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div className="flex flex-col gap-1">
-              <span className="font-medium">Total available slots: <strong className="text-blue-600">{slots.length}</strong></span>
+              <span className="font-medium">Total available slots: <strong className="text-gray-900">{slots.length}</strong></span>
               <span className="text-xs text-gray-500">
                 Last updated: {lastRefreshed.toLocaleTimeString()} • Auto-refreshes every 30 seconds
               </span>
             </div>
-            <span className="font-medium">Session duration: <strong className="text-blue-600">{slots[0]?.session_duration || 60} minutes</strong></span>
+            <span className="font-medium">Session duration: <strong className="text-gray-900">{slots[0]?.session_duration || 60} minutes</strong></span>
           </div>
         </div>
       </CardContent>

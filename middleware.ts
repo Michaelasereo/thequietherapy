@@ -3,23 +3,45 @@ import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
-  // Gracefully handle missing JWT_SECRET
+  // SECURITY: Fail closed if JWT_SECRET is missing
   if (!process.env.JWT_SECRET) {
-    console.warn('JWT_SECRET not available in middleware - proceeding with public access')
+    console.error('🚨 CRITICAL: JWT_SECRET missing in middleware')
     
-    // For critical auth routes, redirect to maintenance page
-    if (request.nextUrl.pathname.startsWith('/admin') || 
-        request.nextUrl.pathname.startsWith('/partner') ||
-        request.nextUrl.pathname.startsWith('/therapist')) {
-      console.log('Redirecting protected route to maintenance due to missing JWT_SECRET')
-      return NextResponse.redirect(new URL('/maintenance', request.url))
+    // In production, this should NEVER happen - lock everything down
+    if (process.env.NODE_ENV === 'production') {
+      console.error('🚨 PRODUCTION LOCKDOWN: JWT_SECRET missing')
+      
+      // Redirect ALL protected routes to maintenance
+      if (!request.nextUrl.pathname.startsWith('/maintenance') &&
+          !request.nextUrl.pathname.startsWith('/_next') &&
+          !request.nextUrl.pathname.startsWith('/api/health')) {
+        return NextResponse.redirect(new URL('/maintenance', request.url))
+      }
     }
     
-    // For public routes, continue without auth
+    // In development, still redirect protected routes
+    if (request.nextUrl.pathname.startsWith('/admin') || 
+        request.nextUrl.pathname.startsWith('/partner') ||
+        request.nextUrl.pathname.startsWith('/therapist') ||
+        request.nextUrl.pathname.startsWith('/dashboard')) {
+      console.warn('⚠️ DEV: Redirecting protected route due to missing JWT_SECRET')
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    
+    // Only allow truly public routes
     return NextResponse.next()
   }
 
   try {
+    // Check for custom session cookie first (magic link auth)
+    const quietSession = request.cookies.get('quiet_session')
+    
+    if (quietSession) {
+      // User has a valid custom session, allow access
+      return NextResponse.next()
+    }
+
+    // Fallback to Supabase auth check
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -41,7 +63,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // Rest of your auth logic...
     return NextResponse.next()
     
   } catch (error) {
@@ -52,5 +73,10 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/partner/:path*', '/therapist/:path*', '/dashboard/:path*']
+  matcher: [
+    '/admin/((?!login|register).*)',
+    '/partner/((?!login|register).*)',
+    '/therapist/((?!login|register).*)',
+    '/dashboard/:path*'
+  ]
 }

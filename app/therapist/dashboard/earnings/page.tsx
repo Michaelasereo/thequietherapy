@@ -3,22 +3,22 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useTherapistUser } from "@/context/therapist-user-context"
-import { getTherapistDashboardData } from "@/lib/therapist-data"
+import { useAuth } from "@/context/auth-context"
 
 export default function TherapistEarningsPage() {
-  const { therapistUser } = useTherapistUser()
+  const { user } = useAuth()
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchEarningsData = async () => {
-      if (!therapistUser?.id) return
+      if (!user?.id) return
 
       try {
         setLoading(true)
-        const data = await getTherapistDashboardData(therapistUser.id)
-        setDashboardData(data)
+        const response = await fetch(`/api/therapist/dashboard-data?therapistId=${user.id}`)
+        const data = await response.json()
+        setDashboardData(data?.data)
       } catch (error) {
         console.error('Error fetching earnings data:', error)
       } finally {
@@ -27,7 +27,7 @@ export default function TherapistEarningsPage() {
     }
 
     fetchEarningsData()
-  }, [therapistUser?.id])
+  }, [user?.id])
 
   if (loading) {
     return (
@@ -41,8 +41,14 @@ export default function TherapistEarningsPage() {
     )
   }
 
-  const earnings = dashboardData?.earnings || { thisMonth: 0, total: 0, transactions: [] }
-  const mtd = `₦${earnings.thisMonth.toLocaleString()}`
+  // Use data from the API (same structure as dashboard)
+  const earningsThisMonth = dashboardData?.therapist?.earningsThisMonth || 0
+  const completedSessions = dashboardData?.therapist?.completedSessions || 0
+  const totalEarnings = completedSessions * 5000 // ₦5,000 per session
+  
+  // Get completed sessions for transactions
+  const sessions = dashboardData?.sessions || []
+  const completedSessionsList = sessions.filter((s: any) => s.status === 'completed')
 
   return (
     <div className="space-y-6">
@@ -54,7 +60,7 @@ export default function TherapistEarningsPage() {
             <CardTitle>This Month</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{mtd}</div>
+            <div className="text-3xl font-bold">₦{earningsThisMonth.toLocaleString()}</div>
             <p className="text-muted-foreground">Based on completed sessions this month.</p>
           </CardContent>
         </Card>
@@ -64,7 +70,7 @@ export default function TherapistEarningsPage() {
             <CardTitle>Total Earnings</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">₦{earnings.total.toLocaleString()}</div>
+            <div className="text-3xl font-bold">₦{totalEarnings.toLocaleString()}</div>
             <p className="text-muted-foreground">All time earnings from completed sessions.</p>
           </CardContent>
         </Card>
@@ -74,7 +80,7 @@ export default function TherapistEarningsPage() {
             <CardTitle>Completed Sessions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{dashboardData?.therapist?.completedSessions || 0}</div>
+            <div className="text-3xl font-bold">{completedSessions}</div>
             <p className="text-muted-foreground">Total completed sessions.</p>
           </CardContent>
         </Card>
@@ -85,7 +91,7 @@ export default function TherapistEarningsPage() {
           <CardTitle>Recent Transactions</CardTitle>
         </CardHeader>
         <CardContent>
-          {earnings.transactions.length > 0 ? (
+          {completedSessionsList.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -95,12 +101,16 @@ export default function TherapistEarningsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {earnings.transactions.map((t: any) => (
-                  <TableRow key={t.id}>
-                    <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{t.description}</TableCell>
+                {completedSessionsList.map((session: any) => (
+                  <TableRow key={session.id}>
+                    <TableCell>
+                      {new Date(session.start_time || `${session.scheduled_date}T${session.scheduled_time}`).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      Session with {session.users?.full_name || 'Unknown Client'}
+                    </TableCell>
                     <TableCell className="text-right text-green-600">
-                      +₦{t.amount.toLocaleString()}
+                      +₦5,000
                     </TableCell>
                   </TableRow>
                 ))}
