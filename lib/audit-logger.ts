@@ -62,6 +62,29 @@ export class AuditLogger {
   }
 
   /**
+   * Log magic link sent event
+   */
+  static async logMagicLinkSent(
+    email: string,
+    metadata?: any
+  ): Promise<void> {
+    try {
+      await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: null,
+          action: 'magic_link_sent',
+          resource_type: 'magic_link',
+          resource_id: email,
+          metadata: metadata || {},
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.warn('Failed to log magic link sent:', error);
+    }
+  }
+
+  /**
    * Log general event
    */
   static async log(
