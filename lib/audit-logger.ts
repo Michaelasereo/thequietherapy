@@ -85,6 +85,30 @@ export class AuditLogger {
   }
 
   /**
+   * Log magic link verification event
+   */
+  static async logMagicLinkVerification(
+    userId: string | null,
+    success: boolean,
+    metadata?: any
+  ): Promise<void> {
+    try {
+      await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: userId,
+          action: 'magic_link_verification',
+          resource_type: 'magic_link',
+          resource_id: userId || 'unknown',
+          metadata: { success, ...metadata },
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.warn('Failed to log magic link verification:', error);
+    }
+  }
+
+  /**
    * Log general event
    */
   static async log(
