@@ -176,6 +176,52 @@ export class AuditLogger {
   }
 
   /**
+   * Log logout event
+   */
+  static async logLogout(
+    userId: string,
+    metadata?: any
+  ): Promise<void> {
+    try {
+      await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: userId,
+          action: 'logout',
+          resource_type: 'authentication',
+          resource_id: userId,
+          metadata: metadata || {},
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.warn('Failed to log logout:', error);
+    }
+  }
+
+  /**
+   * Log session created event
+   */
+  static async logSessionCreated(
+    userId: string,
+    metadata?: any
+  ): Promise<void> {
+    try {
+      await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: userId,
+          action: 'session_created',
+          resource_type: 'session',
+          resource_id: userId,
+          metadata: metadata || {},
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.warn('Failed to log session created:', error);
+    }
+  }
+
+  /**
    * Log general event
    */
   static async log(
