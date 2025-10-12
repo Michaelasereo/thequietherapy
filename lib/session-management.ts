@@ -23,6 +23,7 @@ export interface SessionData {
   description?: string
   notes?: string
   session_url?: string
+  daily_room_url?: string
   room_name?: string
   // Recording removed for HIPAA compliance
   price?: number
