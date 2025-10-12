@@ -19,7 +19,6 @@ export class AuditLogger {
     metadata?: any
   ): Promise<void> {
     try {
-      // Gracefully handle if audit_logs table doesn't exist
       await supabase
         .from('audit_logs')
         .insert({
@@ -31,7 +30,6 @@ export class AuditLogger {
           created_at: new Date().toISOString()
         });
     } catch (error) {
-      // Log to console but don't fail the request
       console.warn('Failed to log audit event:', error);
     }
   }
@@ -105,6 +103,75 @@ export class AuditLogger {
         });
     } catch (error) {
       console.warn('Failed to log magic link verification:', error);
+    }
+  }
+
+  /**
+   * Log login success event
+   */
+  static async logLoginSuccess(
+    userId: string,
+    metadata?: any
+  ): Promise<void> {
+    try {
+      await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: userId,
+          action: 'login_success',
+          resource_type: 'authentication',
+          resource_id: userId,
+          metadata: metadata || {},
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.warn('Failed to log login success:', error);
+    }
+  }
+
+  /**
+   * Log login failure event
+   */
+  static async logLoginFailure(
+    email: string,
+    metadata?: any
+  ): Promise<void> {
+    try {
+      await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: null,
+          action: 'login_failure',
+          resource_type: 'authentication',
+          resource_id: email,
+          metadata: metadata || {},
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.warn('Failed to log login failure:', error);
+    }
+  }
+
+  /**
+   * Log signup event
+   */
+  static async logSignup(
+    userId: string,
+    metadata?: any
+  ): Promise<void> {
+    try {
+      await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: userId,
+          action: 'signup',
+          resource_type: 'user',
+          resource_id: userId,
+          metadata: metadata || {},
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.warn('Failed to log signup:', error);
     }
   }
 
