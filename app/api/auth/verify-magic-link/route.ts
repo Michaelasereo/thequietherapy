@@ -50,21 +50,6 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ Magic link verified successfully for user:', result.user.email)
 
-    // Create session data with proper typing
-    const sessionData = {
-      id: result.user.id,
-      email: result.user.email,
-      name: result.user.full_name || result.user.email.split('@')[0],
-      role: authType as 'admin' | 'partner' | 'therapist' | 'individual',
-      user_type: result.user.user_type || authType,
-      is_verified: result.user.is_verified || false,
-      is_active: result.user.is_active || true,
-      session_token: result.user.session_token
-    }
-
-    // Create JWT session token using SessionManager
-    const sessionToken = await ServerSessionManager.createSession(sessionData)
-
     // Create the redirect response FIRST
     let redirectUrl = '/dashboard'
     if (authType === 'therapist') redirectUrl = '/therapist/dashboard'
@@ -73,18 +58,20 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.redirect(new URL(redirectUrl, request.url))
 
-    // Set the JWT session cookie
-    response.cookies.set({
-      name: 'quiet_session',
-      value: sessionToken, // This is now a JWT token, not JSON
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/',
-    })
+    // Create session data with proper typing
+    const sessionData = {
+      id: result.user.id,
+      email: result.user.email,
+      name: result.user.full_name || result.user.email.split('@')[0],
+      user_type: result.user.user_type || authType,
+      is_verified: result.user.is_verified ?? true,
+      is_active: result.user.is_active ?? true,
+    }
 
-    console.log('🍪 Session cookies set successfully for:', result.user.email)
+    // Create JWT session token using SessionManager and pass response object
+    const sessionToken = await ServerSessionManager.createSession(sessionData, response)
+
+    console.log('🍪 Session created and cookie set for:', result.user.email)
     console.log('🔑 Auth type:', authType)
     console.log('📍 Redirecting to:', redirectUrl)
 
