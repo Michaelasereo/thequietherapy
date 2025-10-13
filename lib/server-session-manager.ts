@@ -60,7 +60,7 @@ export class ServerSessionManager {
       .setExpirationTime(expiresAt)
       .sign(JWT_SECRET)
 
-    // Set cookie
+    // Set cookie with explicit domain for production
     const cookieOptions = {
       name: this.COOKIE_NAME,
       value: token,
@@ -69,6 +69,7 @@ export class ServerSessionManager {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
       path: '/',
+      domain: process.env.NODE_ENV === 'production' ? '.thequietherapy.live' : undefined,
     }
 
     if (response) {
