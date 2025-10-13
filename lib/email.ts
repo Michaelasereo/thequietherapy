@@ -8,7 +8,7 @@ export function createTransporter() {
   }
   
   // Use a proper sender email address
-  const senderEmail = process.env.SENDER_EMAIL || 'noreply@trpi.com';
+  const senderEmail = process.env.SENDER_EMAIL || 'noreply@thequietherapy.live';
   
   return nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
@@ -34,12 +34,12 @@ export async function sendVerificationEmail(email: string, token: string) {
   
   const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/auth/verify-email?email=${email}&token=${token}`;
   
-  const senderEmail = process.env.SENDER_EMAIL || 'noreply@trpi.com';
+  const senderEmail = process.env.SENDER_EMAIL || 'noreply@thequietherapy.live';
   
   const mailOptions = {
-    from: `Michael from Quiet  <${senderEmail}>`,
+    from: `The Quiet Therapy <${senderEmail}>`,
     to: email,
-    subject: 'Welcome to Thequietherapy.live - Access Your Dashboard',
+    subject: 'Welcome to The Quiet Therapy - Access Your Dashboard',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #3b82f6;">Welcome to Quiet!</h2>
@@ -81,12 +81,12 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/reset-password?token=${token}`;
   
-  const senderEmail = process.env.SENDER_EMAIL || 'noreply@trpi.com';
+  const senderEmail = process.env.SENDER_EMAIL || 'noreply@thequietherapy.live';
   
   const mailOptions = {
-    from: `Quiet <${senderEmail}>`,
+    from: `The Quiet Therapy <${senderEmail}>`,
     to: email,
-    subject: 'Reset your Quiet password',
+    subject: 'Reset your The Quiet Therapy password',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #3b82f6;">Password Reset Request</h2>
@@ -162,21 +162,21 @@ export async function sendMagicLinkEmail(email: string, verificationUrl: string,
         title = 'Welcome to Quiet!';
         description = `Hi ${metadata?.first_name || 'there'}, welcome to Quiet! Click the link below to complete your therapist registration and access your professional dashboard:`;
       } else if (userType === 'partner') {
-        subject = 'Welcome to Trpi - Complete Your Partner Onboarding';
-        title = 'Welcome to Trpi!';
-        description = `Hi ${metadata?.first_name || 'there'}, welcome to Trpi! Click the link below to complete your partner onboarding and access your organization dashboard:`;
+        subject = 'Welcome to The Quiet Therapy - Complete Your Partner Onboarding';
+        title = 'Welcome to The Quiet Therapy!';
+        description = `Hi ${metadata?.first_name || 'there'}, welcome to The Quiet Therapy! Click the link below to complete your partner onboarding and access your organization dashboard:`;
       } else {
-        subject = 'Welcome to Trpi - Confirm Your Account';
-        title = 'Welcome to Trpi!';
-        description = `Hi ${metadata?.first_name || 'there'}, welcome to Trpi! Click the link below to confirm your account and start your therapy journey:`;
+        subject = 'Welcome to The Quiet Therapy - Confirm Your Account';
+        title = 'Welcome to The Quiet Therapy!';
+        description = `Hi ${metadata?.first_name || 'there'}, welcome to The Quiet Therapy! Click the link below to confirm your account and start your therapy journey:`;
       }
       break;
   }
   
-  const senderEmail = process.env.SENDER_EMAIL || 'noreply@trpi.com';
+  const senderEmail = process.env.SENDER_EMAIL || 'noreply@thequietherapy.live';
   
   const mailOptions = {
-    from: `Quiet <${senderEmail}>`,
+    from: `The Quiet Therapy <${senderEmail}>`,
     to: email,
     subject: subject,
     html: `
