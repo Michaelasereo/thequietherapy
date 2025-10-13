@@ -46,46 +46,81 @@ END $$;
 
 -- Delete therapist-related data (child tables first)
 
--- 1. Delete therapist availability and time slots
-DELETE FROM therapist_time_slots
-WHERE therapist_id IN (
-    SELECT id FROM users WHERE user_type = 'therapist'
-);
-
-DELETE FROM therapist_availability
-WHERE therapist_id IN (
-    SELECT id FROM users WHERE user_type = 'therapist'
-);
+-- 1. Delete therapist availability and time slots (if tables exist)
+DO $$
+BEGIN
+    -- Delete from therapist_time_slots if it exists
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'therapist_time_slots') THEN
+        DELETE FROM therapist_time_slots
+        WHERE therapist_id IN (
+            SELECT id FROM users WHERE user_type = 'therapist'
+        );
+        RAISE NOTICE 'Deleted therapist_time_slots records';
+    END IF;
+    
+    -- Delete from therapist_availability
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'therapist_availability') THEN
+        DELETE FROM therapist_availability
+        WHERE therapist_id IN (
+            SELECT id FROM users WHERE user_type = 'therapist'
+        );
+        RAISE NOTICE 'Deleted therapist_availability records';
+    END IF;
+END $$;
 
 -- 2. Delete therapist profiles
-DELETE FROM therapist_profiles
-WHERE user_id IN (
-    SELECT id FROM users WHERE user_type = 'therapist'
-);
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'therapist_profiles') THEN
+        DELETE FROM therapist_profiles
+        WHERE user_id IN (
+            SELECT id FROM users WHERE user_type = 'therapist'
+        );
+        RAISE NOTICE 'Deleted therapist_profiles records';
+    END IF;
+END $$;
 
 -- 3. Delete therapist enrollments
-DELETE FROM therapist_enrollments
-WHERE user_id IN (
-    SELECT id FROM users WHERE user_type = 'therapist'
-);
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'therapist_enrollments') THEN
+        DELETE FROM therapist_enrollments
+        WHERE user_id IN (
+            SELECT id FROM users WHERE user_type = 'therapist'
+        );
+        RAISE NOTICE 'Deleted therapist_enrollments records';
+    END IF;
+END $$;
 
 -- 4. Delete sessions where therapist was involved
-DELETE FROM session_notes
-WHERE session_id IN (
-    SELECT id FROM sessions 
-    WHERE therapist_id IN (SELECT id FROM users WHERE user_type = 'therapist')
-);
-
-DELETE FROM session_feedback
-WHERE session_id IN (
-    SELECT id FROM sessions 
-    WHERE therapist_id IN (SELECT id FROM users WHERE user_type = 'therapist')
-);
-
-DELETE FROM sessions
-WHERE therapist_id IN (
-    SELECT id FROM users WHERE user_type = 'therapist'
-);
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'session_notes') THEN
+        DELETE FROM session_notes
+        WHERE session_id IN (
+            SELECT id FROM sessions 
+            WHERE therapist_id IN (SELECT id FROM users WHERE user_type = 'therapist')
+        );
+        RAISE NOTICE 'Deleted session_notes records';
+    END IF;
+    
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'session_feedback') THEN
+        DELETE FROM session_feedback
+        WHERE session_id IN (
+            SELECT id FROM sessions 
+            WHERE therapist_id IN (SELECT id FROM users WHERE user_type = 'therapist')
+        );
+        RAISE NOTICE 'Deleted session_feedback records';
+    END IF;
+    
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'sessions') THEN
+        DELETE FROM sessions
+        WHERE therapist_id IN (
+            SELECT id FROM users WHERE user_type = 'therapist'
+        );
+        RAISE NOTICE 'Deleted sessions records';
+    END IF;
+END $$;
 
 -- 5. Delete therapist user accounts
 DELETE FROM users
@@ -110,15 +145,25 @@ SELECT
 FROM users
 WHERE user_type = 'therapist';
 
--- Check related tables
-SELECT 'therapist_profiles' as table_name, COUNT(*) as remaining
-FROM therapist_profiles
-UNION ALL
-SELECT 'therapist_availability', COUNT(*) FROM therapist_availability
-UNION ALL
-SELECT 'therapist_enrollments', COUNT(*) FROM therapist_enrollments
-UNION ALL
-SELECT 'therapist_time_slots', COUNT(*) FROM therapist_time_slots;
+-- Check related tables (only if they exist)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'therapist_profiles') THEN
+        RAISE NOTICE 'therapist_profiles: % remaining', (SELECT COUNT(*) FROM therapist_profiles);
+    END IF;
+    
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'therapist_availability') THEN
+        RAISE NOTICE 'therapist_availability: % remaining', (SELECT COUNT(*) FROM therapist_availability);
+    END IF;
+    
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'therapist_enrollments') THEN
+        RAISE NOTICE 'therapist_enrollments: % remaining', (SELECT COUNT(*) FROM therapist_enrollments);
+    END IF;
+    
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'therapist_time_slots') THEN
+        RAISE NOTICE 'therapist_time_slots: % remaining', (SELECT COUNT(*) FROM therapist_time_slots);
+    END IF;
+END $$;
 
 -- Show remaining users by type
 SELECT 
