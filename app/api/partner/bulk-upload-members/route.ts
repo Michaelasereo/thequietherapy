@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
         let userId = existingUser?.id
 
         if (!userId) {
-          // Create new user
+          // Create new user (no credits assigned here - done via partner credits)
           const { data: newUser, error: createError } = await supabase
             .from('users')
             .insert({
@@ -208,7 +208,6 @@ export async function POST(request: NextRequest) {
               full_name: record.name,
               user_type: 'individual',
               partner_id: partnerId,
-              credits: record.creditsToAssign,
               is_verified: false,
               is_active: true
             })
@@ -231,8 +230,7 @@ export async function POST(request: NextRequest) {
           const { error: updateError } = await supabase
             .from('users')
             .update({
-              partner_id: partnerId,
-              credits: record.creditsToAssign
+              partner_id: partnerId
             })
             .eq('id', userId)
 
@@ -247,6 +245,26 @@ export async function POST(request: NextRequest) {
           console.log('✅ Updated existing user:', userId)
         }
 
+        // Allocate partner credits using the proper credit system
+        const { error: creditError } = await supabase
+          .rpc('allocate_partner_credit', {
+            p_partner_id: partnerId,
+            p_employee_email: record.email.toLowerCase(),
+            p_employee_name: record.name,
+            p_credits_count: record.creditsToAssign,
+            p_expires_days: 90 // Credits expire in 90 days
+          })
+
+        if (creditError) {
+          console.error('Error allocating partner credits:', creditError)
+          errors.push({
+            row: validRecords.indexOf(record) + 2,
+            message: `User created but failed to allocate credits: ${creditError.message}`
+          })
+          continue
+        }
+
+        console.log(`✅ Allocated ${record.creditsToAssign} credits to user:`, userId)
         successfulRecords++
       } catch (recordError) {
         console.error('Error processing record:', recordError)
