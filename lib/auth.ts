@@ -5,10 +5,13 @@ import { syncUserToSupabaseAuth, createUserWithSupabaseAuth } from './supabase-a
 import { RateLimiter } from './rate-limit';
 import { AuditLogger } from './audit-logger';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Create Supabase client with lazy initialization for serverless
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  );
+}
 
 export interface MagicLinkData {
   email: string;
@@ -57,6 +60,8 @@ export async function createMagicLinkForAuthType(
   console.log('🔑 createMagicLinkForAuthType called:', { email, authType, type, metadata })
   
   try {
+    const supabase = getSupabaseClient();
+    
     // Rate limiting check - 10 magic links per hour per email
     const rateLimitAllowed = await RateLimiter.checkMagicLinkRequest(email)
     if (!rateLimitAllowed) {
@@ -184,6 +189,7 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
   console.log('🔍 verifyMagicLinkForAuthType called with token:', token.substring(0, 8) + '...', 'authType:', authType)
   
   try {
+    const supabase = getSupabaseClient();
     // Rate limiting check - 3 attempts per token
     const rateLimitAllowed = await RateLimiter.checkMagicLinkVerification(token)
     if (!rateLimitAllowed) {
