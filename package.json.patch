@@ -1,0 +1,11 @@
+# Add these scripts to your package.json:
+
+"scripts": {
+  ...existing scripts...,
+  
+  "test:e2e": "node tests/run-all-tests.js",
+  "test:auth": "node tests/e2e-auth-test.js",
+  "test:video": "node tests/e2e-video-test.js",
+  "test:booking": "node tests/e2e-booking-test.js"
+}
+
