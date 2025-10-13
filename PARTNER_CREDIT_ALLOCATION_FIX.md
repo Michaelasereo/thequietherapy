@@ -84,7 +84,25 @@ fix-partner-member-credit-allocation.sql
 - ✅ Prevent new users from getting unwanted free credits
 - ✅ Preserve trigger structure for future use
 
-### Step 2: Deploy Updated API Code
+### Step 2: Clean Up Existing Automatic Free Credits
+
+Run this SQL script to remove existing automatic free credits from regular users:
+
+```bash
+cleanup-automatic-free-credits.sql
+```
+
+**This will:**
+- ✅ Remove unused automatic free credits from regular individual users
+- ✅ Keep partner member credits intact (all credits)
+- ✅ Preserve already-used credits for audit trail
+- ✅ Clean up orphaned purchase records
+- ✅ Show preview before deletion
+- ✅ Provide verification queries
+
+**Important:** The script includes a PREVIEW section that shows what will be deleted before actually deleting it. Review the preview first!
+
+### Step 3: Deploy Updated API Code
 
 The updated bulk upload API is already in place:
 ```
@@ -97,7 +115,7 @@ app/api/partner/bulk-upload-members/route.ts
 - ✅ Support credit expiration (90 days default)
 - ✅ Provide better error handling
 
-### Step 3: Verify Setup
+### Step 4: Verify Setup
 
 Run these queries to confirm:
 
@@ -166,6 +184,37 @@ SELECT * FROM partner_credits LIMIT 1;
    ↓
 4. Session starts
 ```
+
+---
+
+## 🧹 Cleanup Script Details
+
+### What Gets Removed:
+- ❌ Unused automatic free credits for regular individual users (partner_id IS NULL)
+- ❌ `signup_free` purchase records without associated used credits
+- ❌ `free_credits_granted_at` flags for users who didn't use their free credit
+
+### What Gets Preserved:
+- ✅ Partner member credits (all - used and unused)
+- ✅ Already-used free credits (for audit trail)
+- ✅ All paid/purchased credits
+- ✅ Credits from partner_credits table
+
+### Safety Features:
+1. **Preview First:** Shows exactly what will be deleted before deletion
+2. **Backup Option:** Commented-out code to create backup table
+3. **Verification Queries:** Confirms cleanup was successful
+4. **Selective Deletion:** Uses multiple JOINs and conditions to target only unwanted credits
+
+### Script Sections:
+1. **PREVIEW** - Shows what will be removed (review this!)
+2. **BACKUP** - Optional backup creation (uncomment if desired)
+3. **DELETE** - Removes unused automatic free credits
+4. **CLEANUP** - Removes orphaned purchase records
+5. **UPDATE** - Resets user flags
+6. **VERIFY** - Confirms cleanup success
+7. **SUMMARY** - Shows credits by user type
+8. **ROLLBACK** - Instructions to restore if needed
 
 ---
 
