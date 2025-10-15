@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback, memo, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Video, CheckCircle2, TrendingUp, Clock, Users, Mail, DollarSign, RefreshCw } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { CalendarIcon, Video, CheckCircle2, TrendingUp, Clock, Users, Mail, DollarSign, RefreshCw, AlertTriangle } from "lucide-react"
 // Removed unused imports that were causing re-renders
 import { useAuth } from "@/context/auth-context"
 
@@ -168,7 +169,7 @@ const TherapistDashboardPage = memo(function TherapistDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">
-            Welcome, {therapist?.name || user?.full_name || 'Therapist'}
+            Welcome, {therapist?.full_name || therapist?.name || user?.full_name || 'Therapist'}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {therapist?.specialization && Array.isArray(therapist.specialization) && therapist.specialization.length > 0 
@@ -188,6 +189,17 @@ const TherapistDashboardPage = memo(function TherapistDashboardPage() {
           Refresh
         </Button>
       </div>
+
+      {/* Pending Approval Banner */}
+      {therapist?.is_pending && (
+        <Alert className="bg-yellow-50 border-yellow-200">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertTitle className="text-yellow-900">Application Pending Approval</AlertTitle>
+          <AlertDescription className="text-yellow-800">
+            Your therapist enrollment is under review by our admin team. You can explore your dashboard, but you won't be able to set availability or accept sessions until your application is approved.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Summary Cards Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

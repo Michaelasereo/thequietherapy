@@ -47,15 +47,49 @@ export async function GET(request: NextRequest) {
 
     if (therapistError) {
       console.error('🔍 DEBUG: Therapist query error:', therapistError)
-      // Return empty data instead of throwing - graceful degradation
+      
+      // If therapist not found in users table, check therapist_enrollments (newly enrolled, not approved yet)
+      const { data: enrollmentData, error: enrollmentError } = await supabase
+        .from('therapist_enrollments')
+        .select('*')
+        .eq('email', session.email)
+        .single()
+      
+      if (enrollmentError || !enrollmentData) {
+        console.error('🔍 DEBUG: Enrollment also not found:', enrollmentError)
+        return NextResponse.json({
+          success: true,
+          data: {
+            therapist: null,
+            sessions: [],
+            clients: 0
+          },
+          message: 'Unable to load therapist data'
+        })
+      }
+      
+      // Return enrollment data with pending status
       return NextResponse.json({
         success: true,
         data: {
-          therapist: null,
+          therapist: {
+            id: enrollmentData.id,
+            full_name: enrollmentData.full_name,
+            email: enrollmentData.email,
+            phone: enrollmentData.phone,
+            specialization: enrollmentData.specialization,
+            languages: enrollmentData.languages,
+            status: enrollmentData.status, // 'pending' until admin approves
+            is_pending: true, // Flag to show pending banner
+            totalClients: 0,
+            totalSessions: 0,
+            earningsThisMonth: 0,
+            hourlyRate: 5000
+          },
           sessions: [],
           clients: 0
         },
-        message: 'Unable to load therapist data'
+        message: 'Enrollment pending admin approval'
       })
     }
 

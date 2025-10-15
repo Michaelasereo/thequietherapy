@@ -290,7 +290,7 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
       
       const createResult = await createUserWithSupabaseAuth({
         email: magicLink.email,
-        full_name: magicLink.metadata?.first_name || magicLink.email.split('@')[0],
+        full_name: magicLink.metadata?.fullName || magicLink.metadata?.first_name || magicLink.email.split('@')[0],
         user_type: authType
       })
 
