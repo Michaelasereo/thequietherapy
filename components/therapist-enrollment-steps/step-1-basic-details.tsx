@@ -19,7 +19,7 @@ const formSchema = z.object({
     .email({ message: "Invalid email address." })
     .refine(
       (email) => email.toLowerCase().endsWith(ALLOWED_THERAPIST_DOMAIN),
-      { message: `Therapist enrollment requires an official company email (${ALLOWED_THERAPIST_DOMAIN})` }
+      { message: "Therapist enrollment requires an official company email. Please use your assigned work email." }
     ),
   phone: z.string().min(10, { message: "Phone number is required." }),
 })
@@ -139,10 +139,10 @@ export default function Step1BasicDetails({ onNext, initialData, onEmailStatusCh
             <FormItem>
               <FormLabel>Official Company Email</FormLabel>
               <FormControl>
-                <Input placeholder="yourname@thequietherapy.live" {...field} />
+                <Input placeholder="your.work.email@company.com" {...field} />
               </FormControl>
               <p className="text-sm text-gray-500 mt-1">
-                Only {ALLOWED_THERAPIST_DOMAIN} emails are accepted for therapist enrollment
+                Use your assigned work email for therapist enrollment
               </p>
               <FormMessage />
               

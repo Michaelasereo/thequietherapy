@@ -47,7 +47,7 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
     if (!email.toLowerCase().endsWith(ALLOWED_DOMAIN)) {
       return {
         success: false,
-        error: `Therapist enrollment is restricted to official company emails (${ALLOWED_DOMAIN}). Please use your company email address or contact support.`
+        error: 'Therapist enrollment is restricted to official company emails. Please use your assigned work email or contact support.'
       }
     }
 
