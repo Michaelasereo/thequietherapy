@@ -7,10 +7,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
+import { useState, useEffect } from "react"
 
 const formSchema = z.object({
   idUpload: z.any().refine((file) => file?.length > 0, "ID document is required."),
-  mdcnCode: z.string().min(1, { message: "MDCN code is required." }),
+  licensedQualification: z.string().min(1, { message: "Licensed qualification is required." }),
 })
 
 type DocumentVerificationFormValues = z.infer<typeof formSchema>
@@ -22,21 +23,30 @@ interface Step2DocumentVerificationProps {
 }
 
 export default function Step2DocumentVerification({ onNext, onBack, initialData }: Step2DocumentVerificationProps) {
+  const [uploadedFileName, setUploadedFileName] = useState<string>("")
+  
   const form = useForm<DocumentVerificationFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      idUpload: undefined,
-      mdcnCode: "",
+    defaultValues: {
+      idUpload: initialData?.idUpload || undefined,
+      licensedQualification: initialData?.licensedQualification || "",
     },
   })
+  
+  // Preserve uploaded file name on mount if initialData has file
+  useEffect(() => {
+    if (initialData?.idUpload && initialData.idUpload.length > 0) {
+      setUploadedFileName(initialData.idUpload[0].name)
+    }
+  }, [initialData])
 
   async function onSubmit(data: DocumentVerificationFormValues) {
-    // For now, we'll just collect the MDCN code and verify manually later
+    // For now, we'll just collect the licensed qualification and verify manually later
     // No API verification needed for shipping
     
     toast({
       title: "Documents Uploaded",
-      description: "MDCN code recorded. We'll verify this manually. Proceeding...",
+      description: "Licensed qualification recorded. We'll verify this manually. Proceeding...",
     })
     onNext(data)
   }
@@ -55,22 +65,33 @@ export default function Step2DocumentVerification({ onNext, onBack, initialData 
                 <Input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(event) => onChange(event.target.files)}
+                  onChange={(event) => {
+                    const files = event.target.files
+                    onChange(files)
+                    if (files && files.length > 0) {
+                      setUploadedFileName(files[0].name)
+                    }
+                  }}
                   {...fieldProps}
                 />
               </FormControl>
+              {uploadedFileName && (
+                <p className="text-sm text-green-600 mt-1">
+                  ✓ Uploaded: {uploadedFileName}
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}
         />
         <FormField
           control={form.control}
-          name="mdcnCode"
+          name="licensedQualification"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>MDCN Code</FormLabel>
+              <FormLabel>Licensed Qualification</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your MDCN registration number" {...field} />
+                <Input placeholder="Enter your licensed qualification (e.g., MD, DO, PhD, Licensed Therapist)" {...field} />
               </FormControl>
               <FormMessage />
               <p className="text-sm text-muted-foreground">
