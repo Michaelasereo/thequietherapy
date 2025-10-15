@@ -298,39 +298,39 @@ export default function TherapistEnrollmentPage() {
               Enrollment Submitted Successfully!
             </DialogTitle>
             <DialogDescription>
-              We've sent a verification email to complete your enrollment.
+              Your application has been submitted and is pending review.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-              <Mail className="h-5 w-5 text-blue-600" />
+            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+              <CheckCircle className="h-5 w-5 text-green-600" />
               <div>
-                <p className="font-medium text-blue-900">Check Your Email</p>
-                <p className="text-sm text-blue-700">{enrollmentEmail}</p>
+                <p className="font-medium text-green-900">Application Received</p>
+                <p className="text-sm text-green-700">{enrollmentEmail}</p>
               </div>
             </div>
             
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p>📧 Look for an email from Quiet</p>
-              <p>🔗 Click the verification link in the email</p>
-              <p>✅ Complete your account setup</p>
-              <p>⏳ Your application will be reviewed by our admin team</p>
+              <p>✅ Your enrollment has been saved</p>
+              <p>👀 Our admin team will review your application</p>
+              <p>📧 We'll contact you via email within 24-48 hours</p>
+              <p>🔐 Once approved, you'll receive login credentials</p>
             </div>
             
             <div className="flex gap-2">
               <Button 
-                onClick={() => setShowSuccessModal(false)} 
+                onClick={() => window.location.href = "/"} 
                 className="flex-1"
                 variant="outline"
               >
-                Close
+                Back to Home
               </Button>
               <Button 
-                onClick={() => window.location.href = "/therapist/login"} 
+                onClick={() => setShowSuccessModal(false)} 
                 className="flex-1"
               >
-                Go to Login
+                Close
               </Button>
             </div>
           </div>

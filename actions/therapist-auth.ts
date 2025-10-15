@@ -95,15 +95,13 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
       }
     }
 
-    // Then send magic link
-    const result = await therapistSignUp({
-      email,
-      fullName,
-      phone,
-      licensedQualification
-    })
+    console.log('✅ Enrollment saved successfully')
 
-    return result
+    // Enrollment successful - admin will review and approve
+    return {
+      success: true,
+      message: 'Enrollment submitted successfully! Our admin team will review your application and contact you via email within 24-48 hours.'
+    }
   } catch (error) {
     console.error('Therapist enrollment error:', error)
     return {
