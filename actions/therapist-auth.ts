@@ -31,14 +31,14 @@ export async function therapistLogoutAction(): Promise<void> {
 export async function therapistEnrollAction(prevState: any, formData: FormData) {
   try {
     const email = formData.get('email') as string
-    const firstName = formData.get('firstName') as string
-    const lastName = formData.get('lastName') as string
-    const fullName = `${firstName} ${lastName}`.trim()
+    const fullName = formData.get('fullName') as string
+    const phone = formData.get('phone') as string
+    const licensedQualification = formData.get('licensedQualification') as string
     
-    if (!email || !firstName || !lastName) {
+    if (!email || !fullName || !phone || !licensedQualification) {
       return {
         success: false,
-        error: 'All fields are required'
+        error: 'All required fields must be filled'
       }
     }
 
@@ -53,8 +53,9 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
 
     const result = await therapistSignUp({
       email,
-      firstName,
-      fullName
+      fullName,
+      phone,
+      licensedQualification
     })
 
     return result
