@@ -11,9 +11,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
+const ALLOWED_THERAPIST_DOMAIN = '@thequietherapy.live'
+
 const formSchema = z.object({
   fullName: z.string().min(2, { message: "Full Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Invalid email address." }),
+  email: z.string()
+    .email({ message: "Invalid email address." })
+    .refine(
+      (email) => email.toLowerCase().endsWith(ALLOWED_THERAPIST_DOMAIN),
+      { message: `Therapist enrollment requires an official company email (${ALLOWED_THERAPIST_DOMAIN})` }
+    ),
   phone: z.string().min(10, { message: "Phone number is required." }),
 })
 
@@ -130,10 +137,13 @@ export default function Step1BasicDetails({ onNext, initialData, onEmailStatusCh
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Official Company Email</FormLabel>
               <FormControl>
-                <Input placeholder="jane.doe@example.com" {...field} />
+                <Input placeholder="yourname@thequietherapy.live" {...field} />
               </FormControl>
+              <p className="text-sm text-gray-500 mt-1">
+                Only {ALLOWED_THERAPIST_DOMAIN} emails are accepted for therapist enrollment
+              </p>
               <FormMessage />
               
               {/* Email status display */}

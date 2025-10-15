@@ -26,6 +26,7 @@ export async function therapistLogoutAction(): Promise<void> {
 
 /**
  * Therapist enrollment action for the enrollment flow
+ * Only allows enrollment with official company email domain
  */
 export async function therapistEnrollAction(prevState: any, formData: FormData) {
   try {
@@ -38,6 +39,15 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
       return {
         success: false,
         error: 'All fields are required'
+      }
+    }
+
+    // SECURITY: Restrict therapist enrollment to official company email domain
+    const ALLOWED_DOMAIN = '@thequietherapy.live'
+    if (!email.toLowerCase().endsWith(ALLOWED_DOMAIN)) {
+      return {
+        success: false,
+        error: `Therapist enrollment is restricted to official company emails (${ALLOWED_DOMAIN}). Please use your company email address or contact support.`
       }
     }
 
