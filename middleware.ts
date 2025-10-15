@@ -75,8 +75,8 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/((?!login|register).*)',
-    '/partner/((?!login|register).*)',
-    '/therapist/((?!login|register).*)',
+    '/partner/((?!login|register|enroll).*)',
+    '/therapist/((?!login|register|enroll).*)',
     '/dashboard/:path*'
   ]
 }
