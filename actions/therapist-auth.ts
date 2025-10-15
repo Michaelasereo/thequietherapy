@@ -34,6 +34,8 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
     const fullName = formData.get('fullName') as string
     const phone = formData.get('phone') as string
     const licensedQualification = formData.get('licensedQualification') as string
+    const specialization = formData.getAll('specialization') as string[]
+    const languages = formData.getAll('languages') as string[]
     
     if (!email || !fullName || !phone || !licensedQualification) {
       return {
@@ -51,6 +53,49 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
       }
     }
 
+    // Save enrollment data to database FIRST
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    // Check if enrollment already exists
+    const { data: existingEnrollment } = await supabase
+      .from('therapist_enrollments')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .single()
+
+    if (existingEnrollment) {
+      return {
+        success: false,
+        error: 'An enrollment with this email already exists. Please use the login page.'
+      }
+    }
+
+    // Create enrollment record
+    const { error: enrollmentError } = await supabase
+      .from('therapist_enrollments')
+      .insert({
+        full_name: fullName,
+        email: email.toLowerCase(),
+        phone,
+        licensed_qualification: licensedQualification,
+        specialization,
+        languages,
+        status: 'pending'
+      })
+
+    if (enrollmentError) {
+      console.error('Error creating enrollment:', enrollmentError)
+      return {
+        success: false,
+        error: 'Failed to save enrollment data. Please try again.'
+      }
+    }
+
+    // Then send magic link
     const result = await therapistSignUp({
       email,
       fullName,
