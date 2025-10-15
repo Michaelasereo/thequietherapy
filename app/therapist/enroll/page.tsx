@@ -25,7 +25,7 @@ export default function TherapistEnrollmentPage() {
     fullName: "",
     email: "",
     phone: "",
-    mdcnCode: "",
+    licensedQualification: "",
     specialization: [],
     languages: [],
     termsAccepted: false
