@@ -71,7 +71,7 @@ export default function TherapistHeader({ user }: TherapistHeaderProps) {
         {/* User Menu */}
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-medium">{displayName}</p>
+            <p className="text-sm font-medium text-brand-gold">{displayName}</p>
             <p className="text-xs text-gray-500">{user.email}</p>
           </div>
           <Avatar className="h-8 w-8" key={avatarKey}>

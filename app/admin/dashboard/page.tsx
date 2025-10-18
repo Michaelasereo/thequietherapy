@@ -172,7 +172,7 @@ const AdminDashboardPage = memo(function AdminDashboardPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-foreground">
-              Welcome, {adminInfo?.name || adminInfo?.email?.split('@')[0] || 'Admin'}
+              Welcome, <span className="text-brand-gold">{adminInfo?.name || adminInfo?.email?.split('@')[0] || 'Admin'}</span>
             </h1>
             <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-md">
               Admin

@@ -397,7 +397,7 @@ function DashboardContent() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-semibold text-foreground">
-                  Welcome, {(() => {
+                  Welcome, <span className="text-brand-gold">{(() => {
                     try {
                       if (user && typeof user === 'object') {
                         // Try different name fields in order of preference
@@ -410,7 +410,7 @@ function DashboardContent() {
                       console.error('Error parsing user name:', error);
                       return 'User';
                     }
-                  })()}
+                  })()}</span>
                 </h1>
                 <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-md">
                   Individual

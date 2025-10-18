@@ -93,7 +93,7 @@ export default function PartnerOverviewPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">
-              Welcome, {dashboardData?.partner?.full_name || dashboardData?.partner?.company_name || 'Partner'}
+              Welcome, <span className="text-brand-gold">{dashboardData?.partner?.full_name || dashboardData?.partner?.company_name || 'Partner'}</span>
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               {dashboardData?.partner?.organization_type ? `${dashboardData.partner.organization_type} • ` : ''}Manage members, credits, and sessions
