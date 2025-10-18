@@ -53,9 +53,17 @@ export default function PendingVerificationsCard({ className }: PendingVerificat
   const fetchPendingVerifications = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/pending-verifications')
+      // Add cache busting to ensure fresh data
+      const response = await fetch(`/api/admin/pending-verifications?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
+        console.log('📋 Fetched pending verifications:', data.length)
         // Add type information based on data structure
         const verificationsWithType = data.map((item: PendingVerification) => ({
           ...item,
@@ -83,6 +91,8 @@ export default function PendingVerificationsCard({ className }: PendingVerificat
 
   const handleQuickApprove = async (verification: PendingVerification) => {
     try {
+      console.log('🔍 Approving verification:', verification.id, verification.full_name)
+      
       const response = await fetch(`/api/admin/approve-verification`, {
         method: 'POST',
         headers: {
@@ -96,13 +106,26 @@ export default function PendingVerificationsCard({ className }: PendingVerificat
       })
 
       if (response.ok) {
-        toast.success(`${verification.type === 'therapist' ? 'Therapist' : 'Partner'} approved successfully`)
-        fetchPendingVerifications() // Refresh the list
+        const result = await response.json()
+        console.log('✅ Approval successful:', result)
+        
+        toast.success(`${verification.type === 'therapist' ? 'Therapist' : 'Partner'} approved successfully (including availability)`)
+        
+        // Remove the approved item from the list immediately for better UX
+        setPendingVerifications(prev => prev.filter(v => v.id !== verification.id))
+        
+        // Then refresh after a delay to ensure database sync
+        setTimeout(() => {
+          console.log('🔄 Refreshing pending verifications list...')
+          fetchPendingVerifications()
+        }, 1000)
       } else {
-        toast.error('Failed to approve verification')
+        const errorData = await response.json()
+        console.error('❌ Approval failed:', errorData)
+        toast.error(errorData.error || 'Failed to approve verification')
       }
     } catch (error) {
-      console.error('Error approving verification:', error)
+      console.error('❌ Error approving verification:', error)
       toast.error('Error approving verification')
     }
   }
@@ -133,32 +156,6 @@ export default function PendingVerificationsCard({ className }: PendingVerificat
     }
   }
 
-  const handleAvailabilityApprove = async (verification: PendingVerification) => {
-    try {
-      const response = await fetch(`/api/admin/approve-verification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: verification.id,
-          type: verification.type,
-          action: 'approve',
-          approvalType: 'availability'
-        }),
-      })
-
-      if (response.ok) {
-        toast.success(`Therapist availability approved successfully`)
-        fetchPendingVerifications() // Refresh the list
-      } else {
-        toast.error('Failed to approve availability')
-      }
-    } catch (error) {
-      console.error('Error approving availability:', error)
-      toast.error('Error approving availability')
-    }
-  }
 
   const filteredVerifications = pendingVerifications.filter(verification => {
     if (filter === 'all') return true
@@ -329,15 +326,6 @@ export default function PendingVerificationsCard({ className }: PendingVerificat
                   >
                     <CheckCircle className="h-3 w-3" />
                     Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleAvailabilityApprove(verification)}
-                    className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
-                  >
-                    <CheckCircle className="h-3 w-3" />
-                    Approve Availability
                   </Button>
                   <Button
                     size="sm"

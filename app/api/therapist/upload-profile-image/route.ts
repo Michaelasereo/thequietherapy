@@ -58,10 +58,49 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate unique filename
+    // Get user's email to find their enrollment
+    const { data: userInfo } = await supabase
+      .from('users')
+      .select('email')
+      .eq('id', session.id)
+      .single()
+
+    // Get current enrollment (for both old image deletion AND tracking)
+    const { data: currentEnrollment } = await supabase
+      .from('therapist_enrollments')
+      .select('*')
+      .eq('email', userInfo?.email || session.email)
+      .single()
+
+    // Delete old image if exists (cleanup old files)
+    if (currentEnrollment?.profile_image_url) {
+      try {
+        const oldImageUrl = currentEnrollment.profile_image_url
+        // Extract file path from URL
+        const urlParts = oldImageUrl.split('/')
+        const bucketIndex = urlParts.findIndex((part: string) => part === 'profile-images')
+        if (bucketIndex !== -1) {
+          const oldFilePath = urlParts.slice(bucketIndex + 1).join('/')
+          console.log('🗑️  Deleting old image:', oldFilePath)
+          
+          await supabase.storage
+            .from('profile-images')
+            .remove([oldFilePath])
+          
+          console.log('✅ Old image deleted successfully')
+        }
+      } catch (error) {
+        console.error('⚠️  Failed to delete old image (continuing anyway):', error)
+        // Don't fail upload if cleanup fails
+      }
+    }
+
+    // Generate UNIQUE filename with timestamp and random string
+    // This makes cache busting unnecessary!
     const fileExtension = file.name.split('.').pop()
-    const fileName = `therapist-${session.id}-${Date.now()}.${fileExtension}`
-    const filePath = `therapist-profiles/${fileName}`
+    const randomString = Math.random().toString(36).substring(2, 9)
+    const fileName = `therapist-${session.id}-${Date.now()}-${randomString}.${fileExtension}`
+    const filePath = `therapist-profiles/${session.id}/${fileName}` // Organize by user ID
 
     // Convert file to buffer
     const bytes = await file.arrayBuffer()
@@ -72,11 +111,12 @@ export async function POST(request: NextRequest) {
       .from('profile-images')
       .upload(filePath, buffer, {
         contentType: file.type,
-        upsert: false
+        upsert: false, // Never overwrite - always create new file
+        cacheControl: '3600' // Cache for 1 hour (safe since filename is unique)
       })
 
     if (uploadError) {
-      console.error('Upload error:', uploadError)
+      console.error('❌ Upload error:', uploadError)
       return NextResponse.json(
         { error: 'Failed to upload image' },
         { status: 500 }
@@ -89,25 +129,66 @@ export async function POST(request: NextRequest) {
       .getPublicUrl(filePath)
 
     const imageUrl = urlData.publicUrl
+    console.log('✅ New image uploaded:', imageUrl)
 
-    // Update therapist profile with new image URL
+    // Preserve original enrollment data on first image upload
+    let originalEnrollmentData = currentEnrollment?.original_enrollment_data
+    if (!originalEnrollmentData && currentEnrollment) {
+      originalEnrollmentData = {
+        full_name: currentEnrollment.full_name,
+        phone: currentEnrollment.phone || '',
+        licensed_qualification: currentEnrollment.licensed_qualification || '',
+        bio: currentEnrollment.bio || '',
+        specialization: currentEnrollment.specialization || [],
+        languages: currentEnrollment.languages || [],
+        gender: currentEnrollment.gender || '',
+        age: currentEnrollment.age || null,
+        marital_status: currentEnrollment.marital_status || '',
+        profile_image_url: currentEnrollment.profile_image_url || ''
+      }
+    }
+
+    // Track profile_image_url as edited
+    const editedFields = new Set(currentEnrollment?.edited_fields || [])
+    editedFields.add('profile_image_url')
+
+    // Update therapist enrollment with profile image URL and edit tracking
     const { error: updateError } = await supabase
-      .from('therapist_profiles')
+      .from('therapist_enrollments')
       .update({ 
         profile_image_url: imageUrl,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        profile_updated_at: new Date().toISOString(),
+        original_enrollment_data: originalEnrollmentData,
+        edited_fields: Array.from(editedFields)
       })
-      .eq('user_id', session.id)
+      .eq('email', userInfo?.email || session.email)
 
     if (updateError) {
-      console.error('Update error:', updateError)
-      // Try to delete the uploaded file if profile update fails
-      await supabase.storage
-        .from('profile-images')
-        .remove([filePath])
+      console.error('❌ Database update error:', updateError)
+      
+      // ROLLBACK: Delete the uploaded image since DB update failed
+      console.log('🔄 Rolling back: Deleting uploaded image...')
+      try {
+        const { error: deleteError } = await supabase.storage
+          .from('profile-images')
+          .remove([filePath])
+        
+        if (deleteError) {
+          console.error('⚠️ Rollback failed (orphaned file will remain):', deleteError)
+        } else {
+          console.log('✅ Rollback successful: Uploaded image deleted')
+        }
+      } catch (rollbackError) {
+        console.error('⚠️ Rollback exception (orphaned file):', rollbackError)
+      }
       
       return NextResponse.json(
-        { error: 'Failed to update profile with image' },
+        { 
+          success: false,
+          error: 'Failed to update enrollment with image',
+          details: updateError.message 
+        },
         { status: 500 }
       )
     }

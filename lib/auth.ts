@@ -167,13 +167,15 @@ export async function createMagicLinkForAuthType(
     } else {
       console.log('✅ Magic link email sent successfully')
       
-      // Audit log: Magic link sent
-      await AuditLogger.logMagicLinkSent(email, {
+      // Audit log: Magic link sent (non-blocking - fire and forget)
+      AuditLogger.logMagicLinkSent(email, {
         email,
         authType,
         type,
         expiryDuration: expiryDuration / 1000 / 60, // minutes
         expiresAt: expiresAt.toISOString()
+      }).catch(err => {
+        console.error('⚠️ Audit logging failed (non-critical):', err)
       })
     }
 

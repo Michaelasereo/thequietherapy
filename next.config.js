@@ -123,7 +123,10 @@ const nextConfig = {
     return config;
   },
   images: {
-    domains: ['localhost'],
+    domains: [
+      'localhost',
+      'frzciymslvpohhyefmtr.supabase.co' // Supabase storage domain
+    ],
     unoptimized: true
   },
 }

@@ -27,6 +27,9 @@ export default function TherapistAvailabilityPage() {
     if (therapistInfo) {
       console.log('🔍 Availability page: therapistInfo received:', therapistInfo)
       console.log('🔍 Availability page: availability_approved:', therapistInfo.availability_approved)
+      console.log('🔍 Availability page: isActive from server:', therapistInfo.isActive)
+      console.log('🔍 Availability page: current local isActive state:', isActive)
+      console.log('🔍 Availability page: Should show schedule?', therapistInfo.availability_approved && therapistInfo.isActive)
       setIsActive(therapistInfo.isActive)
       setAvailabilityApproved(therapistInfo.availability_approved || false)
     }
@@ -48,6 +51,7 @@ export default function TherapistAvailabilityPage() {
   }, [])
 
   const handleToggleActive = async (checked: boolean) => {
+    console.log('🔄 Toggling availability to:', checked)
     setIsLoading(true)
     try {
       const response = await fetch('/api/therapist/availability', {
@@ -61,14 +65,18 @@ export default function TherapistAvailabilityPage() {
       })
 
       if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Availability toggle successful:', result)
         setIsActive(checked)
-        // Don't refresh therapist data immediately to prevent infinite loops
-        // The state will be updated on the next component mount or manual refresh
+        // Trigger a refresh of therapist data to sync with server
+        console.log('🔄 Refreshing therapist data after availability toggle...')
+        fetchTherapistData()
       } else {
-        console.error('Failed to update availability')
+        const errorData = await response.json()
+        console.error('❌ Failed to update availability:', errorData)
       }
     } catch (error) {
-      console.error('Error updating availability:', error)
+      console.error('❌ Error updating availability:', error)
     } finally {
       setIsLoading(false)
     }
@@ -98,6 +106,21 @@ export default function TherapistAvailabilityPage() {
       </div>
 
 
+      {/* Debug Info */}
+      <Card className="bg-yellow-50 border-yellow-200">
+        <CardContent className="pt-6">
+          <div className="text-sm">
+            <p><strong>Debug Info:</strong></p>
+            <p>• availabilityApproved: {availabilityApproved ? '✅ true' : '❌ false'}</p>
+            <p>• isActive: {isActive ? '✅ true (available)' : '❌ false (unavailable)'}</p>
+            <p>• Should show schedule: {availabilityApproved && isActive ? '✅ YES' : '❌ NO'}</p>
+            <p className="text-xs text-gray-600 mt-2">
+              After approval: isActive should be true, therapist can toggle OFF to be unavailable
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Active/Inactive Toggle */}
       {true && (
         <Card>
@@ -111,10 +134,10 @@ export default function TherapistAvailabilityPage() {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <Label htmlFor="active-toggle" className="text-base font-medium">
-                  Active for Client Bookings
+                  Available for Client Bookings
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  When active, clients can see and book sessions with you. When inactive, you won't appear in client searches.
+                  When ON, clients can see and book sessions with you. When OFF, you won't appear in client searches (temporarily unavailable).
                 </p>
               </div>
               <Switch
@@ -129,12 +152,12 @@ export default function TherapistAvailabilityPage() {
               {isActive ? (
                 <>
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-green-700 font-medium">Active - Available for bookings</span>
+                  <span className="text-green-700 font-medium">Available - Clients can book with you</span>
                 </>
               ) : (
                 <>
                   <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                  <span className="text-gray-600">Inactive - Not available for bookings</span>
+                  <span className="text-gray-600">Unavailable - Not accepting new bookings</span>
                 </>
               )}
             </div>

@@ -21,7 +21,27 @@ export async function verifyTherapistMagicLink(token: string): Promise<void> {
 }
 
 export async function therapistLogoutAction(): Promise<void> {
-  return signOut()
+  const { cookies } = await import('next/headers')
+  const { redirect } = await import('next/navigation')
+  
+  const cookieStore = await cookies()
+  
+  // Clear all possible auth cookies
+  const cookieNames = [
+    'quiet_individual_user',
+    'quiet_therapist_user', 
+    'quiet_partner_user',
+    'quiet_admin_user'
+  ]
+  
+  cookieNames.forEach(cookieName => {
+    cookieStore.delete(cookieName)
+  })
+  
+  console.log('✅ Therapist logged out, redirecting to therapist login')
+  
+  // Redirect to THERAPIST login with fresh_login flag
+  redirect('/therapist/login?fresh_login=true')
 }
 
 /**
@@ -37,7 +57,13 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
     const specialization = formData.getAll('specialization') as string[]
     const languages = formData.getAll('languages') as string[]
     
-    if (!email || !fullName || !phone || !licensedQualification) {
+    // NEW: Personal information fields
+    const gender = formData.get('gender') as string
+    const age = formData.get('age') as string
+    const maritalStatus = formData.get('maritalStatus') as string
+    const bio = formData.get('bio') as string
+    
+    if (!email || !fullName || !phone || !licensedQualification || !gender || !age || !maritalStatus || !bio) {
       return {
         success: false,
         error: 'All required fields must be filled'
@@ -74,7 +100,7 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
       }
     }
 
-    // Create enrollment record
+    // Create enrollment record with ALL fields
     const { error: enrollmentError } = await supabase
       .from('therapist_enrollments')
       .insert({
@@ -84,7 +110,11 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
         licensed_qualification: licensedQualification,
         specialization,
         languages,
-        status: 'pending'
+        gender,
+        age: parseInt(age),
+        marital_status: maritalStatus,
+        bio,
+        status: 'pending' // Admin needs to approve before they can set availability
       })
 
     if (enrollmentError) {
@@ -97,11 +127,22 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
 
     console.log('✅ Enrollment saved successfully')
 
-    // Enrollment successful - admin will review and approve
-    return {
-      success: true,
-      message: 'Enrollment submitted successfully! Our admin team will review your application and contact you via email within 24-48 hours.'
-    }
+    // Send magic link to create account and access dashboard
+    // They can login but can't set availability until admin approves
+    const result = await therapistSignUp({
+      email,
+      fullName,
+      phone,
+      licensedQualification,
+      specialization,
+      languages,
+      gender,
+      age,
+      maritalStatus,
+      bio
+    })
+
+    return result
   } catch (error) {
     console.error('Therapist enrollment error:', error)
     return {

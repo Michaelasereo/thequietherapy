@@ -164,14 +164,14 @@ export default function PartnerDashboardLayout({
           <div className="flex-1">
             {/* Pending Approval Banner */}
             {isPending && (
-              <div className="bg-yellow-50 border-b border-yellow-200 p-4">
+              <div className="bg-amber-50 border-b border-amber-200 p-4">
                 <div className="flex items-center">
-                  <Clock className="h-5 w-5 text-yellow-600 mr-3" />
+                  <div className="w-5 h-5 rounded-full bg-slate-800 text-amber-50 flex items-center justify-center text-xs font-bold mr-3">i</div>
                   <div>
-                    <h3 className="text-sm font-medium text-yellow-800">
+                    <h3 className="text-sm font-medium text-slate-800">
                       Account Pending Approval
                     </h3>
-                    <p className="text-sm text-yellow-700">
+                    <p className="text-sm text-slate-700">
                       Your partnership application is under review. Full access will be available within 24-48 hours.
                     </p>
                   </div>
@@ -181,14 +181,14 @@ export default function PartnerDashboardLayout({
 
             {/* Approved Banner */}
             {isApproved && (
-              <div className="bg-green-50 border-b border-green-200 p-4">
+              <div className="bg-amber-50 border-b border-amber-200 p-4">
                 <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+                  <div className="w-5 h-5 rounded-full bg-slate-800 text-amber-50 flex items-center justify-center text-xs font-bold mr-3">✓</div>
                   <div>
-                    <h3 className="text-sm font-medium text-green-800">
+                    <h3 className="text-sm font-medium text-slate-800">
                       Account Approved
                     </h3>
-                    <p className="text-sm text-green-700">
+                    <p className="text-sm text-slate-700">
                       Welcome to the full partner portal! All features are now available.
                     </p>
                   </div>

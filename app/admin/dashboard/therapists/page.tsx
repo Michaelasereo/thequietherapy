@@ -80,9 +80,16 @@ function TherapistsContent() {
   const fetchTherapists = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/therapists')
+      const response = await fetch(`/api/admin/therapists?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
+        console.log('📋 Fetched therapists:', data.length)
         setTherapists(data)
       } else {
         toast.error('Failed to fetch therapists')
@@ -224,6 +231,8 @@ function TherapistsContent() {
     try {
       setProcessingId(therapistId)
       
+      console.log('🔍 Approving therapist:', therapistId)
+      
       const response = await fetch('/api/admin/approve-verification', {
         method: 'POST',
         headers: {
@@ -232,14 +241,22 @@ function TherapistsContent() {
         body: JSON.stringify({
           id: therapistId,
           type: 'therapist',
-          action: 'approve',
-          approvalType: 'availability'
+          action: 'approve'
         }),
       })
 
       if (response.ok) {
         const result = await response.json()
-        toast.success(result.message || 'Availability update approved successfully')
+        console.log('✅ Therapist approved:', result)
+        
+        toast.success(result.message || 'Therapist approved successfully')
+        
+        // Update local state immediately for better UX
+        setTherapists(prev => prev.map(t => 
+          t.id === therapistId 
+            ? { ...t, status: 'approved', is_verified: true, is_active: true } 
+            : t
+        ))
         
         // 🔥 CRITICAL: Check for the invalidates flag and trigger a refetch
         if (result.invalidates && result.invalidates.includes('therapist-profile')) {
@@ -247,14 +264,19 @@ function TherapistsContent() {
           triggerTherapistDataRefresh()
         }
         
-        fetchTherapists() // Refresh the admin list
+        // Refresh the admin list after a delay to ensure database sync
+        setTimeout(() => {
+          console.log('🔄 Refreshing therapists list...')
+          fetchTherapists()
+        }, 1000)
       } else {
         const errorData = await response.json()
-        toast.error(errorData.error || 'Failed to approve availability')
+        console.error('❌ Approval failed:', errorData)
+        toast.error(errorData.error || 'Failed to approve therapist')
       }
     } catch (error) {
-      console.error('Error approving availability:', error)
-      toast.error('Failed to approve availability')
+      console.error('❌ Error approving therapist:', error)
+      toast.error('Failed to approve therapist')
     } finally {
       setProcessingId(null)
     }
@@ -425,8 +447,8 @@ function TherapistsContent() {
       <Alert className="border-blue-200 bg-blue-50">
         <Info className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-800">
-          <strong>Availability Update Process:</strong> Therapists can request availability updates which require admin approval. 
-          Please review the requested changes before approving or rejecting availability updates.
+          <strong>Therapist Approval Process:</strong> New therapist enrollments require admin approval. 
+          When you approve a therapist, they gain full access to the platform including the ability to set their availability and accept sessions.
         </AlertDescription>
       </Alert>
 
@@ -454,12 +476,12 @@ function TherapistsContent() {
         </Card>
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Availability Approved</CardTitle>
+            <CardTitle className="text-sm font-medium">Verified Therapists</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{therapistStats.verified}</div>
-            <p className="text-xs text-muted-foreground">Availability approved</p>
+            <p className="text-xs text-muted-foreground">Approved & verified</p>
           </CardContent>
         </Card>
         <Card className="shadow-sm">

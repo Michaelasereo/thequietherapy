@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { TherapistConsistencyManager } from '@/lib/therapist-consistency'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,7 +9,9 @@ const supabase = createClient(
 
 export async function POST(request: Request) {
   try {
-    const { id, type, action, approvalType } = await request.json()
+    const { id, type, action } = await request.json()
+
+    console.log(`🔍 Approval request received:`, { id, type, action })
 
     if (!id || !type || !action) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -18,54 +21,96 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    // Handle availability approval separately from general verification
-    if (approvalType === 'availability') {
-      return await handleAvailabilityApproval(id, type, action)
-    }
-
     if (type === 'therapist') {
-      // Update therapist enrollment status
-      const { error: enrollmentError } = await supabase
+      // Try to get enrollment by ID first (for approvals from pending verifications card)
+      let { data: enrollment, error: getError } = await supabase
         .from('therapist_enrollments')
-        .update({ 
-          status: action === 'approve' ? 'approved' : 'rejected',
-          updated_at: new Date().toISOString()
-        })
+        .select('id, email, full_name')
         .eq('id', id)
+        .single()
 
-      if (enrollmentError) {
-        console.error('Error updating therapist enrollment:', enrollmentError)
-        return NextResponse.json({ error: 'Failed to update therapist enrollment' }, { status: 500 })
-      }
-
-      // If approving, also update the user account
-      if (action === 'approve') {
-        // Get the therapist email from enrollment
-        const { data: enrollment, error: getError } = await supabase
-          .from('therapist_enrollments')
-          .select('email')
+      // If not found, the ID might be a user ID (for approvals from therapists table)
+      if (getError || !enrollment) {
+        console.log('🔍 ID not found in enrollments, trying to find by user ID...')
+        
+        // Get user email first
+        const { data: user, error: userError } = await supabase
+          .from('users')
+          .select('email, full_name')
           .eq('id', id)
           .single()
 
-        if (getError || !enrollment) {
-          console.error('Error getting therapist email:', getError)
-          return NextResponse.json({ error: 'Failed to get therapist email' }, { status: 500 })
+        if (userError || !user) {
+          console.error('❌ Error getting user:', userError)
+          return NextResponse.json({ error: 'Therapist not found' }, { status: 404 })
         }
 
-        // Update user account
+        // Then find enrollment by email
+        const { data: enrollmentByEmail, error: enrollmentError } = await supabase
+          .from('therapist_enrollments')
+          .select('id, email, full_name')
+          .eq('email', user.email)
+          .single()
+
+        if (enrollmentError || !enrollmentByEmail) {
+          console.error('❌ Error getting enrollment by email:', enrollmentError)
+          return NextResponse.json({ error: 'Therapist enrollment not found' }, { status: 404 })
+        }
+
+        enrollment = enrollmentByEmail
+        console.log('✅ Found enrollment by user email:', enrollment.email)
+      }
+
+      console.log(`📧 Processing ${action} for therapist:`, enrollment.full_name, enrollment.email)
+
+      if (action === 'approve') {
+        // Use consistency manager for approval to ensure both tables are updated atomically
+        const result = await TherapistConsistencyManager.approveTherapist(enrollment.email)
+        
+        if (!result.success) {
+          console.error('❌ Approval failed via consistency manager:', result.error)
+          return NextResponse.json({ error: result.error }, { status: 500 })
+        }
+
+        console.log('✅ Therapist approved via consistency manager')
+      } else {
+        // Rejection: Update both tables
+        const { error: enrollmentError } = await supabase
+          .from('therapist_enrollments')
+          .update({ 
+            status: 'rejected',
+            is_active: false,
+            approved_at: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', enrollment.id)
+
+        if (enrollmentError) {
+          console.error('❌ Error updating therapist enrollment:', enrollmentError)
+          return NextResponse.json({ error: 'Failed to update therapist enrollment' }, { status: 500 })
+        }
+
         const { error: userError } = await supabase
           .from('users')
           .update({ 
-            is_verified: true,
-            is_active: true,
+            is_verified: false,
+            is_active: false,
             updated_at: new Date().toISOString()
           })
           .eq('email', enrollment.email)
 
         if (userError) {
-          console.error('Error updating user account:', userError)
+          console.error('❌ Error updating user account:', userError)
           return NextResponse.json({ error: 'Failed to update user account' }, { status: 500 })
         }
+
+        console.log('✅ Therapist rejected')
+      }
+
+      // Validate consistency after update
+      const validation = await TherapistConsistencyManager.validateConsistency(enrollment.email)
+      if (!validation.isConsistent) {
+        console.error('⚠️ Data inconsistency detected after update:', validation.issues)
       }
 
     } else if (type === 'partner') {
@@ -87,72 +132,21 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `${type} ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
-      invalidates: ['therapist-profile']
-    })
-
-  } catch (error) {
-    console.error('Error in approve-verification:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-async function handleAvailabilityApproval(id: string, type: string, action: string) {
-  try {
-    if (type === 'therapist') {
-      // Get the therapist email from enrollment
-      const { data: enrollment, error: getError } = await supabase
-        .from('therapist_enrollments')
-        .select('email')
-        .eq('id', id)
-        .single()
-
-      if (getError || !enrollment) {
-        console.error('Error getting therapist email:', getError)
-        return NextResponse.json({ error: 'Failed to get therapist email' }, { status: 500 })
-      }
-
-      // Update therapist enrollment status based on availability approval
-      const { error: enrollmentError } = await supabase
-        .from('therapist_enrollments')
-        .update({ 
-          status: action === 'approve' ? 'approved' : 'rejected',
-          approved_at: action === 'approve' ? new Date().toISOString() : null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-
-      if (enrollmentError) {
-        console.error('Error updating therapist availability approval:', enrollmentError)
-        return NextResponse.json({ error: 'Failed to update availability approval' }, { status: 500 })
-      }
-
-      // Update user account with verification status
-      const { error: userError } = await supabase
-        .from('users')
-        .update({ 
-          is_verified: action === 'approve',
-          is_active: action === 'approve',
-          updated_at: new Date().toISOString()
-        })
-        .eq('email', enrollment.email)
-
-      if (userError) {
-        console.error('Error updating user availability approval:', userError)
-        return NextResponse.json({ error: 'Failed to update user availability approval' }, { status: 500 })
-      }
-    }
+    console.log(`✅ ${type} ${action} completed successfully`)
 
     return NextResponse.json({ 
       success: true, 
-      message: `Therapist availability ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+      message: `${type} ${action === 'approve' ? 'approved' : 'rejected'} successfully (including availability)`,
       invalidates: ['therapist-profile']
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache'
+      }
     })
 
   } catch (error) {
-    console.error('Error in handleAvailabilityApproval:', error)
+    console.error('❌ Error in approve-verification:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

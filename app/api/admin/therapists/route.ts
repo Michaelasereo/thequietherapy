@@ -6,8 +6,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Add cache control headers to prevent stale data
+    console.log('🔍 Fetching therapists with fresh data...')
+    
     // Fetch therapists from users table
     const { data: therapistUsers, error: usersError } = await supabase
       .from('users')
@@ -51,7 +54,15 @@ export async function GET() {
       }
     }) || []
 
-    return NextResponse.json(transformedTherapists)
+    console.log(`✅ Fetched ${transformedTherapists.length} therapists`)
+
+    return NextResponse.json(transformedTherapists, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
   } catch (error) {
     console.error('Error fetching therapists:', error)
     return NextResponse.json([], { status: 500 })

@@ -493,10 +493,10 @@ export function TherapistDashboardProvider({ children }: { children: React.React
       })
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.data && data.data.therapist) {
-          console.log('🔍 Context: Setting therapist data:', data.data.therapist)
-          console.log('🔍 Context: availability_approved value:', data.data.therapist.availability_approved)
-          dispatch({ type: 'SET_THERAPIST', payload: data.data.therapist })
+        if (data.success && data.therapist) {
+          console.log('🔍 Context: Setting therapist data:', data.therapist)
+          console.log('🔍 Context: availability_approved value:', data.therapist.availability_approved)
+          dispatch({ type: 'SET_THERAPIST', payload: data.therapist })
         } else {
           dispatch({ type: 'SET_ERROR', payload: data.error || 'Failed to load therapist data' })
         }
@@ -528,10 +528,10 @@ export function TherapistDashboardProvider({ children }: { children: React.React
       
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.data && data.data.therapist) {
-          console.log('🔄 Context: Refetched data:', data.data.therapist)
-          console.log('🔄 Context: availability_approved value:', data.data.therapist.availability_approved)
-          dispatch({ type: 'SET_THERAPIST', payload: data.data.therapist })
+        if (data.success && data.therapist) {
+          console.log('🔄 Context: Refetched data:', data.therapist)
+          console.log('🔄 Context: availability_approved value:', data.therapist.availability_approved)
+          dispatch({ type: 'SET_THERAPIST', payload: data.therapist })
         } else {
           console.error('🔄 Context: Failed to refetch - invalid response:', data)
           dispatch({ type: 'SET_ERROR', payload: data.error || 'Failed to refetch therapist data' })
@@ -550,18 +550,25 @@ export function TherapistDashboardProvider({ children }: { children: React.React
 
   // Fetch clients
   const fetchClients = useCallback(async () => {
+    if (!state.therapist?.id) {
+      console.log('🔍 No therapist ID available for fetching clients')
+      return
+    }
+
     try {
-      const response = await fetch('/api/therapist/clients')
+      const response = await fetch(`/api/therapist/clients?therapistId=${state.therapist.id}`)
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.clients) {
+        if (data.clients) {
           dispatch({ type: 'SET_CLIENTS', payload: data.clients })
         }
+      } else {
+        console.error('Failed to fetch clients:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Failed to fetch clients:', error)
     }
-  }, [dispatch])
+  }, [dispatch, state.therapist?.id])
 
   // Fetch sessions
   const fetchSessions = useCallback(async () => {

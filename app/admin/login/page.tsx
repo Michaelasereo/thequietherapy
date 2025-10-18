@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Mail, ArrowLeft, Shield, CheckCircle, Users, Clock, Heart, DollarSign, Award } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { supabase } from '@/lib/supabase'
+import WarmMagicLinkNotification from '@/components/warm-magic-link-notification'
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
@@ -185,10 +186,7 @@ export default function AdminLoginPage() {
                 )}
 
                 {message && (
-                  <Alert>
-                    <Mail className="h-4 w-4" />
-                    <AlertDescription>{message}</AlertDescription>
-                  </Alert>
+                  <WarmMagicLinkNotification message={message} />
                 )}
 
                 <Button 

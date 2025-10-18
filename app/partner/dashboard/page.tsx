@@ -111,21 +111,21 @@ export default function PartnerOverviewPage() {
 
         {/* Under Review Card */}
         {isUnderReview && (
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-amber-200 bg-amber-50">
             <CardHeader>
-              <CardTitle className="flex items-center text-blue-800">
-                <Clock className="h-5 w-5 mr-2" />
+              <CardTitle className="flex items-center text-slate-800">
+                <div className="w-5 h-5 rounded-full bg-slate-800 text-amber-50 flex items-center justify-center text-xs font-bold mr-3">i</div>
                 Partnership Under Review
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <p className="text-blue-700">
+                <p className="text-slate-700">
                   🎉 <strong>Welcome to the platform!</strong> Your partnership has been automatically approved and you have full access to all features while our team conducts a final review.
                 </p>
-                <div className="bg-white p-4 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-800 mb-2">You Can Access:</h4>
-                  <ul className="text-sm text-blue-700 space-y-1">
+                <div className="bg-white p-4 rounded-lg border border-amber-200">
+                  <h4 className="font-semibold text-slate-800 mb-2">You Can Access:</h4>
+                  <ul className="text-sm text-slate-700 space-y-1">
                     <li>✅ All dashboard features and navigation</li>
                     <li>✅ Add and manage members</li>
                     <li>✅ Purchase and assign credits</li>
@@ -133,12 +133,12 @@ export default function PartnerOverviewPage() {
                     <li>✅ Complete partner onboarding</li>
                   </ul>
                 </div>
-                <div className="bg-blue-100 p-3 rounded-lg">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-amber-100 p-3 rounded-lg">
+                  <p className="text-sm text-slate-800">
                     <strong>Note:</strong> Our team will conduct a final review within 24-48 hours. You'll receive an email notification once the review is complete. Your access will continue uninterrupted.
                   </p>
                 </div>
-                <p className="text-sm text-blue-600">
+                <p className="text-sm text-slate-600">
                   <strong>Organization:</strong> {dashboardData?.partner?.company_name || 'Organization'} - {dashboardData?.partner?.organization_type || 'Organization Type'}
                 </p>
                 {dashboardData?.partner?.onboarding_data && (

@@ -298,24 +298,24 @@ export default function TherapistEnrollmentPage() {
               Enrollment Submitted Successfully!
             </DialogTitle>
             <DialogDescription>
-              Your application has been submitted and is pending review.
+              Check your email to access your dashboard.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+              <Mail className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="font-medium text-green-900">Application Received</p>
-                <p className="text-sm text-green-700">{enrollmentEmail}</p>
+                <p className="font-medium text-blue-900">Check Your Email</p>
+                <p className="text-sm text-blue-700">{enrollmentEmail}</p>
               </div>
             </div>
             
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p>✅ Your enrollment has been saved</p>
-              <p>👀 Our admin team will review your application</p>
-              <p>📧 We'll contact you via email within 24-48 hours</p>
-              <p>🔐 Once approved, you'll receive login credentials</p>
+              <p>📧 Look for an email with your dashboard access link</p>
+              <p>🔗 Click the link to access your therapist dashboard</p>
+              <p>👀 Your application is pending admin approval</p>
+              <p>⏳ You'll be able to set availability once approved</p>
             </div>
             
             <div className="flex gap-2">

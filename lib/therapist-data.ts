@@ -351,7 +351,7 @@ export const therapistDashboardSidebarGroups = [
 ]
 
 export const therapistDashboardBottomNavItems = [
-  { name: "Settings", href: "/therapist/dashboard/settings", icon: Settings },
+  { name: "Profile Settings", href: "/therapist/dashboard/settings", icon: Settings },
 ]
 
 // Legacy exports for backward compatibility - these will be populated with real data

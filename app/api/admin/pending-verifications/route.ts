@@ -10,8 +10,15 @@ function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString()
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Add cache control headers to prevent stale data
+    const headers = {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+
     // Fetch pending therapist enrollments
     const { data: therapistApplications, error: therapistError } = await supabase
       .from('therapist_enrollments')
@@ -71,7 +78,13 @@ export async function GET() {
     const allApplications = [...formattedTherapistApplications, ...formattedPartnerApplications]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-    return NextResponse.json(allApplications)
+    return NextResponse.json(allApplications, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
   } catch (error) {
     console.error('Error fetching pending verifications:', error)
     return NextResponse.json([], { status: 500 })

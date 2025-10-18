@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireApiAuth } from '@/lib/server-auth'
 import { handleApiError, ValidationError, successResponse } from '@/lib/api-response'
+import { TherapistConsistencyManager } from '@/lib/therapist-consistency'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -211,19 +212,25 @@ export async function POST(request: NextRequest) {
 
 async function handleIsActiveToggle(therapistEmail: string, body: { isActive: boolean }) {
   try {
+    console.log(`🔄 Toggling is_active to ${body.isActive} for ${therapistEmail}`)
     
-    // Update therapist is_active status
-    const { error } = await supabase
-      .from('therapists')
-      .update({ is_active: body.isActive })
-      .eq('email', therapistEmail)
+    // Use consistency manager to update BOTH tables atomically
+    const result = await TherapistConsistencyManager.setTherapistActive(therapistEmail, body.isActive)
 
-    if (error) {
-      console.error('Error updating therapist active status:', error)
+    if (!result.success) {
+      console.error('❌ Failed to toggle active status:', result.error)
       return NextResponse.json(
-        { success: false, error: 'Failed to update active status' },
+        { success: false, error: result.error || 'Failed to update active status' },
         { status: 500 }
       )
+    }
+
+    console.log(`✅ Successfully toggled is_active to ${body.isActive} for ${therapistEmail}`)
+
+    // Validate consistency
+    const validation = await TherapistConsistencyManager.validateConsistency(therapistEmail)
+    if (!validation.isConsistent) {
+      console.error('⚠️ Data inconsistency detected after toggle:', validation.issues)
     }
 
     return NextResponse.json({

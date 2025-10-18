@@ -134,7 +134,7 @@ export default function RootLayout({
               "name": "Quiet - Healthcare Mental Health Platform",
               "description": "Professional mental health support platform designed specifically for healthcare professionals and medical students. Providing licensed therapists, physician wellness programs, and medical student counseling services.",
               "url": "https://quiet-app.com",
-              "logo": "https://quiet-app.com/logo-black.svg",
+              "logo": "https://quiet-app.com/logo-quietherapy-black-version.png",
               "image": "https://quiet-app.com/og-image.jpg",
               "telephone": "+234-800-QUIET-01",
               "email": "support@quiet-app.com",

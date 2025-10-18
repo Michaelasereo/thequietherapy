@@ -1,17 +1,38 @@
--- Add gender, marital_status, and age columns to therapist_profiles table
--- This script adds the new fields that therapists can update in their profile
+-- Add missing profile fields to therapist_enrollments table
+-- Run this in your Supabase SQL Editor
 
-ALTER TABLE therapist_profiles 
-ADD COLUMN IF NOT EXISTS gender VARCHAR(50),
-ADD COLUMN IF NOT EXISTS marital_status VARCHAR(50),
-ADD COLUMN IF NOT EXISTS age VARCHAR(10);
+-- Add gender column if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'therapist_enrollments' 
+                   AND column_name = 'gender') THEN
+        ALTER TABLE therapist_enrollments ADD COLUMN gender VARCHAR(20);
+    END IF;
+END $$;
 
--- Add comments to document the new fields
-COMMENT ON COLUMN therapist_profiles.gender IS 'Therapist gender preference for client matching';
-COMMENT ON COLUMN therapist_profiles.marital_status IS 'Therapist marital status for client matching';
-COMMENT ON COLUMN therapist_profiles.age IS 'Therapist age for client matching';
+-- Add age column if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'therapist_enrollments' 
+                   AND column_name = 'age') THEN
+        ALTER TABLE therapist_enrollments ADD COLUMN age INTEGER;
+    END IF;
+END $$;
 
--- Update existing records to have empty strings instead of null for better UI handling
-UPDATE therapist_profiles 
-SET gender = '', marital_status = '', age = ''
-WHERE gender IS NULL OR marital_status IS NULL OR age IS NULL;
+-- Add marital_status column if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'therapist_enrollments' 
+                   AND column_name = 'marital_status') THEN
+        ALTER TABLE therapist_enrollments ADD COLUMN marital_status VARCHAR(20);
+    END IF;
+END $$;
+
+-- Show the current table structure
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns 
+WHERE table_name = 'therapist_enrollments'
+ORDER BY ordinal_position;

@@ -252,21 +252,42 @@ export async function requireApiAuth(allowedUserTypes?: string[]): Promise<{ ses
   const unifiedSession = await ServerSessionManager.getSession()
   
   if (unifiedSession) {
-    // Convert unified session to ServerSession format
+    // CRITICAL: Verify current is_active and is_verified status from database
+    // Don't trust cached session values as they may be stale after admin approval
+    const { data: freshUser, error: userError } = await supabase
+      .from('users')
+      .select('is_active, is_verified, user_type, full_name')
+      .eq('id', unifiedSession.id)
+      .single()
+    
+    if (userError || !freshUser) {
+      console.error('❌ Failed to verify user status:', userError)
+      return { 
+        error: new Response(
+          JSON.stringify({ error: 'Failed to verify account status' }), 
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+    
+    console.log(`🔍 User ${unifiedSession.email} status - is_active: ${freshUser.is_active}, is_verified: ${freshUser.is_verified}`)
+    
+    // Convert unified session to ServerSession format with fresh database values
     const session: ServerSession = {
       user: {
         id: unifiedSession.id,
         email: unifiedSession.email,
-        full_name: unifiedSession.name,
-        user_type: unifiedSession.user_type as 'individual' | 'therapist' | 'partner' | 'admin',
-        is_verified: unifiedSession.is_verified,
-        is_active: unifiedSession.is_active
+        full_name: freshUser.full_name || unifiedSession.name,
+        user_type: freshUser.user_type as 'individual' | 'therapist' | 'partner' | 'admin',
+        is_verified: freshUser.is_verified,
+        is_active: freshUser.is_active
       },
       session_token: unifiedSession.session_token || '',
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
     }
     
     if (!session.user.is_active) {
+      console.log('❌ Account is not active for user:', unifiedSession.email)
       return { 
         error: new Response(
           JSON.stringify({ error: 'Account disabled' }), 
@@ -284,6 +305,7 @@ export async function requireApiAuth(allowedUserTypes?: string[]): Promise<{ ses
       }
     }
     
+    console.log('✅ User authenticated and active:', unifiedSession.email)
     return { session }
   }
   
@@ -299,7 +321,23 @@ export async function requireApiAuth(allowedUserTypes?: string[]): Promise<{ ses
     }
   }
   
+  // CRITICAL: Verify current is_active status from database for legacy sessions too
+  const { data: freshUser, error: userError } = await supabase
+    .from('users')
+    .select('is_active, is_verified, user_type, full_name')
+    .eq('id', session.user.id)
+    .single()
+  
+  if (freshUser) {
+    console.log(`🔍 Legacy session user ${session.user.email} status - is_active: ${freshUser.is_active}`)
+    // Update session with fresh values
+    session.user.is_active = freshUser.is_active
+    session.user.is_verified = freshUser.is_verified
+    session.user.user_type = freshUser.user_type as 'individual' | 'therapist' | 'partner' | 'admin'
+  }
+  
   if (!session.user.is_active) {
+    console.log('❌ Account is not active for user:', session.user.email)
     return { 
       error: new Response(
         JSON.stringify({ error: 'Account disabled' }), 
@@ -317,5 +355,6 @@ export async function requireApiAuth(allowedUserTypes?: string[]): Promise<{ ses
     }
   }
   
+  console.log('✅ Legacy session user authenticated and active:', session.user.email)
   return { session }
 }

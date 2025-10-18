@@ -37,11 +37,25 @@ export async function GET(request: NextRequest) {
           full_name: therapistData.full_name,
           phone: therapistData.phone,
           specialization: therapistData.specialization,
+          specializations: therapistData.specializations,
           languages: therapistData.languages,
+          languages_array: therapistData.languages_array,
           status: therapistData.status,
           is_active: therapistData.is_active,
           hourly_rate: therapistData.hourly_rate,
-          bio: therapistData.bio
+          bio: therapistData.bio,
+          mdcn_code: therapistData.mdcn_code,
+          license_number: therapistData.license_number,
+          experience_years: therapistData.experience_years,
+          education: therapistData.education,
+          is_verified: therapistData.is_verified,
+          license_verified: therapistData.license_verified,
+          id_verified: therapistData.id_verified,
+          gender: therapistData.gender,
+          age: therapistData.age,
+          marital_status: therapistData.marital_status,
+          created_at: therapistData.created_at,
+          updated_at: therapistData.updated_at
         }
       }
 
@@ -170,11 +184,25 @@ export async function GET(request: NextRequest) {
         full_name: therapist.full_name,
         phone: therapist.phone,
         specialization: therapist.specialization,
+        specializations: therapist.specializations,
         languages: therapist.languages,
+        languages_array: therapist.languages_array,
         status: therapist.status,
         is_active: therapist.is_active,
         hourly_rate: therapist.hourly_rate,
-        bio: therapist.bio
+        bio: therapist.bio,
+        mdcn_code: therapist.mdcn_code,
+        license_number: therapist.license_number,
+        experience_years: therapist.experience_years,
+        education: therapist.education,
+        is_verified: therapist.is_verified,
+        license_verified: therapist.license_verified,
+        id_verified: therapist.id_verified,
+        gender: therapist.gender,
+        age: therapist.age,
+        marital_status: therapist.marital_status,
+        created_at: therapist.created_at,
+        updated_at: therapist.updated_at
       }
     }
 

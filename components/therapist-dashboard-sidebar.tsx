@@ -84,11 +84,6 @@ export default function TherapistDashboardSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.href)}
-                        className={
-                          isActive(item.href)
-                            ? "bg-sidebar-active-bg text-sidebar-active-foreground hover:bg-sidebar-active-bg hover:text-sidebar-active-foreground"
-                            : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        }
                       >
                         <Link href={item.href}>
                           <item.icon className="h-5 w-5" />
@@ -124,11 +119,6 @@ export default function TherapistDashboardSidebar() {
               <SidebarMenuButton
                 asChild
                 isActive={isActive(item.href)}
-                className={
-                  isActive(item.href)
-                    ? "bg-sidebar-active-bg text-sidebar-active-foreground hover:bg-sidebar-active-bg hover:text-sidebar-active-foreground"
-                    : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                }
               >
                 <Link href={item.href}>
                   <item.icon className="h-5 w-5" />

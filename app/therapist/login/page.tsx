@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,12 +11,32 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Mail, ArrowLeft, Stethoscope, CheckCircle, Shield, Users, Clock, Heart, DollarSign, Award } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { supabase } from '@/lib/supabase'
+import WarmMagicLinkNotification from '@/components/warm-magic-link-notification'
 
 export default function TherapistLoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+
+  // REMOVED AUTO-REDIRECT: Always show login form
+  // Users can manually navigate to /therapist/dashboard if already logged in
+  useEffect(() => {
+    // Check if this is a fresh login (from logout)
+    const urlParams = new URLSearchParams(window.location.search)
+    const isFreshLogin = urlParams.get('fresh_login') === 'true'
+    
+    if (isFreshLogin) {
+      console.log('🔍 TherapistLogin: Fresh login requested, clearing session')
+      
+      // Clear any existing session
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      }).catch(err => console.error('Error clearing session:', err))
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,7 +77,7 @@ export default function TherapistLoginPage() {
     }
   }
 
-
+  // Always show the login form immediately (no auth check)
   return (
     <div className="min-h-screen flex">
       {/* Left Section - Black Background with Therapist Benefits */}
@@ -205,10 +226,7 @@ export default function TherapistLoginPage() {
                 )}
 
                 {message && (
-                  <Alert>
-                    <Mail className="h-4 w-4" />
-                    <AlertDescription>{message}</AlertDescription>
-                  </Alert>
+                  <WarmMagicLinkNotification message={message} />
                 )}
 
                 <Button 
@@ -216,8 +234,19 @@ export default function TherapistLoginPage() {
                   className="w-full" 
                   disabled={isLoading || !email.trim()}
                 >
-                  {isLoading ? 'Sending...' : 'Send Magic Link'}
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Sending...
+                    </span>
+                  ) : 'Send Magic Link'}
                 </Button>
+                
+                {isLoading && (
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    ⏱️ Sending email, this may take a few seconds...
+                  </p>
+                )}
               </form>
 
               <div className="mt-6 text-center">

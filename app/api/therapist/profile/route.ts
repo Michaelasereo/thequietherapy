@@ -18,6 +18,11 @@ export async function GET(request: NextRequest) {
     const therapistUserId = session.id // This is now TRUSTED and verified
     const email = session.email
 
+    console.log('🔍 Therapist profile API: Session data:', { 
+      id: therapistUserId, 
+      email: email, 
+      role: session.role 
+    })
     console.log('🔍 Therapist profile API: Looking for therapist with email:', email)
 
     const supabase = createClient(
@@ -39,14 +44,34 @@ export async function GET(request: NextRequest) {
     let enrollmentData = null
     if (profileError || !profile) {
       console.log('🔍 No profile found, checking therapist_enrollments table...')
-      const { data: enrollment, error: enrollmentError } = await supabase
+      
+      // First try to find by user_id
+      let { data: enrollment, error: enrollmentError } = await supabase
         .from('therapist_enrollments')
         .select('*')
         .eq('user_id', therapistUserId)
         .single()
       
-      console.log('🔍 Enrollment data:', enrollment)
-      console.log('🔍 Enrollment error:', enrollmentError)
+      console.log('🔍 Enrollment data by user_id:', enrollment)
+      console.log('🔍 Enrollment error by user_id:', enrollmentError)
+      
+      // If user_id lookup fails, try by email
+      if (enrollmentError || !enrollment) {
+        console.log('🔍 user_id lookup failed, trying email lookup...')
+        const { data: enrollmentByEmail, error: enrollmentByEmailError } = await supabase
+          .from('therapist_enrollments')
+          .select('*')
+          .eq('email', email)
+          .single()
+        
+        console.log('🔍 Enrollment data by email:', enrollmentByEmail)
+        console.log('🔍 Enrollment error by email:', enrollmentByEmailError)
+        
+        if (enrollmentByEmail && !enrollmentByEmailError) {
+          enrollment = enrollmentByEmail
+          enrollmentError = enrollmentByEmailError
+        }
+      }
       
       if (enrollment && !enrollmentError) {
         enrollmentData = enrollment
@@ -54,25 +79,60 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user account data
-    const { data: user, error: userError } = await supabase
+    let { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
       .single()
 
-    console.log('🔍 User data:', user)
-    console.log('🔍 User error:', userError)
+    console.log('🔍 User data by email:', user)
+    console.log('🔍 User error by email:', userError)
+
+    // If email lookup fails, try by ID
+    if (userError || !user) {
+      console.log('🔍 Email lookup failed, trying ID lookup...')
+      const { data: userById, error: userByIdError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', therapistUserId)
+        .single()
+      
+      console.log('🔍 User data by ID:', userById)
+      console.log('🔍 User error by ID:', userByIdError)
+      
+      if (userById && !userByIdError) {
+        user = userById
+        userError = userByIdError
+      }
+    }
 
     if (userError || !user) {
+      console.error('❌ User account not found:', {
+        email: email,
+        therapistUserId: therapistUserId,
+        userError: userError
+      })
       return NextResponse.json({
         success: false,
-        error: "User account not found"
+        error: "User account not found",
+        debug: {
+          email: email,
+          therapistUserId: therapistUserId,
+          userError: userError?.message
+        }
       }, { status: 404 })
     }
 
     // If no profile or enrollment data found, return basic user data
     if (!profile && !enrollmentData) {
       console.log('⚠️ No profile or enrollment data found, returning basic user data')
+      console.log('🔍 Debug info:', {
+        profile: profile,
+        enrollmentData: enrollmentData,
+        user: user,
+        email: email,
+        therapistUserId: therapistUserId
+      })
       
       const basicTherapistData = {
         id: user.id,
@@ -82,7 +142,7 @@ export async function GET(request: NextRequest) {
         license_number: '',
         is_verified: user.is_verified,
         is_active: user.is_active,
-        availability_approved: false, // No enrollment data means not approved
+        availability_approved: user.is_verified && user.is_active, // Use user verification status
         rating: 4.8,
         total_sessions: 0,
         total_clients: 0,
@@ -116,10 +176,14 @@ export async function GET(request: NextRequest) {
     // Use profile data if available, otherwise fall back to enrollment data
     const dataSource = profile || enrollmentData
     
-    console.log('🔍 Data source being used:', dataSource)
-    console.log('🔍 Enrollment data for approval status:', enrollmentData)
-    console.log('🔍 Specialization raw data:', dataSource?.specialization)
-    console.log('🔍 Languages raw data:', dataSource?.languages)
+    // Get profile image from enrollment data (SINGLE SOURCE OF TRUTH)
+    const profileImageUrl = enrollmentData?.profile_image_url || profile?.profile_image_url || null
+    
+    console.log('🔍 API: Data source being used:', dataSource)
+    console.log('🔍 API: profile_image_url (standardized):', profileImageUrl)
+    console.log('🔍 API: Enrollment data for approval status:', enrollmentData)
+    console.log('🔍 API: Specialization raw data:', dataSource?.specialization)
+    console.log('🔍 API: Languages raw data:', dataSource?.languages)
     
     // Parse specialization data
     let parsedSpecialization = []
@@ -148,16 +212,37 @@ export async function GET(request: NextRequest) {
     }
     console.log('🔍 Parsed languages:', parsedLanguages)
     
+    // Parse edit tracking data
+    const editedFields = enrollmentData?.edited_fields || []
+    const originalEnrollmentData = enrollmentData?.original_enrollment_data || null
+    const profileUpdatedAt = enrollmentData?.profile_updated_at || null
+
+    console.log('🔍 Edit tracking data:', {
+      editedFields,
+      hasOriginalData: !!originalEnrollmentData,
+      profileUpdatedAt
+    })
+    
     // Combine profile and user data
+    // STANDARDIZED: Only use profile_image_url (no aliases)
     const therapistData = {
       id: user.id,
       email: user.email,
       full_name: user.full_name || user.name,
       specialization: parsedSpecialization,
-      license_number: dataSource?.mdcn_code || '',
+      license_number: dataSource?.licensed_qualification || dataSource?.mdcn_code || '',
       is_verified: user.is_verified,
       is_active: user.is_active,
       availability_approved: user.is_verified && user.is_active, // Use user verification status for availability approval
+      
+      // Debug info for availability approval
+      debug_availability: {
+        user_verified: user.is_verified,
+        user_active: user.is_active,
+        enrollment_status: dataSource?.status,
+        enrollment_active: dataSource?.is_active,
+        calculated_approval: user.is_verified && user.is_active
+      },
       rating: 4.8, // Default rating
       total_sessions: 0, // Will be calculated from sessions table
       total_clients: 0, // Will be calculated from clients table
@@ -174,14 +259,19 @@ export async function GET(request: NextRequest) {
       phone: dataSource?.phone || '',
       languages: parsedLanguages,
       bio: dataSource?.bio || '',
-      status: dataSource?.verification_status || 'pending',
+      status: dataSource?.status || dataSource?.verification_status || 'pending',
       experience_years: dataSource?.experience_years || 0,
-      profile_image: dataSource?.profile_image_url || null,
+      profile_image_url: profileImageUrl, // ✅ SINGLE STANDARDIZED FIELD
       gender: dataSource?.gender || '',
       maritalStatus: dataSource?.marital_status || '',
       age: dataSource?.age || '',
       created_at: dataSource?.created_at || new Date().toISOString(),
-      updated_at: dataSource?.updated_at || new Date().toISOString()
+      updated_at: dataSource?.updated_at || new Date().toISOString(),
+      // Edit tracking metadata
+      edited_fields: editedFields,
+      original_enrollment_data: originalEnrollmentData,
+      profile_updated_at: profileUpdatedAt,
+      enrollment_date: dataSource?.created_at || new Date().toISOString()
     }
 
     console.log('🔍 Returning therapist data:', therapistData)

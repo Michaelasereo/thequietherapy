@@ -151,68 +151,7 @@ export default function TherapistVerificationPage() {
         </CardContent>
       </Card>
 
-      {/* Overall Status */}
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
-            Profile Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mt-3 p-3 bg-brand-gold/10 border border-brand-gold rounded-md">
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-brand-gold" />
-              <span className="text-sm text-gray-900 font-medium">Manual Verification In Progress</span>
-            </div>
-            <p className="text-xs text-gray-900 mt-2">
-              Your license and ID information submitted during registration is being verified manually by our admin team. 
-              Complete the Bio section below to finish setting up your therapist profile.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Bio */}
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle>Bio</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Full Name</label>
-              <Input placeholder="Enter your full name" />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Age</label>
-              <Input type="number" placeholder="Enter your age" />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Gender</label>
-              <Input placeholder="e.g., Male, Female, Non-binary" />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Marital Status</label>
-              <Input placeholder="e.g., Single, Married, Divorced" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="text-sm font-medium mb-1 block">Specialization</label>
-              <Input placeholder="e.g., CBT, Trauma-Informed Therapy, Depression" />
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Professional Bio</label>
-            <Textarea 
-              placeholder="Write a brief professional bio describing your experience, approach, and areas of expertise..." 
-              className="min-h-[100px]"
-            />
-          </div>
-          <div className="flex justify-end">
-            <Button>Save Bio</Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

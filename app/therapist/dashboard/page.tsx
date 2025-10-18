@@ -136,11 +136,14 @@ const TherapistDashboardPage = memo(function TherapistDashboardPage() {
     console.log('Session Updated:', `Session status changed to ${newStatus}`);
   };
 
+  // Get user's display name early for loading state
+  const displayName = user?.full_name || user?.email?.split('@')[0] || 'Therapist'
+
   if (loading) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold">Therapist Dashboard</h1>
+          <h1 className="text-2xl font-semibold">Welcome back, {displayName}</h1>
           <p className="text-sm text-muted-foreground mt-1">Loading dashboard data...</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -169,7 +172,7 @@ const TherapistDashboardPage = memo(function TherapistDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">
-            Welcome, {therapist?.full_name || therapist?.name || user?.full_name || 'Therapist'}
+            Welcome back, {displayName}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {therapist?.specialization && Array.isArray(therapist.specialization) && therapist.specialization.length > 0 
@@ -283,15 +286,33 @@ const TherapistDashboardPage = memo(function TherapistDashboardPage() {
       </div>
 
       {/* Notifications / Important Updates section */}
-      <Card className="shadow-sm">
+      <Card className="shadow-sm bg-amber-50 border-amber-200">
         <CardHeader>
-          <CardTitle>Notifications & Important Updates</CardTitle>
+          <CardTitle className="text-slate-800 flex items-center">
+            <div className="w-5 h-5 rounded-full bg-slate-800 text-amber-50 flex items-center justify-center text-xs font-bold mr-3">i</div>
+            Notifications & Important Updates
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2 text-muted-foreground">
-            <p>• Reminder: Your profile review is due by September 30th.</p>
-            <p>• New feature: Enhanced client notes are now available.</p>
-            <p>• Platform update: Scheduled maintenance on October 5th, 2 AM - 4 AM UTC.</p>
+          <div className="space-y-3 text-slate-700">
+            <p className="flex items-start">
+              <span className="text-amber-600 mr-2">•</span>
+              <span>Reminder: Your profile review is due by September 30th.</span>
+            </p>
+            <p className="flex items-start">
+              <span className="text-amber-600 mr-2">•</span>
+              <span>New feature: Enhanced client notes are now available.</span>
+            </p>
+            <p className="flex items-start">
+              <span className="text-amber-600 mr-2">•</span>
+              <span>Platform update: Scheduled maintenance on October 5th, 2 AM - 4 AM UTC.</span>
+            </p>
+            {therapist?.is_pending && (
+              <p className="flex items-start">
+                <span className="text-amber-600 mr-2">•</span>
+                <span>Your therapist application is under review. You'll receive an email once approved.</span>
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

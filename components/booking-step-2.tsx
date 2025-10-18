@@ -55,7 +55,7 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
             id: therapist.id,
             name: therapist.full_name || 'Unknown Therapist',
             email: therapist.email,
-            picture: therapist.profile_image_url || '/placeholder.svg',
+            profile_image_url: therapist.profile_image_url || '/placeholder.svg', // ✅ STANDARDIZED
             specialization: Array.isArray(therapist.specializations) 
               ? therapist.specializations.join(', ') || 'General Therapy'
               : therapist.specializations || 'General Therapy',

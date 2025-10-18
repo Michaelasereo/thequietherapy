@@ -11,19 +11,21 @@ interface LogoProps {
 
 export function Logo({ className, size = "md", variant = "auto" }: LogoProps) {
   const sizeClasses = {
-    sm: "h-8 w-auto",
-    md: "h-10 w-auto", 
-    lg: "h-16 w-auto"
+    sm: "h-10 w-auto",
+    md: "h-12 w-auto", 
+    lg: "h-20 w-auto"
   }
 
   const getLogoSrc = () => {
+    // Add version parameter to force reload of new logo
+    const version = "v3"
     if (variant === "light") {
-      return "/quiet-logo-whitee.png"
+      return `/logo-quietherapy-white-version.png?v=${version}`
     } else if (variant === "dark") {
-      return "/quiet-logo-blackk.png"
+      return `/logo-quietherapy-black-version.png?v=${version}`
     } else {
       // Auto variant - default to dark logo for light backgrounds
-      return "/quiet-logo-blackk.png"
+      return `/logo-quietherapy-black-version.png?v=${version}`
     }
   }
 
@@ -32,7 +34,7 @@ export function Logo({ className, size = "md", variant = "auto" }: LogoProps) {
       <img
         src={getLogoSrc()}
         alt="Quiet Logo"
-        style={{ height: size === "sm" ? "32px" : size === "md" ? "40px" : "64px", width: "auto" }}
+        style={{ height: size === "sm" ? "40px" : size === "md" ? "48px" : "80px", width: "auto" }}
         onError={(e) => {
           console.error('Logo failed to load:', getLogoSrc());
           e.currentTarget.style.display = 'none';

@@ -582,21 +582,39 @@ function DashboardContent() {
       </Card>
 
       {/* Notifications / Important Updates section */}
-      <Card className="shadow-sm">
+      <Card className="shadow-sm bg-amber-50 border-amber-200">
         <CardHeader>
-          <CardTitle>Notifications & Important Updates</CardTitle>
+          <CardTitle className="text-slate-800 flex items-center">
+            <div className="w-5 h-5 rounded-full bg-slate-800 text-amber-50 flex items-center justify-center text-xs font-bold mr-3">i</div>
+            Notifications & Important Updates
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2 text-muted-foreground">
+          <div className="space-y-3 text-slate-700">
             {state.upcomingSessions.length > 0 ? (
-              <p>• Reminder: Your next session is scheduled for {format(new Date(state.upcomingSessions[0].date), "PPP")}.</p>
+              <p className="flex items-start">
+                <span className="text-amber-600 mr-2">•</span>
+                <span>Reminder: Your next session is scheduled for {format(new Date(state.upcomingSessions[0].date), "PPP")}.</span>
+              </p>
             ) : (
-              <p>• No upcoming sessions scheduled. Book your first session to get started!</p>
+              <p className="flex items-start">
+                <span className="text-amber-600 mr-2">•</span>
+                <span>No upcoming sessions scheduled. Book your first session to get started!</span>
+              </p>
             )}
-            <p>• New feature: Enhanced session notes are now available.</p>
-            <p>• Platform update: Scheduled maintenance on October 5th, 2 AM - 4 AM UTC.</p>
+            <p className="flex items-start">
+              <span className="text-amber-600 mr-2">•</span>
+              <span>New feature: Enhanced session notes are now available.</span>
+            </p>
+            <p className="flex items-start">
+              <span className="text-amber-600 mr-2">•</span>
+              <span>Platform update: Scheduled maintenance on October 5th, 2 AM - 4 AM UTC.</span>
+            </p>
             {state.stats.totalCredits < 2 && (
-              <p>• Low credits alert: You have {state.stats.totalCredits} credits remaining. Consider purchasing more credits.</p>
+              <p className="flex items-start">
+                <span className="text-amber-600 mr-2">•</span>
+                <span>Low credits alert: You have {state.stats.totalCredits} credits remaining. Consider purchasing more credits.</span>
+              </p>
             )}
           </div>
         </CardContent>

@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -22,6 +24,10 @@ const formSchema = z.object({
       { message: "Therapist enrollment requires an official company email. Please use your assigned work email." }
     ),
   phone: z.string().min(10, { message: "Phone number is required." }),
+  gender: z.string().min(1, { message: "Please select your gender." }),
+  age: z.string().min(1, { message: "Age is required." }),
+  maritalStatus: z.string().min(1, { message: "Please select your marital status." }),
+  bio: z.string().min(50, { message: "Bio must be at least 50 characters." }),
 })
 
 type BasicDetailsFormValues = z.infer<typeof formSchema>
@@ -44,6 +50,10 @@ export default function Step1BasicDetails({ onNext, initialData, onEmailStatusCh
       fullName: "",
       email: "",
       phone: "",
+      gender: "",
+      age: "",
+      maritalStatus: "",
+      bio: "",
     },
   })
 
@@ -190,12 +200,110 @@ export default function Step1BasicDetails({ onNext, initialData, onEmailStatusCh
             <FormItem>
               <FormLabel>Phone Number</FormLabel>
               <FormControl>
-                <Input placeholder="+1 (555) 123-4567" {...field} />
+                <Input placeholder="+234 802 123 4567" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {/* Personal Information Section */}
+        <div className="border-t pt-6 mt-6">
+          <h4 className="text-lg font-medium mb-4">Personal Information</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FormField
+              control={form.control}
+              name="gender"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Gender</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Non-binary">Non-binary</SelectItem>
+                      <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="age"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Age</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      placeholder="Age" 
+                      min="18" 
+                      max="100"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="maritalStatus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Marital Status</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Single">Single</SelectItem>
+                      <SelectItem value="Married">Married</SelectItem>
+                      <SelectItem value="Divorced">Divorced</SelectItem>
+                      <SelectItem value="Widowed">Widowed</SelectItem>
+                      <SelectItem value="Separated">Separated</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="bio"
+            render={({ field }) => (
+              <FormItem className="mt-4">
+                <FormLabel>Professional Bio</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Tell clients about your experience, approach, and specialties... (minimum 50 characters)"
+                    className="min-h-[120px]"
+                    {...field} 
+                  />
+                </FormControl>
+                <p className="text-sm text-muted-foreground">
+                  {field.value?.length || 0} / 50 characters minimum
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <Button 
           type="submit" 
           className="w-full" 

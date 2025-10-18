@@ -20,7 +20,11 @@ export function createTransporter() {
     },
     tls: {
       rejectUnauthorized: false
-    }
+    },
+    // Add connection timeout and greetingTimeout to speed up failures
+    connectionTimeout: 5000, // 5 seconds
+    greetingTimeout: 5000, // 5 seconds
+    socketTimeout: 10000, // 10 seconds
   });
 }
 
@@ -197,7 +201,13 @@ export async function sendMagicLinkEmail(email: string, verificationUrl: string,
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    // Add timeout to prevent hanging
+    const sendPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email send timeout')), 15000) // 15 second timeout
+    );
+    
+    const info = await Promise.race([sendPromise, timeoutPromise]) as any;
     console.log('Magic link email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {

@@ -52,7 +52,7 @@ interface TherapistCardProps {
   therapist: {
     id: string
     name: string
-    picture: string
+    profile_image_url?: string  // ✅ STANDARDIZED FIELD NAME
     specialization: string
     gender: string
     age: string
@@ -80,7 +80,7 @@ export default function TherapistCard({ therapist, onSelect, onViewProfile, isSe
       {/* Image Section with Overlay Button */}
       <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
         <Image
-          src={therapist.picture || "/placeholder.svg"}
+          src={therapist.profile_image_url || "/placeholder.svg"}
           alt={therapist.name}
           fill
           className="object-cover"
