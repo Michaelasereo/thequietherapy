@@ -101,20 +101,20 @@ function TherapistLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   // If we have therapist data, use it; otherwise use user data
-  const displayName = therapist?.full_name || user.full_name || user.email?.split('@')[0] || 'Therapist'
+  const displayName = therapist?.full_name || user?.full_name || user?.email?.split('@')[0] || 'Therapist'
 
   // Extract only the needed fields to avoid passing the entire user object
   // Prioritize therapist data which includes enrollment profile image
   const userInfo = { 
     name: displayName,
-    full_name: therapist?.full_name || user.full_name || '',
-    email: therapist?.email || user.email || '',
-    profile_image_url: therapist?.profile_image_url || user.profile_image_url // ✅ STANDARDIZED
+    full_name: therapist?.full_name || user?.full_name || '',
+    email: therapist?.email || user?.email || '',
+    profile_image_url: therapist?.profile_image_url // ✅ STANDARDIZED - only from therapist data
   }
   
   console.log('🔍 TherapistLayout: userInfo profile_image_url:', userInfo.profile_image_url)
   console.log('🔍 TherapistLayout: therapist profile_image_url:', therapist?.profile_image_url)
-  console.log('🔍 TherapistLayout: user profile_image_url:', user.profile_image_url)
+  console.log('🔍 TherapistLayout: user data available:', !!user)
 
   // Debug logging (can be removed in production)
   console.log('🔍 TherapistLayout: userInfo being passed to header:', userInfo);
