@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       const dayName = dayNames[dayOfWeek];
       
       // Check if this day is enabled in availability
-      const dayAvailability = weeklyAvailability.standardHours[dayName];
+      const dayAvailability = weeklyAvailability.standardHours[dayName as keyof typeof weeklyAvailability.standardHours];
       if (dayAvailability && dayAvailability.enabled) {
         // Check if there are time slots or general hours
         const hasTimeSlots = dayAvailability.timeSlots && dayAvailability.timeSlots.length > 0;

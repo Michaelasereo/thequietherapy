@@ -576,7 +576,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
               total: validatedSessions.length 
             })
             
-            console.log('🔍 DashboardContext: Upcoming sessions details:', upcoming.map(s => ({
+            console.log('🔍 DashboardContext: Upcoming sessions details:', upcoming.map((s: any) => ({
               id: s.id,
               date: s.date,
               time: s.time,

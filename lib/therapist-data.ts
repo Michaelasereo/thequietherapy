@@ -57,6 +57,7 @@ export async function getTherapistClients(therapistId: string): Promise<Therapis
       .from('sessions')
       .select(`
         user_id,
+        start_time,
         scheduled_date,
         scheduled_time,
         users:user_id (
@@ -68,8 +69,7 @@ export async function getTherapistClients(therapistId: string): Promise<Therapis
       `)
       .eq('therapist_id', therapistId)
       .not('user_id', 'is', null)
-      .order('scheduled_date', { ascending: false })
-      .order('scheduled_time', { ascending: false })
+      .order('start_time', { ascending: false })
 
     if (error) {
       console.error('Error fetching therapist clients:', error)
@@ -89,7 +89,7 @@ export async function getTherapistClients(therapistId: string): Promise<Therapis
           full_name: user?.full_name || 'Unknown Client',
           email: user?.email || '',
           avatar_url: user?.avatar_url,
-          last_session_date: session.start_time,
+          last_session_date: session.start_time || (session.scheduled_date && session.scheduled_time ? `${session.scheduled_date}T${session.scheduled_time}` : undefined),
           total_sessions: 1
         })
       } else {
@@ -119,14 +119,15 @@ export async function getTherapistSessions(therapistId: string): Promise<{
   try {
     const now = new Date().toISOString()
     
-    // Get upcoming sessions
+    // Get upcoming sessions using standardized start_time field
     const { data: upcomingData, error: upcomingError } = await supabase
       .from('sessions')
       .select(`
         id,
+        start_time,
+        end_time,
         scheduled_date,
         scheduled_time,
-        end_time,
         session_type,
         status,
         session_url,
@@ -136,18 +137,18 @@ export async function getTherapistSessions(therapistId: string): Promise<{
         )
       `)
       .eq('therapist_id', therapistId)
-      .gte('scheduled_date', now.split('T')[0])
-      .order('scheduled_date', { ascending: true })
-      .order('scheduled_time', { ascending: true })
+      .gte('start_time', now)
+      .order('start_time', { ascending: true })
 
-    // Get past sessions
+    // Get past sessions using standardized start_time field
     const { data: pastData, error: pastError } = await supabase
       .from('sessions')
       .select(`
         id,
+        start_time,
+        end_time,
         scheduled_date,
         scheduled_time,
-        end_time,
         session_type,
         status,
         notes,
@@ -158,9 +159,8 @@ export async function getTherapistSessions(therapistId: string): Promise<{
         )
       `)
       .eq('therapist_id', therapistId)
-      .lt('scheduled_date', now.split('T')[0])
-      .order('scheduled_date', { ascending: false })
-      .order('scheduled_time', { ascending: false })
+      .lt('start_time', now)
+      .order('start_time', { ascending: false })
       .limit(20)
 
     if (upcomingError || pastError) {
@@ -168,20 +168,32 @@ export async function getTherapistSessions(therapistId: string): Promise<{
       return { upcoming: [], past: [] }
     }
 
-    const formatSession = (session: any, isUpcoming: boolean): TherapistSession => ({
-      id: session.id,
-      session_date: new Date(`${session.scheduled_date}T${session.scheduled_time}`).toLocaleDateString(),
-      session_time: new Date(`${session.scheduled_date}T${session.scheduled_time}`).toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      client_name: session.users?.full_name || 'Unknown Client',
-      session_type: session.session_type || 'Therapy Session',
-      status: session.status || 'scheduled',
-      session_link: isUpcoming ? session.session_url : undefined,
-      summary: !isUpcoming ? session.notes : undefined,
-      amount_earned: !isUpcoming ? session.price : undefined
-    })
+    const formatSession = (session: any, isUpcoming: boolean): TherapistSession => {
+      // Use start_time as primary source (with fallback for legacy data)
+      let startDate: Date
+      if (session.start_time) {
+        startDate = new Date(session.start_time)
+      } else if (session.scheduled_date && session.scheduled_time) {
+        startDate = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
+      } else {
+        startDate = new Date()
+      }
+
+      return {
+        id: session.id,
+        session_date: startDate.toLocaleDateString(),
+        session_time: startDate.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        client_name: session.users?.full_name || 'Unknown Client',
+        session_type: session.session_type || 'Therapy Session',
+        status: session.status || 'scheduled',
+        session_link: isUpcoming ? session.session_url : undefined,
+        summary: !isUpcoming ? session.notes : undefined,
+        amount_earned: !isUpcoming ? session.price : undefined
+      }
+    }
 
     return {
       upcoming: upcomingData?.map(s => formatSession(s, true)) || [],
@@ -275,8 +287,7 @@ export async function getClientDetails(clientId: string, therapistId: string) {
       `)
       .eq('user_id', clientId)
       .eq('therapist_id', therapistId)
-      .order('scheduled_date', { ascending: false })
-      .order('scheduled_time', { ascending: false })
+      .order('start_time', { ascending: false })
 
     if (error) {
       console.error('Error fetching client details:', error)

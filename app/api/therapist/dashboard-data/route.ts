@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { ServerSessionManager } from '@/lib/server-session-manager'
 import { handleApiError, successResponse } from '@/lib/api-response'
+import type { TherapistSession } from '@/types/sessions'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,28 +11,20 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 DEBUG: Dashboard-data API called')
     // SECURE Authentication - only therapists can access this endpoint
     const session = await ServerSessionManager.getSession()
-    console.log('🔍 DEBUG: Session data:', session)
     if (!session) {
-      console.log('🔍 DEBUG: No session found')
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
     if (session.role !== 'therapist') {
-      console.log('🔍 DEBUG: Access denied, role:', session.role)
       return NextResponse.json({ error: 'Access denied. Therapist role required' }, { status: 403 })
     }
 
-    // Use therapist ID from verified session, NOT from query params
+    // Use therapist ID from verified session
     const therapistId = session.id
-    console.log('🔍 DEBUG: Therapist ID:', therapistId)
-    console.log('🔍 DEBUG: Session role:', session.role)
-    console.log('🔍 DEBUG: Session user type:', session.user_type)
 
     // Get therapist data
-    console.log('🔍 DEBUG: Querying therapist with ID:', therapistId)
     const { data: therapistData, error: therapistError } = await supabase
       .from('users')
       .select(`
@@ -46,8 +39,6 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (therapistError) {
-      console.error('🔍 DEBUG: Therapist query error:', therapistError)
-      
       // If therapist not found in users table, check therapist_enrollments (newly enrolled, not approved yet)
       const { data: enrollmentData, error: enrollmentError } = await supabase
         .from('therapist_enrollments')
@@ -56,7 +47,6 @@ export async function GET(request: NextRequest) {
         .single()
       
       if (enrollmentError || !enrollmentData) {
-        console.error('🔍 DEBUG: Enrollment also not found:', enrollmentError)
         return NextResponse.json({
           success: true,
           data: {
@@ -79,8 +69,8 @@ export async function GET(request: NextRequest) {
             phone: enrollmentData.phone,
             specialization: enrollmentData.specialization,
             languages: enrollmentData.languages,
-            status: enrollmentData.status, // 'pending' until admin approves
-            is_pending: true, // Flag to show pending banner
+            status: enrollmentData.status,
+            is_pending: true,
             totalClients: 0,
             totalSessions: 0,
             earningsThisMonth: 0,
@@ -93,80 +83,104 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Get therapist sessions separately
-    console.log('🔍 DEBUG: Querying sessions for therapist:', therapistId)
+    // Get therapist sessions using standardized start_time field
     const { data: rawSessions, error: sessionsError } = await supabase
       .from('sessions')
       .select(`
         id,
         status,
         user_id,
-        scheduled_date,
-        scheduled_time,
+        therapist_id,
+        start_time,
         end_time,
         created_at,
         title,
+        description,
         notes,
-        duration_minutes
+        complaints,
+        duration_minutes,
+        users:user_id (
+          id,
+          full_name,
+          email
+        )
       `)
       .eq('therapist_id', therapistId)
-      .order('scheduled_date', { ascending: false })
-      .order('scheduled_time', { ascending: false })
+      .order('start_time', { ascending: false })
+      .limit(100)
 
     if (sessionsError) {
-      console.error('🔍 DEBUG: Sessions query error:', sessionsError)
-      console.error('🔍 DEBUG: Sessions query error details:', JSON.stringify(sessionsError, null, 2))
-      console.error('🔍 DEBUG: Sessions query error message:', sessionsError.message)
-      console.error('🔍 DEBUG: Sessions query error code:', sessionsError.code)
+      console.error('Sessions query error:', sessionsError)
       // Continue with empty sessions instead of failing completely
-      console.log('⚠️ Continuing with empty sessions due to query error')
-    } else {
-      console.log('✅ DEBUG: Sessions query successful, found:', rawSessions?.length || 0)
+      return successResponse({
+        therapist: {
+          id: therapistData.id,
+          name: therapistData.full_name,
+          email: therapistData.email,
+          isVerified: therapistData.is_verified,
+          isApproved: true,
+          specialization: [],
+          licenseNumber: '',
+          hourlyRate: 5000,
+          totalClients: 0,
+          totalSessions: 0,
+          completedSessions: 0,
+          upcomingSessions: 0,
+          earningsThisMonth: 0
+        },
+        sessions: [],
+        clients: 0
+      })
     }
-
-    // Get user details for each session
-    const sessionUserIds = [...new Set(rawSessions?.map(s => s.user_id) || [])]
-    const { data: sessionUsers, error: usersError } = await supabase
-      .from('users')
-      .select('id, full_name, email')
-      .in('id', sessionUserIds)
-
-    if (usersError) {
-      console.error('🔍 DEBUG: Users query error:', usersError)
-      console.error('🔍 DEBUG: Users query error details:', JSON.stringify(usersError, null, 2))
-      throw usersError
-    }
-
-    // Create a map of user data
-    const userMap = new Map(sessionUsers?.map(user => [user.id, user]) || [])
-
-    const therapist = therapistData
-    
-    console.log('🔍 DEBUG: Raw sessions found:', rawSessions?.length || 0)
-    console.log('🔍 DEBUG: Raw sessions data:', JSON.stringify(rawSessions, null, 2))
 
     // Transform sessions to match frontend expectations
-    const sessions = rawSessions?.map(session => {
-      // Convert scheduled_date and scheduled_time to start_time and end_time
-      const startDateTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
-      const endDateTime = session.end_time ? new Date(session.end_time) : new Date(startDateTime.getTime() + 30 * 60000) // Default 30 minutes
+    const sessions: TherapistSession[] = (rawSessions || []).map(session => {
+      // Use start_time as primary source (with fallback for legacy data)
+      let startDateTime: Date
+      let endDateTime: Date
       
-      // Get user data from the map
-      const user = userMap.get(session.user_id)
+      if (session.start_time) {
+        startDateTime = new Date(session.start_time)
+      } else {
+        // Fallback to created_at if start_time is missing (should not happen after migration)
+        startDateTime = new Date(session.created_at)
+      }
+      
+      // Use end_time if available, otherwise calculate from duration
+      if (session.end_time) {
+        endDateTime = new Date(session.end_time)
+      } else {
+        const duration = session.duration_minutes || 30
+        endDateTime = new Date(startDateTime.getTime() + duration * 60 * 1000)
+      }
       
       return {
-        ...session,
+        id: session.id,
+        status: session.status as any,
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
-        duration: 30, // Default duration
-        users: user ? {
-          full_name: user.full_name,
-          email: user.email
-        } : null
+        duration_minutes: session.duration_minutes || 30,
+        title: session.title,
+        description: session.description,
+        notes: session.notes,
+        complaints: session.complaints,
+        user_id: session.user_id,
+        therapist_id: session.therapist_id,
+        created_at: session.created_at,
+        updated_at: session.updated_at || session.created_at,
+        users: session.users ? {
+          id: session.users.id,
+          full_name: session.users.full_name,
+          email: session.users.email
+        } : {
+          id: session.user_id,
+          full_name: 'Unknown User',
+          email: ''
+        }
       }
-    }) || []
+    })
 
-    // Calculate stats in JavaScript (more efficient than separate queries)
+    // Calculate stats
     const totalSessions = sessions.length
     const completedSessions = sessions.filter(s => s.status === 'completed').length
     const upcomingSessions = sessions.filter(s => s.status === 'scheduled').length
@@ -175,17 +189,14 @@ export async function GET(request: NextRequest) {
     // Calculate earnings (₦5,000 per session)
     const earningsThisMonth = completedSessions * 5000
 
-    console.log('🔍 DEBUG: Transformed sessions count:', sessions.length)
-    console.log('🔍 DEBUG: Returning response with sessions:', sessions)
-
-    return successResponse({
+    const response = successResponse({
       therapist: {
-        id: therapist.id,
-        name: therapist.full_name,
-        email: therapist.email,
-        isVerified: therapist.is_verified,
-        isApproved: true, // Default to true for now
-        specialization: [], // Default empty array
+        id: therapistData.id,
+        name: therapistData.full_name,
+        email: therapistData.email,
+        isVerified: therapistData.is_verified,
+        isApproved: true,
+        specialization: [],
         licenseNumber: '',
         hourlyRate: 5000,
         totalClients: uniqueClients,
@@ -194,13 +205,16 @@ export async function GET(request: NextRequest) {
         upcomingSessions,
         earningsThisMonth
       },
-      sessions: sessions || [],
+      sessions: sessions,
       clients: uniqueClients
     })
+    
+    // Add cache headers (consider implementing smart caching in the future)
+    response.headers.set('Cache-Control', 'private, max-age=60, must-revalidate')
+    
+    return response
   } catch (error) {
-    console.error('🔍 DEBUG: Therapist dashboard API error:', error)
-    console.error('🔍 DEBUG: Error type:', typeof error)
-    console.error('🔍 DEBUG: Error details:', JSON.stringify(error, null, 2))
+    console.error('Therapist dashboard API error:', error)
     return handleApiError(error)
   }
 }

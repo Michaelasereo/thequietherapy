@@ -33,16 +33,15 @@ export async function POST(request: NextRequest) {
     console.log('✅ Found user:', user.full_name, 'ID:', userId)
 
     // 1. Delete all sessions for this user
-    const { error: sessionsError, count: deletedSessions } = await supabase
+    const { error: sessionsError } = await supabase
       .from('sessions')
       .delete()
       .eq('user_id', userId)
-      .select('id', { count: 'exact' })
 
     if (sessionsError) {
       console.error('❌ Error deleting sessions:', sessionsError)
     } else {
-      console.log(`✅ Deleted ${deletedSessions || 0} sessions`)
+      console.log('✅ Deleted sessions for user')
     }
 
     // 2. Delete or reset user credits
@@ -100,7 +99,7 @@ export async function POST(request: NextRequest) {
 
     const { count: remainingSessions } = await supabase
       .from('sessions')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
 
     console.log('✅ User data reset complete')
@@ -118,7 +117,7 @@ export async function POST(request: NextRequest) {
           id: userId
         },
         deleted: {
-          sessions: deletedSessions || 0
+          sessions: null
         },
         credits: {
           balance: newCredits?.credits_balance || 0,

@@ -62,16 +62,23 @@ export function formatDate(dateString: string | null | undefined): string {
 }
 
 // Helper function to get session start time reliably
+// NOTE: Use standardized start_time field (with fallback for legacy data)
 export function getSessionStartTime(session: any): Date {
-  // Prefer separate date/time fields to avoid timezone issues
-  if (session.session_date && session.session_time) {
-    return new Date(`${session.session_date}T${session.session_time}`);
-  }
-  if (session.scheduled_date && session.scheduled_time) {
-    return new Date(`${session.scheduled_date}T${session.scheduled_time}`);
-  }
+  // Prefer standardized start_time field
   if (session.start_time) {
     return new Date(session.start_time);
   }
-  return new Date(); // Fallback
+  // Fallback to scheduled_date + scheduled_time for legacy data
+  if (session.scheduled_date && session.scheduled_time) {
+    return new Date(`${session.scheduled_date}T${session.scheduled_time}`);
+  }
+  // Legacy: session_date + session_time
+  if (session.session_date && session.session_time) {
+    return new Date(`${session.session_date}T${session.session_time}`);
+  }
+  // Last resort: use created_at
+  if (session.created_at) {
+    return new Date(session.created_at);
+  }
+  return new Date(); // Final fallback
 }

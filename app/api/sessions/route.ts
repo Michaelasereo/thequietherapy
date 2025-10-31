@@ -88,25 +88,23 @@ export async function GET(request: NextRequest) {
     
     if (upcoming) {
       const now = new Date().toISOString();
-      // Properly filter for upcoming: use start_time for accurate datetime comparison
+      // Use start_time for accurate datetime comparison
       query = query.gte('start_time', now);
     }
     
-    // Apply ordering - handle both scheduled_date and start_time columns
+    // Apply ordering - use standardized start_time field
     if (order) {
       const [column, direction] = order.split('.');
       const ascending = direction === 'asc';
       
-      // Handle scheduled_date vs start_time
-      if (column === 'scheduled_date') {
-        query = query.order('scheduled_date', { ascending }).order('start_time', { ascending });
-      } else if (column === 'start_time') {
-        query = query.order('start_time', { ascending }).order('scheduled_date', { ascending });
+      // Standardize on start_time for ordering
+      if (column === 'scheduled_date' || column === 'start_time') {
+        query = query.order('start_time', { ascending });
       } else {
         query = query.order(column, { ascending });
       }
     } else {
-      query = query.order('created_at', { ascending: false });
+      query = query.order('start_time', { ascending: false });
     }
     
     // Apply limit
@@ -146,13 +144,33 @@ export async function GET(request: NextRequest) {
         ? session.session_notes[0] 
         : null;
 
+      // Use start_time as primary source (with fallback for legacy data)
+      let startTime = session.start_time;
+      if (!startTime && session.scheduled_date && session.scheduled_time) {
+        // Fallback to scheduled_date + scheduled_time for legacy data
+        startTime = `${session.scheduled_date}T${session.scheduled_time}`;
+      }
+      if (!startTime) {
+        startTime = session.created_at;
+      }
+
+      // Use end_time if available, otherwise calculate from duration
+      let endTime = session.end_time;
+      if (!endTime && startTime) {
+        const duration = session.duration_minutes || 30;
+        const startDate = new Date(startTime);
+        endTime = new Date(startDate.getTime() + duration * 60 * 1000).toISOString();
+      }
+      if (!endTime) {
+        endTime = session.created_at;
+      }
+
       return {
         ...session,
-        start_time: session.scheduled_date && session.scheduled_time 
-          ? `${session.scheduled_date}T${session.scheduled_time}` 
-          : session.start_time || session.created_at,
-        end_time: session.end_time || session.created_at,
+        start_time: startTime,
+        end_time: endTime,
         duration: session.duration_minutes || 30,
+        duration_minutes: session.duration_minutes || 30,
         session_type: session.session_type || 'video',
         // Include session notes data
         session_notes: latestNotes ? {
