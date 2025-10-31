@@ -74,6 +74,14 @@ export class TherapistConsistencyManager {
     try {
       console.log(`🔄 TherapistConsistencyManager: Approving ${email}`)
 
+      // Get user_id first for therapist_profiles update
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .eq('user_type', 'therapist')
+        .single()
+
       // Update users table
       const { error: userError } = await supabase
         .from('users')
@@ -114,6 +122,26 @@ export class TherapistConsistencyManager {
           .eq('email', email)
         
         return { success: false, error: `Enrollments table update failed: ${enrollmentError.message}` }
+      }
+
+      // Update therapist_profiles table (CRITICAL for booking API)
+      if (userData?.id) {
+        const { error: profileError } = await supabase
+          .from('therapist_profiles')
+          .update({ 
+            verification_status: 'approved',
+            is_verified: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userData.id)
+
+        if (profileError) {
+          console.error('❌ Failed to update therapist_profiles table:', profileError)
+          // Note: We don't rollback here as the main approval succeeded
+          // This is a data consistency issue but won't prevent the approval
+        } else {
+          console.log('✅ Therapist_profiles updated successfully')
+        }
       }
 
       console.log(`✅ TherapistConsistencyManager: Successfully approved ${email}`)
