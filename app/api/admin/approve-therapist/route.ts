@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
       .from('therapist_enrollments')
       .update({ 
         status: newStatus,
+        is_active: action === 'approve',
         updated_at: new Date().toISOString()
       })
       .eq('id', enrollmentId)
@@ -114,13 +115,31 @@ export async function POST(request: NextRequest) {
           .from('therapist_profiles')
           .update({
             is_verified: true,
-            verification_status: 'approved'
+            verification_status: 'approved',
+            updated_at: new Date().toISOString()
           })
           .eq('user_id', userId)
 
         if (profileError) {
           console.error('Error updating therapist profile verification:', profileError)
-          // Don't fail the approval, just log the error
+          // Try to create the profile if it doesn't exist
+          console.log('🔄 Attempting to create missing therapist_profiles entry...')
+          const { error: createError } = await supabase
+            .from('therapist_profiles')
+            .insert({
+              user_id: userId,
+              verification_status: 'approved',
+              is_verified: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+          
+          if (createError) {
+            console.error('Error creating therapist profile verification:', createError)
+            // Don't fail the approval, just log the error
+          } else {
+            console.log('✅ Created missing therapist_profiles entry successfully')
+          }
         } else {
           console.log('✅ Updated therapist profile verification status for user:', userId)
         }

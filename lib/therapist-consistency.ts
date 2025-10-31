@@ -137,11 +137,29 @@ export class TherapistConsistencyManager {
 
         if (profileError) {
           console.error('❌ Failed to update therapist_profiles table:', profileError)
-          // Note: We don't rollback here as the main approval succeeded
-          // This is a data consistency issue but won't prevent the approval
+          // Try to create the profile if it doesn't exist
+          console.log('🔄 Attempting to create missing therapist_profiles entry...')
+          const { error: createError } = await supabase
+            .from('therapist_profiles')
+            .insert({
+              user_id: userData.id,
+              verification_status: 'approved',
+              is_verified: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+          
+          if (createError) {
+            console.error('❌ Failed to create therapist_profiles entry:', createError)
+            // This is a critical data consistency issue but won't prevent the approval
+          } else {
+            console.log('✅ Created missing therapist_profiles entry successfully')
+          }
         } else {
           console.log('✅ Therapist_profiles updated successfully')
         }
+      } else {
+        console.error('❌ No user_id found, cannot update therapist_profiles')
       }
 
       console.log(`✅ TherapistConsistencyManager: Successfully approved ${email}`)
