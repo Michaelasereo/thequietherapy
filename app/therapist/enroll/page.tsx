@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, startTransition } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -12,8 +12,6 @@ import Step2DocumentVerification from "@/components/therapist-enrollment-steps/s
 import Step3SpecializationLanguages from "@/components/therapist-enrollment-steps/step-3-specialization-languages"
 import Step4TermsConditions from "@/components/therapist-enrollment-steps/step-4-terms-conditions"
 import BookingProgress from "@/components/booking-progress"
-import { useActionState } from "react"
-import { therapistEnrollAction } from "@/actions/therapist-auth"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function TherapistEnrollmentPage() {
@@ -31,30 +29,7 @@ export default function TherapistEnrollmentPage() {
     termsAccepted: false
   })
   const { toast } = useToast()
-
-  const [state, formAction, isPending] = useActionState(therapistEnrollAction, null)
-
-  // Handle state changes from the server action
-  useEffect(() => {
-    console.log("State changed:", state)
-    
-    if (state?.error) {
-      console.log("Error state detected:", state.error)
-      toast({
-        title: "Enrollment Failed",
-        description: state.error,
-        variant: "destructive",
-      })
-    } else if (state?.success) {
-      console.log("Success state detected, showing modal")
-      setEnrollmentEmail(formData.email)
-      setShowSuccessModal(true)
-      toast({
-        title: "Enrollment Successful!",
-        description: "Please check your email to complete the process.",
-      })
-    }
-  }, [state, toast, formData.email])
+  const [isPending, setIsPending] = useState(false)
 
   const handleNext = (data: any) => {
     setFormData((prev: any) => ({ ...prev, ...data }))
@@ -79,31 +54,62 @@ export default function TherapistEnrollmentPage() {
     const finalData = { ...formData, ...data }
     console.log("Final Enrollment Data:", finalData)
 
-    // Prepare FormData for the server action
-    const submitFormData = new FormData()
-    for (const key in finalData) {
-      if (Array.isArray(finalData[key])) {
-        finalData[key].forEach((item: any) => submitFormData.append(key, item))
-      } else if (key === "idUpload" && finalData[key] instanceof FileList) {
-        // Handle FileList for file uploads
-        if (finalData[key].length > 0) {
-          submitFormData.append(key, finalData[key][0]) // Append the first file
-        }
-      } else {
-        submitFormData.append(key, finalData[key])
+    // Prepare JSON payload for API route
+    const payload: any = {
+      email: finalData.email,
+      fullName: finalData.fullName,
+      phone: finalData.phone,
+      licensedQualification: finalData.licensedQualification,
+      specialization: finalData.specialization || [],
+      languages: finalData.languages || [],
+      gender: finalData.gender,
+      age: finalData.age,
+      maritalStatus: finalData.maritalStatus,
+      bio: finalData.bio
+    }
+
+    console.log("Calling API route /api/therapist/enroll...")
+    setIsPending(true)
+
+    try {
+      const response = await fetch('/api/therapist/enroll', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        console.error("Enrollment error:", result.error)
+        toast({
+          title: "Enrollment Failed",
+          description: result.error || "Failed to submit enrollment. Please try again.",
+          variant: "destructive",
+        })
+        setIsPending(false)
+        return
       }
-    }
 
-    console.log("FormData entries:")
-    for (let [key, value] of submitFormData.entries()) {
-      console.log(`${key}:`, value)
+      console.log("Success state detected, showing modal")
+      setEnrollmentEmail(formData.email)
+      setShowSuccessModal(true)
+      toast({
+        title: "Enrollment Successful!",
+        description: "Please check your email to complete the process.",
+      })
+      setIsPending(false)
+    } catch (error) {
+      console.error("Enrollment error:", error)
+      toast({
+        title: "Enrollment Failed",
+        description: "An error occurred during enrollment. Please try again.",
+        variant: "destructive",
+      })
+      setIsPending(false)
     }
-
-    console.log("Calling formAction...")
-    // Call the server action using startTransition
-    startTransition(() => {
-      formAction(submitFormData)
-    })
   }
 
   const renderStep = () => {
