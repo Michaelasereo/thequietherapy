@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
         start_time,
         end_time,
         created_at,
+        updated_at,
         title,
         description,
         notes,
@@ -167,11 +168,15 @@ export async function GET(request: NextRequest) {
         user_id: session.user_id,
         therapist_id: session.therapist_id,
         created_at: session.created_at,
-        updated_at: session.updated_at || session.created_at,
-        users: session.users ? {
-          id: session.users.id,
-          full_name: session.users.full_name,
-          email: session.users.email
+        updated_at: (session as any).updated_at || session.created_at,
+        users: (session.users && Array.isArray(session.users) && session.users.length > 0) ? {
+          id: session.users[0].id,
+          full_name: session.users[0].full_name,
+          email: session.users[0].email
+        } : (session.users && !Array.isArray(session.users)) ? {
+          id: (session.users as any).id,
+          full_name: (session.users as any).full_name,
+          email: (session.users as any).email
         } : {
           id: session.user_id,
           full_name: 'Unknown User',
