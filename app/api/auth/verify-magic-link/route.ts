@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     
     if (!token || !authType) {
       return NextResponse.redirect(
-        new URL('/auth/error?error=Invalid verification link', request.url)
+        new URL('/auth/error?error=' + encodeURIComponent('Invalid verification link'), request.url)
       )
     }
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const validAuthTypes = ['individual', 'therapist', 'partner', 'admin'] as const
     if (!validAuthTypes.includes(authType as any)) {
       return NextResponse.redirect(
-        new URL('/auth/error?error=Invalid authentication type', request.url)
+        new URL('/auth/error?error=' + encodeURIComponent('Invalid authentication type'), request.url)
       )
     }
 
@@ -36,15 +36,16 @@ export async function GET(request: NextRequest) {
       }
       
       // Otherwise, show error page
+      const errorMessage = encodeURIComponent(result.error || 'Verification failed')
       return NextResponse.redirect(
-        new URL(`/auth/error?error=${result.error || 'Verification failed'}`, request.url)
+        new URL(`/auth/error?error=${errorMessage}`, request.url)
       )
     }
     
     if (!result.user) {
       console.error('❌ No user returned from magic link verification')
       return NextResponse.redirect(
-        new URL('/auth/error?error=No user data returned', request.url)
+        new URL('/auth/error?error=' + encodeURIComponent('No user data returned'), request.url)
       )
     }
 
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Magic link verification error:', error)
     return NextResponse.redirect(
-      new URL('/auth/error?error=Internal server error', request.url)
+      new URL('/auth/error?error=' + encodeURIComponent('Internal server error'), request.url)
     )
   }
 }

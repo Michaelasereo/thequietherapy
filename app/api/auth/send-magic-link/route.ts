@@ -80,6 +80,18 @@ export async function POST(request: NextRequest) {
           { status: 429 }
         )
       }
+
+      // If user exists and should login instead, return redirect info
+      if (result.error?.includes('already registered') || result.error?.includes('login instead')) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: result.error || 'This email is already registered. Please use login instead.',
+            redirectTo: result.redirectTo
+          },
+          { status: 400 }
+        )
+      }
       
       return NextResponse.json(
         { success: false, error: result.error || 'Failed to send magic link. Please try again later.' },

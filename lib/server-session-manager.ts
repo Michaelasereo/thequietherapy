@@ -69,7 +69,7 @@ export class ServerSessionManager {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
       path: '/',
-      domain: process.env.NODE_ENV === 'production' ? '.thequietherapy.live' : undefined,
+      domain: process.env.NODE_ENV === 'production' ? 'thequietherapy.live' : undefined,
     }
 
     if (response) {
@@ -145,6 +145,7 @@ export class ServerSessionManager {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
       path: '/',
+      domain: process.env.NODE_ENV === 'production' ? 'thequietherapy.live' : undefined,
     }
 
     if (response) {

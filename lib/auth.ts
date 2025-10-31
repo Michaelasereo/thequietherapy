@@ -111,14 +111,29 @@ export async function createMagicLinkForAuthType(
       console.log('✅ User found and verified for login:', existingUser.email)
     }
 
-    // For SIGNUP attempts - prevent duplicate emails
+    // For SIGNUP attempts - prevent duplicate emails (check both database and Supabase Auth)
     if (type === 'signup') {
       if (existingUser) {
-        console.log('❌ Email already exists with user_type:', existingUser.user_type)
+        console.log('❌ Email already exists in database with user_type:', existingUser.user_type)
         
         return {
           success: false,
-          error: `This email is already registered. Please login instead or use a different email.`
+          error: `This email is already registered. Please login instead or use a different email.`,
+          redirectTo: `/login?user_type=${authType}&error=account_exists&email=${encodeURIComponent(email)}`
+        }
+      }
+
+      // Also check if user exists in Supabase Auth (even if not in database)
+      const { checkUserExistsInSupabaseAuth } = await import('./supabase-auth-sync')
+      const authCheck = await checkUserExistsInSupabaseAuth(email)
+      
+      if (authCheck.exists) {
+        console.log('❌ Email already exists in Supabase Auth - user should login instead')
+        
+        return {
+          success: false,
+          error: `This email is already registered. Please use the login link instead.`,
+          redirectTo: `/login?user_type=${authType}&error=account_exists&email=${encodeURIComponent(email)}`
         }
       }
       
@@ -287,6 +302,20 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
 
     // Handle user existence based on magic link type
     if (!user && magicLink.type === 'signup') {
+      // Before creating, double-check user doesn't exist in Supabase Auth
+      // (they shouldn't get here due to the check in createMagicLinkForAuthType, but just in case)
+      const { checkUserExistsInSupabaseAuth } = await import('./supabase-auth-sync')
+      const authCheck = await checkUserExistsInSupabaseAuth(magicLink.email)
+      
+      if (authCheck.exists && authCheck.user) {
+        console.log('⚠️ User exists in Supabase Auth - they should login instead')
+        return {
+          success: false,
+          error: 'This email is already registered. Please use the login link instead.',
+          redirectTo: `/login?user_type=${authType}&error=account_exists&email=${encodeURIComponent(magicLink.email)}`
+        }
+      }
+
       // Create new user for signup
       console.log('👤 Creating new user with Supabase Auth sync...')
       

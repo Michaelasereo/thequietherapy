@@ -97,7 +97,7 @@ export async function createUserWithSupabaseAuth(userData: Omit<UserSyncData, 'i
   try {
     console.log('👤 Creating new user with Supabase Auth sync:', userData.email);
 
-    // Create user in Supabase Auth first
+    // Try to create user in Supabase Auth first
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: userData.email,
       email_confirm: true, // Auto-confirm since you're using magic links
@@ -108,15 +108,72 @@ export async function createUserWithSupabaseAuth(userData: Omit<UserSyncData, 'i
       }
     });
 
-    if (authError) {
+    let userId: string;
+
+    // If user already exists in Supabase Auth, find and use that user
+    if (authError && (authError.message.includes('already been registered') || authError.status === 422)) {
+      console.log('⚠️ User already exists in Supabase Auth, finding existing user...');
+      
+      // List users to find the one with this email
+      const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (listError) {
+        console.error('❌ Error listing users:', listError);
+        return { success: false, error: 'Failed to find existing user in Supabase Auth' };
+      }
+
+      const existingAuthUser = usersData.users.find(u => u.email === userData.email);
+      
+      if (!existingAuthUser) {
+        console.error('❌ User email exists error but user not found in list');
+        return { success: false, error: 'User exists but could not be found' };
+      }
+
+      userId = existingAuthUser.id;
+      console.log('✅ Found existing Supabase Auth user:', userId);
+
+      // Update the user metadata to ensure it's in sync
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          full_name: userData.full_name || existingAuthUser.user_metadata?.full_name,
+          user_type: userData.user_type || existingAuthUser.user_metadata?.user_type,
+          updated_at: new Date().toISOString()
+        }
+      });
+    } else if (authError) {
       console.error('❌ Supabase Auth creation error:', authError);
       return { success: false, error: authError.message };
+    } else {
+      userId = authUser.user.id;
+      console.log('✅ Created new Supabase Auth user:', userId);
     }
-
-    const userId = authUser.user.id;
 
     // Now create user in your database with the same ID
     const supabase = createServerClient();
+    
+    // Check if user already exists in database
+    const { data: existingDbUser, error: checkError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    // If user already exists in database, return success with existing user
+    if (existingDbUser) {
+      console.log('✅ User already exists in database, using existing user:', userId);
+      return { 
+        success: true, 
+        user_id: userId,
+        auth_user_id: userId,
+        existing_user: true
+      };
+    }
+
+    // If check error is not "not found", it's a real error
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('❌ Error checking existing user in database:', checkError);
+      return { success: false, error: checkError.message };
+    }
     
     // Set verification and active status based on user type
     // Therapists need manual approval, others can be auto-verified
@@ -138,8 +195,11 @@ export async function createUserWithSupabaseAuth(userData: Omit<UserSyncData, 'i
 
     if (dbError) {
       console.error('❌ Database user creation error:', dbError);
-      // Try to clean up the Supabase Auth user if database creation fails
-      await supabaseAdmin.auth.admin.deleteUser(userId);
+      // Don't delete the Supabase Auth user if it already existed before this call
+      // Only clean up if we just created it
+      if (authUser) {
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+      }
       return { success: false, error: dbError.message };
     }
 
@@ -147,7 +207,7 @@ export async function createUserWithSupabaseAuth(userData: Omit<UserSyncData, 'i
     return { 
       success: true, 
       user_id: userId,
-      auth_user_id: authUser.user.id 
+      auth_user_id: userId // Use userId directly since authUser might be null if user existed
     };
 
   } catch (error) {
@@ -277,6 +337,36 @@ export async function getAllSupabaseAuthUsers() {
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+/**
+ * Check if a user exists in Supabase Auth by email
+ */
+export async function checkUserExistsInSupabaseAuth(email: string) {
+  try {
+    // List users and find by email
+    const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error('❌ Error listing users:', listError);
+      return { success: false, error: listError.message, exists: false };
+    }
+
+    const existingUser = usersData.users.find(u => u.email === email);
+    
+    return {
+      success: true,
+      exists: !!existingUser,
+      user: existingUser || null
+    };
+  } catch (error) {
+    console.error('❌ checkUserExistsInSupabaseAuth error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      exists: false
     };
   }
 }

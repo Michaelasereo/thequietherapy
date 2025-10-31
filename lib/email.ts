@@ -212,6 +212,13 @@ export async function sendMagicLinkEmail(email: string, verificationUrl: string,
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Failed to send magic link email:', error);
+    // Always log the magic link when email fails so users can still access it
+    console.log('🔗 MAGIC LINK (Email failed - use this link directly):');
+    console.log('Email:', email);
+    console.log('URL:', verificationUrl);
+    console.log('Type:', type);
+    console.log('Metadata:', metadata);
+    console.log('🔗 END MAGIC LINK');
     return { success: false, error: 'Failed to send email' };
   }
 }
