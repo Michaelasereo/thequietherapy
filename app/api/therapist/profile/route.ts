@@ -177,10 +177,21 @@ export async function GET(request: NextRequest) {
     const dataSource = profile || enrollmentData
     
     // Get profile image from enrollment data (SINGLE SOURCE OF TRUTH)
-    const profileImageUrl = enrollmentData?.profile_image_url || profile?.profile_image_url || null
+    // Priority: enrollmentData > users.avatar_url > profile > null
+    const profileImageUrl = enrollmentData?.profile_image_url || 
+                           user?.avatar_url || 
+                           profile?.profile_image_url || 
+                           null
     
     console.log('🔍 API: Data source being used:', dataSource)
-    console.log('🔍 API: profile_image_url (standardized):', profileImageUrl)
+    console.log('🔍 API: Avatar sync check:', {
+      enrollment_avatar: enrollmentData?.profile_image_url,
+      user_avatar: user?.avatar_url,
+      profile_avatar: profile?.profile_image_url,
+      final_avatar: profileImageUrl,
+      all_match: enrollmentData?.profile_image_url === user?.avatar_url && 
+                 user?.avatar_url === profile?.profile_image_url
+    })
     console.log('🔍 API: Enrollment data for approval status:', enrollmentData)
     console.log('🔍 API: Specialization raw data:', dataSource?.specialization)
     console.log('🔍 API: Languages raw data:', dataSource?.languages)

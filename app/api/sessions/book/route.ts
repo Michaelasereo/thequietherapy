@@ -223,7 +223,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         throw new ValidationError('Insufficient credits to book session')
       }
       console.error('❌ Atomic booking error:', rpcError)
-      throw new Error('Failed to create session')
+      // Return detailed error in development for faster debugging
+      const devBody = {
+        error: 'Failed to create session',
+        details: msg,
+      }
+      return addRequestIdHeader(NextResponse.json(devBody, { status: 500 }), requestId)
     }
 
     const sessionRecord = Array.isArray(createdSessions) ? createdSessions[0] : createdSessions

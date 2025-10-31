@@ -19,17 +19,11 @@ export default function TherapistAvailabilityPage() {
   const [availabilityMode, setAvailabilityMode] = useState<'weekly' | 'overrides'>('weekly')
 
   useEffect(() => {
-    console.log('🔍 Availability page: Component mounted, fetching therapist data...')
     fetchTherapistData()
   }, []) // Remove fetchTherapistData from dependencies to prevent infinite loop
 
   useEffect(() => {
     if (therapistInfo) {
-      console.log('🔍 Availability page: therapistInfo received:', therapistInfo)
-      console.log('🔍 Availability page: availability_approved:', therapistInfo.availability_approved)
-      console.log('🔍 Availability page: isActive from server:', therapistInfo.isActive)
-      console.log('🔍 Availability page: current local isActive state:', isActive)
-      console.log('🔍 Availability page: Should show schedule?', therapistInfo.availability_approved && therapistInfo.isActive)
       setIsActive(therapistInfo.isActive)
       setAvailabilityApproved(therapistInfo.availability_approved || false)
     }
@@ -38,7 +32,6 @@ export default function TherapistAvailabilityPage() {
   // Add a manual refresh effect
   useEffect(() => {
     const handleRefresh = () => {
-      console.log('🔄 Availability page: Manual refresh triggered')
       fetchTherapistData()
     }
 
@@ -82,6 +75,7 @@ export default function TherapistAvailabilityPage() {
     }
   }
 
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -93,10 +87,7 @@ export default function TherapistAvailabilityPage() {
         </div>
         <div className="flex gap-2">
           <Button 
-            onClick={() => {
-              console.log('🔍 Manual refresh clicked')
-              fetchTherapistData()
-            }}
+            onClick={() => fetchTherapistData()}
             variant="outline"
             size="sm"
           >
@@ -106,23 +97,18 @@ export default function TherapistAvailabilityPage() {
       </div>
 
 
-      {/* Debug Info */}
-      <Card className="bg-yellow-50 border-yellow-200">
-        <CardContent className="pt-6">
-          <div className="text-sm">
-            <p><strong>Debug Info:</strong></p>
-            <p>• availabilityApproved: {availabilityApproved ? '✅ true' : '❌ false'}</p>
-            <p>• isActive: {isActive ? '✅ true (available)' : '❌ false (unavailable)'}</p>
-            <p>• Should show schedule: {availabilityApproved && isActive ? '✅ YES' : '❌ NO'}</p>
-            <p className="text-xs text-gray-600 mt-2">
-              After approval: isActive should be true, therapist can toggle OFF to be unavailable
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Not Approved Alert */}
+      {!availabilityApproved && (
+        <Alert className="bg-yellow-50 border-yellow-200">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            Your availability settings will be accessible once your therapist application is approved by our admin team.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Active/Inactive Toggle */}
-      {true && (
+      {availabilityApproved && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -137,7 +123,7 @@ export default function TherapistAvailabilityPage() {
                   Available for Client Bookings
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  When ON, clients can see and book sessions with you. When OFF, you won't appear in client searches (temporarily unavailable).
+                  Control your visibility to clients. Toggle OFF if you need to temporarily stop accepting new bookings. You can still manage your schedule settings below regardless of this toggle.
                 </p>
               </div>
               <Switch
@@ -151,13 +137,13 @@ export default function TherapistAvailabilityPage() {
             <div className="flex items-center gap-2 text-sm">
               {isActive ? (
                 <>
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-green-700 font-medium">Available - Clients can book with you</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-green-700 font-medium">🟢 Available - Clients can book with you</span>
                 </>
               ) : (
                 <>
                   <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                  <span className="text-gray-600">Unavailable - Not accepting new bookings</span>
+                  <span className="text-gray-600">⚫ Temporarily Unavailable - Not accepting new bookings</span>
                 </>
               )}
             </div>
@@ -169,7 +155,7 @@ export default function TherapistAvailabilityPage() {
 
 
       {/* Availability Mode Toggle */}
-      {availabilityApproved && isActive && (
+      {availabilityApproved && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -211,7 +197,7 @@ export default function TherapistAvailabilityPage() {
       )}
 
       {/* Weekly Schedule */}
-      {availabilityApproved && isActive && availabilityMode === 'weekly' && therapistInfo?.id && (
+      {availabilityApproved && availabilityMode === 'weekly' && therapistInfo?.id && (
         <AvailabilityManager 
           therapistId={therapistInfo.id}
           onSave={(availability) => {
@@ -226,7 +212,7 @@ export default function TherapistAvailabilityPage() {
       )}
 
       {/* Date Overrides */}
-      {availabilityApproved && isActive && availabilityMode === 'overrides' && therapistInfo?.id && (
+      {availabilityApproved && availabilityMode === 'overrides' && therapistInfo?.id && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -247,7 +233,7 @@ export default function TherapistAvailabilityPage() {
       )}
 
       {/* Session Settings */}
-      {(
+      {availabilityApproved && (
         <Card>
           <CardHeader>
             <CardTitle>Session Settings</CardTitle>

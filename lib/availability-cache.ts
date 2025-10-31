@@ -9,7 +9,7 @@ interface CacheEntry {
 
 class AvailabilityCache {
   private cache = new Map<string, CacheEntry>()
-  private readonly CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+  private readonly CACHE_DURATION = 30 * 1000 // 30 seconds - shorter cache for real-time updates
 
   // Generate cache key
   private getCacheKey(therapistId: string, date: string, type: 'days' | 'slots'): string {

@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION create_session_with_credit_deduction(
     id UUID,
     user_id UUID,
     therapist_id UUID,
-    title TEXT,
+    title VARCHAR(255),
     description TEXT,
     scheduled_date DATE,
     scheduled_time TIME,
@@ -51,11 +51,11 @@ BEGIN
     END IF;
     
     -- Get current credit balance
-    SELECT credits_balance, credits_used INTO v_credits_balance, v_credits_used
-    FROM user_credits
-    WHERE user_id = p_user_id
-    AND user_type IN ('user', 'individual')
-    ORDER BY created_at DESC
+    SELECT uc.credits_balance, uc.credits_used INTO v_credits_balance, v_credits_used
+    FROM user_credits uc
+    WHERE uc.user_id = p_user_id
+    AND uc.user_type IN ('user', 'individual')
+    ORDER BY uc.created_at DESC
     LIMIT 1;
     
     -- Validate credits
@@ -95,14 +95,14 @@ BEGIN
     ) RETURNING id INTO v_session_id;
     
     -- Deduct credit atomically
-    UPDATE user_credits
+    UPDATE user_credits uc
     SET 
-        credits_balance = credits_balance - 1,
-        credits_used = credits_used + 1,
+        credits_balance = uc.credits_balance - 1,
+        credits_used = uc.credits_used + 1,
         updated_at = NOW()
-    WHERE user_id = p_user_id
-    AND user_type IN ('user', 'individual')
-    AND credits_balance >= 1;
+    WHERE uc.user_id = p_user_id
+    AND uc.user_type IN ('user', 'individual')
+    AND uc.credits_balance >= 1;
     
     -- Verify credit deduction was successful
     IF NOT FOUND THEN
@@ -169,39 +169,24 @@ BEGIN
         )
     );
     
-    -- Return the created session
+    -- Return the created session directly (cast types to match return signature)
+    RETURN QUERY 
     SELECT 
         s.id,
         s.user_id,
         s.therapist_id,
-        s.title,
-        s.description,
+        s.title::VARCHAR(255),
+        s.description::TEXT,
         s.scheduled_date,
         s.scheduled_time,
-        s.start_time,
-        s.end_time,
+        s.start_time::TIMESTAMP WITH TIME ZONE,
+        s.end_time::TIMESTAMP WITH TIME ZONE,
         s.duration_minutes,
-        s.session_type,
-        s.status,
-        s.created_at
-    INTO v_session_record
+        s.session_type::VARCHAR(50),
+        s.status::VARCHAR(50),
+        s.created_at::TIMESTAMP WITH TIME ZONE
     FROM sessions s
     WHERE s.id = v_session_id;
-    
-    RETURN QUERY SELECT 
-        v_session_record.id,
-        v_session_record.user_id,
-        v_session_record.therapist_id,
-        v_session_record.title,
-        v_session_record.description,
-        v_session_record.scheduled_date,
-        v_session_record.scheduled_time,
-        v_session_record.start_time,
-        v_session_record.end_time,
-        v_session_record.duration_minutes,
-        v_session_record.session_type,
-        v_session_record.status,
-        v_session_record.created_at;
         
 END;
 $$ LANGUAGE plpgsql;

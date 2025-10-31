@@ -336,10 +336,10 @@ export default function BookingConfirmation({
       // 5. Proceed with booking using AvailabilityManager for conflict prevention
       const bookingData = {
         therapist_id: therapistId,
-        session_date: selectedSlot.date, // YYYY-MM-DD format
-        start_time: selectedSlot.start_time, // HH:MM format
+        session_date: selectedSlot.date,
+        start_time: selectedSlot.start_time,
         duration: selectedSlot.session_duration,
-        session_type: selectedSlot.session_type === 'individual' ? 'video' : 'video', // Map to API expected values
+        session_type: selectedSlot.session_type === 'individual' ? 'video' : 'video',
         notes: sessionNotes || `Emergency contact: ${emergencyContact || 'Not provided'}`
       }
 
@@ -349,6 +349,7 @@ export default function BookingConfirmation({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // IMPORTANT: Include cookies for authentication
         body: JSON.stringify(bookingData),
       })
 
@@ -395,6 +396,16 @@ export default function BookingConfirmation({
         setBookingSuccess(true)
         console.log('🔍 DEBUG: Calling onBookingComplete with result:', result)
         toast.success("Booking confirmed successfully! Credit deducted automatically.")
+        
+        // Force refresh the dashboard to show the new session
+        console.log('🔄 Refreshing dashboard after successful booking...')
+        if (typeof window !== 'undefined') {
+          // Trigger a custom event to refresh dashboard
+          window.dispatchEvent(new CustomEvent('bookingCompleted', { 
+            detail: { sessionId: result.data?.session?.id } 
+          }))
+        }
+        
         onBookingComplete(result)
       } else {
         // Handle API errors gracefully with specific error types
@@ -652,13 +663,16 @@ export default function BookingConfirmation({
           <CardHeader>
             <CardTitle className="text-orange-900 flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
-              Purchase Session Package
+              No Session Credits Available
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-orange-100 rounded-lg border border-orange-200">
+              <p className="text-orange-900 font-semibold text-base mb-2">
+                ⚠️ You need to purchase credits before booking
+              </p>
               <p className="text-orange-800 text-sm">
-                You need to purchase a session package to book this appointment. Choose from the options below and pay to get credits:
+                To book this session, you must first buy a session package. Select a package below and complete payment. After payment, you'll be able to book your session with this therapist.
               </p>
             </div>
 
@@ -726,10 +740,14 @@ export default function BookingConfirmation({
               ) : (
                 <>
                   <CreditCard className="h-4 w-4 mr-2" />
-                  Buy Credits & Book Session
+                  Proceed to Payment - Buy Credits First
                 </>
               )}
             </Button>
+
+            <p className="text-xs text-orange-700 text-center mt-2">
+              ℹ️ After successful payment, you'll return here to complete your booking
+            </p>
           </CardContent>
         </Card>
       )}
@@ -842,6 +860,18 @@ export default function BookingConfirmation({
         )}
 
         {!checkingCredits && userCredits === 0 && (
+          <Button 
+            disabled={true}
+            className="bg-gray-400 cursor-not-allowed text-white"
+            title="Please buy credits above first"
+          >
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Buy Credits Above to Enable Booking
+          </Button>
+        )}
+
+        {/* Hidden button for backward compatibility - no longer shown */}
+        {false && !checkingCredits && userCredits === 0 && (
           <Button 
             onClick={handlePaymentInitiation}
             disabled={!selectedPackage || paymentLoading || !agreedToTerms || packages.length === 0 || isPastDate(selectedSlot.date, selectedSlot.start_time)}

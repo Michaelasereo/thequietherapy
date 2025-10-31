@@ -58,30 +58,30 @@ export async function GET(request: NextRequest) {
     let totalCount = 0
 
     try {
-      // Query users table with therapist_profiles join to get real profile data
+      // Query therapist_enrollments (the source of truth for therapist data)
       let query = supabase
-        .from('users')
+        .from('therapist_enrollments')
         .select(`
-          id, 
-          full_name, 
-          email, 
-          created_at, 
-          updated_at,
-          therapist_profiles (
-            bio,
-            profile_image_url,
-            specialization,
-            languages,
-            experience_years,
-            education,
-            hourly_rate,
-            verification_status,
-            is_verified,
-            phone,
-            mdcn_code
-          )
+          id,
+          full_name,
+          email,
+          bio,
+          profile_image_url,
+          specialization,
+          languages,
+          licensed_qualification,
+          hourly_rate,
+          status,
+          is_active,
+          gender,
+          age,
+          marital_status,
+          phone,
+          created_at,
+          updated_at
         `)
-        .eq('user_type', 'therapist')
+        .eq('status', 'approved') // Only show approved therapists
+        .eq('is_active', true) // Only show active therapists
 
       // Apply search filter
       if (filters.search) {
@@ -93,38 +93,67 @@ export async function GET(request: NextRequest) {
       query = query.range(offset, offset + filters.limit! - 1)
       query = query.order('created_at', { ascending: false })
 
-      const { data: therapistsData, error } = await query
+      const { data: enrollmentsData, error: enrollmentError } = await query
 
-      if (error) {
-        throw error
+      if (enrollmentError) {
+        throw enrollmentError
       }
 
-      // Transform data with real profile data
-      therapists = (therapistsData || []).map((therapist) => {
-        const profile = therapist.therapist_profiles || {}
-        
-        return {
-          id: therapist.id,
-          full_name: therapist.full_name || 'Unknown Therapist',
-          email: therapist.email,
-          specializations: profile?.[0]?.specialization ? [profile?.[0]?.specialization] : ['General Therapy'],
-          bio: profile?.[0]?.bio || 'Professional therapist ready to help you.',
-          experience_years: profile?.[0]?.experience_years || 0,
-          education: profile?.[0]?.education || 'Professional qualification',
-          languages: profile?.[0]?.languages ? (typeof profile?.[0]?.languages === 'string' ? JSON.parse(profile?.[0]?.languages) : [profile?.[0]?.languages]) : ['English'],
-          session_rate: profile?.[0]?.hourly_rate || 5000,
-          availability_status: 'available' as const,
-          rating: 4.5, // Default rating - could be calculated from reviews later
-          total_sessions: 0, // Could be calculated from sessions table later
-          profile_image_url: profile?.[0]?.profile_image_url,
-          verification_status: profile?.[0]?.verification_status || 'pending',
-          gender: 'Not specified', // Not in current schema - could be added later
-          age: 'Not specified', // Not in current schema - could be added later
-          maritalStatus: 'Not specified', // Not in current schema - could be added later
-          created_at: therapist.created_at,
-          updated_at: therapist.updated_at
-        }
-      })
+      console.log('🔍 Found therapist enrollments:', enrollmentsData?.length || 0)
+
+      // For each enrollment, get the corresponding user data
+      const therapistsWithUsers = await Promise.all(
+        (enrollmentsData || []).map(async (enrollment) => {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id, is_verified, is_active')
+            .eq('email', enrollment.email)
+            .eq('user_type', 'therapist')
+            .single()
+
+          return { enrollment, user: userData }
+        })
+      )
+
+      // Transform data with real enrollment data
+      therapists = therapistsWithUsers
+        .filter(({ user }) => user && user.is_verified && user.is_active) // Only show verified and active users
+        .map(({ enrollment, user }) => {
+          // Parse specialization and languages if they're JSON strings
+          const specializations = Array.isArray(enrollment.specialization) 
+            ? enrollment.specialization 
+            : (typeof enrollment.specialization === 'string' 
+              ? [enrollment.specialization] 
+              : ['General Therapy'])
+          
+          const languages = Array.isArray(enrollment.languages)
+            ? enrollment.languages
+            : (typeof enrollment.languages === 'string'
+              ? JSON.parse(enrollment.languages)
+              : ['English'])
+
+          return {
+            id: user!.id, // Use user ID, not enrollment ID (already filtered null above)
+            full_name: enrollment.full_name || 'Unknown Therapist',
+            email: enrollment.email,
+            specializations,
+            bio: enrollment.bio || 'Professional therapist ready to help you.',
+            experience_years: 0, // Could be calculated later
+            education: enrollment.licensed_qualification || 'Professional qualification',
+            languages,
+            session_rate: enrollment.hourly_rate || 5000,
+            availability_status: (user!.is_active && enrollment.is_active) ? 'available' : 'offline',
+            rating: 4.8, // Default rating - could be calculated from reviews later
+            total_sessions: 0, // Could be calculated from sessions table later
+            profile_image_url: enrollment.profile_image_url,
+            verification_status: enrollment.status === 'approved' ? 'verified' : 'pending',
+            gender: enrollment.gender || 'Not specified',
+            age: enrollment.age || 'Not specified',
+            maritalStatus: enrollment.marital_status || 'Not specified',
+            created_at: enrollment.created_at,
+            updated_at: enrollment.updated_at
+          }
+        })
 
       totalCount = therapists.length
 
@@ -134,6 +163,8 @@ export async function GET(request: NextRequest) {
       therapists = []
       totalCount = 0
     }
+
+    console.log('✅ Returning therapists:', therapists.length, 'total:', totalCount)
 
     return NextResponse.json({
       success: true,
@@ -145,7 +176,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCount / filters.limit!)
       },
       filters: filters,
-      data_source: therapists.length > 0 ? 'database_with_real_profiles' : 'no_data'
+      data_source: therapists.length > 0 ? 'therapist_enrollments' : 'no_data'
     })
 
   } catch (error) {

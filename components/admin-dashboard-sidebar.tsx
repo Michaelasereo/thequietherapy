@@ -34,11 +34,19 @@ const AdminDashboardSidebar = memo(function AdminDashboardSidebar() {
     const fetchSidebarData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/admin/sidebar-data', {
-          cache: 'no-cache' // Prevent caching issues
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+        const response = await fetch(`${baseUrl}/api/admin/sidebar-data`, {
+          cache: 'no-store',
+          credentials: 'include',
+          headers: { 'Cache-Control': 'no-cache' }
         })
+        if (!response.ok) {
+          throw new Error(`Sidebar API ${response.status}`)
+        }
         const data = await response.json()
-        setSidebarData(data.sidebarData)
+        if (data?.sidebarData) {
+          setSidebarData(data.sidebarData)
+        }
       } catch (error) {
         console.error('Error fetching sidebar data:', error)
       } finally {

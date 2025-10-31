@@ -303,36 +303,49 @@ function VideoSessionPage() {
 
   const validateAndRefreshAuth = async () => {
     try {
+      // 1) Try Supabase session (may be absent if using alternate auth)
       const { data: { session }, error } = await supabase.auth.getSession()
-      
       if (error) {
         console.error('❌ Auth error:', error)
-        throw new Error('Authentication failed')
       }
-      
-      if (!session) {
-        console.log('🔄 No session, redirecting to login...')
-        router.push('/auth/login')
-        return false
-      }
-      
-      // Check if token is expired
-      const now = Math.floor(Date.now() / 1000)
-      if (session.expires_at && session.expires_at < now) {
-        console.log('🔄 Token expired, refreshing...')
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-        
-        if (refreshError) {
-          console.error('❌ Token refresh failed:', refreshError)
-          router.push('/auth/login')
-          return false
+
+      if (session) {
+        // Check expiry
+        const now = Math.floor(Date.now() / 1000)
+        if (session.expires_at && session.expires_at < now) {
+          console.log('🔄 Token expired, refreshing...')
+          const { error: refreshError } = await supabase.auth.refreshSession()
+          if (refreshError) {
+            console.error('❌ Token refresh failed:', refreshError)
+            // Fall through to API auth check
+          }
         }
+        return true
       }
-      
-      return true
+
+      // 2) Fallback: check our API auth (supports Clerk/custom cookies)
+      try {
+        const me = await fetch('/api/auth/me', { headers: { 'Cache-Control': 'no-cache' } })
+        if (me.ok) {
+          const meJson = await me.json()
+          if (meJson?.id || meJson?.user?.id) {
+            console.log('✅ API auth detected')
+            return true
+          }
+        }
+        if (me.status === 401) {
+          console.log('🔒 API auth 401')
+        }
+      } catch (e) {
+        console.error('❌ /api/auth/me check failed:', e)
+      }
+
+      // 3) If both checks fail, redirect
+      router.push(`/login?next=/video-session/${sessionId}`)
+      return false
     } catch (error) {
       console.error('❌ Auth validation failed:', error)
-      router.push('/auth/login')
+      router.push(`/login?next=/video-session/${sessionId}`)
       return false
     }
   }
@@ -371,6 +384,9 @@ function VideoSessionPage() {
             // Handle different response formats
             if (data.success && data.data) {
               setSession(data.data.session || data.data)
+            } else if (data.success && data.session) {
+              // API returns { success, session }
+              setSession(data.session)
             } else if (data.sessions && data.sessions.length > 0) {
               // Find the specific session
               const foundSession = data.sessions.find((s: any) => s.id === sessionId)
@@ -410,13 +426,22 @@ function VideoSessionPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/join`, {
-        method: 'POST'
+      const response = await fetch(`/api/sessions/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
       })
 
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
+          // Attach room details to session so Daily can join
+          setSession(prev => prev ? {
+            ...prev,
+            daily_room_url: data.data.room_url || prev.daily_room_url || prev.session_url,
+            daily_room_name: data.data.room_name || prev.daily_room_name || prev.room_name
+          } : prev)
+
           setIsConnected(true)
           setIsConnecting(false)
           toast.success('Connected to session')
@@ -660,7 +685,9 @@ function VideoSessionPage() {
                 <div className="bg-gray-700 p-6 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
                   <Video className="h-10 w-10 text-gray-300" />
                 </div>
-                <h2 className="text-2xl font-semibold mb-4">Ready to Start Session</h2>
+                <h2 className="text-2xl font-semibold mb-4">
+                  {session.status === 'in_progress' ? 'Rejoin Session' : 'Ready to Start Session'}
+                </h2>
                 
                 {/* Session Info */}
                 <div className="bg-gray-800 rounded-lg p-4 mb-6 text-left">
@@ -685,7 +712,7 @@ function VideoSessionPage() {
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-300">Status:</span>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant={session.status === 'in_progress' ? 'default' : 'secondary'} className="text-xs">
                         {session.status}
                       </Badge>
                     </div>
@@ -693,18 +720,20 @@ function VideoSessionPage() {
                 </div>
                 
                 <p className="text-gray-400 mb-6">
-                  {sessionPhase === 'waiting' ? 
-                    `Session starts at ${new Date(session.start_time).toLocaleTimeString()}. You can join 15 minutes before, but the countdown will only start at the exact scheduled time.` :
-                    `Click the button below to start your therapy session with ${session.therapist?.full_name || 'your therapist'}`
+                  {session.status === 'in_progress' ? 
+                    `You can rejoin this active session. The session will remain active until your therapist ends it.` :
+                    sessionPhase === 'waiting' ? 
+                      `Session starts at ${new Date(session.start_time).toLocaleTimeString()}. You can join 15 minutes before, but the countdown will only start at the exact scheduled time.` :
+                      `Click the button below to start your therapy session with ${session.therapist?.full_name || 'your therapist'}`
                   }
                 </p>
                 <Button 
                   onClick={joinSession} 
                   size="lg" 
                   className="bg-black hover:bg-gray-800"
-                  disabled={isConnecting}
+                  disabled={isConnecting || session.status === 'completed' || session.status === 'cancelled'}
                 >
-                  {isConnecting ? 'Connecting...' : 'Start Session'}
+                  {isConnecting ? 'Connecting...' : session.status === 'in_progress' ? 'Rejoin Session' : 'Start Session'}
                 </Button>
               </div>
             </div>

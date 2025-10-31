@@ -42,6 +42,9 @@ export async function GET(request: NextRequest) {
     // Build query based on parameters
     console.log('🔍 Fetching sessions from database...');
     
+    // Add cache-busting to ensure fresh data
+    const cacheBuster = Date.now();
+    
     let query = supabase
       .from('sessions')
       .select(`
@@ -85,8 +88,8 @@ export async function GET(request: NextRequest) {
     
     if (upcoming) {
       const now = new Date().toISOString();
-      // Try both scheduled_date and start_time columns
-      query = query.or(`scheduled_date.gte.${now.split('T')[0]},start_time.gte.${now}`);
+      // Properly filter for upcoming: use start_time for accurate datetime comparison
+      query = query.gte('start_time', now);
     }
     
     // Apply ordering - handle both scheduled_date and start_time columns

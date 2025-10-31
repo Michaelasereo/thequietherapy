@@ -1,13 +1,20 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireApiAuth } from '@/lib/server-auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
+    // Require admin authentication
+    const authResult = await requireApiAuth(['admin'])
+    if ('error' in authResult) {
+      return NextResponse.json(authResult.error, { status: 401 })
+    }
+
     // Add cache control headers to prevent stale data
     console.log('🔍 Fetching therapists with fresh data...')
     
@@ -34,7 +41,7 @@ export async function GET(request: Request) {
     })
 
     // Transform the data to match the expected interface
-    const transformedTherapists = therapistUsers?.map(user => {
+    const transformedTherapists = (therapistUsers || []).map(user => {
       const enrollment = enrollmentMap.get(user.email)
       return {
         id: user.id,
@@ -42,8 +49,8 @@ export async function GET(request: Request) {
         email: user.email,
         phone: enrollment?.phone || null,
         mdcn_code: enrollment?.mdcn_code || 'N/A',
-        specialization: enrollment?.specialization || [],
-        languages: enrollment?.languages || [],
+        specialization: Array.isArray(enrollment?.specialization) ? enrollment?.specialization : [],
+        languages: Array.isArray(enrollment?.languages) ? enrollment?.languages : [],
         is_verified: user.is_verified || false,
         is_active: user.is_active || false,
         status: enrollment?.status || 'pending',
@@ -63,8 +70,9 @@ export async function GET(request: Request) {
         'Expires': '0'
       }
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching therapists:', error)
-    return NextResponse.json([], { status: 500 })
+    const message = error?.message || 'Internal server error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

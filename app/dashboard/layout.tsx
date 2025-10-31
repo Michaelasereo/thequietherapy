@@ -6,41 +6,31 @@ import DashboardSidebar from "@/components/dashboard-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { DashboardProvider } from "@/context/dashboard-context"
 import { GlobalStateProvider } from '@/context/global-state-context';
-import { ClientSessionManager } from '@/lib/client-session-manager';
+import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation'
 import DashboardHeader from "@/components/dashboard-header"
 import { OnboardingWrapper } from "@/components/onboarding-wrapper"
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [session, setSession] = useState<any>(null);
+  const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
-  // Check authentication on mount
+  // Handle client-side mounting
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-            const sessionData = await ClientSessionManager.getSession();
-        if (!sessionData) {
-          console.log('🔍 DashboardLayout: No session found, redirecting to login')
-          router.push('/login')
-        } else {
-          console.log('🔍 DashboardLayout: Valid session found for user:', sessionData.email)
-          setSession(sessionData);
-        }
-      } catch (error) {
-        console.error('🔍 DashboardLayout: Auth check error:', error)
-        router.push('/login')
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    setMounted(true);
+  }, []);
 
-    checkAuth();
-  }, [router])
+  // Redirect if not authenticated (only on client after mount)
+  useEffect(() => {
+    if (mounted && !loading && !isAuthenticated) {
+      console.log('🔍 DashboardLayout: No session found, redirecting to login')
+      router.push('/login')
+    }
+  }, [mounted, loading, isAuthenticated, router])
 
   // Show loading state while checking authentication
-  if (isLoading) {
+  if (!mounted || loading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
@@ -52,15 +42,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   // Don't render dashboard if not authenticated
-  if (!session) {
+  if (!isAuthenticated || !user) {
     return null
   }
 
   // Extract only the needed fields to avoid passing the entire session object
   const userInfo = { 
-    name: session.name || session.full_name || session.email?.split('@')[0] || 'User',
-    full_name: session.full_name || session.name || '',
-    email: session.email || '' 
+    name: user.full_name || user.email?.split('@')[0] || 'User',
+    full_name: user.full_name || '',
+    email: user.email || '' 
   }
 
   return (

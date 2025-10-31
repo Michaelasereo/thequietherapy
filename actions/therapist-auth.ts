@@ -70,14 +70,8 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
       }
     }
 
-    // SECURITY: Restrict therapist enrollment to official company email domain
-    const ALLOWED_DOMAIN = '@thequietherapy.live'
-    if (!email.toLowerCase().endsWith(ALLOWED_DOMAIN)) {
-      return {
-        success: false,
-        error: 'Therapist enrollment is restricted to official company emails. Please use your assigned work email or contact support.'
-      }
-    }
+    // EMAIL POLICY UPDATE: Allow any valid email domain for therapist enrollment
+    // Previously restricted to '@thequietherapy.live'
 
     // Save enrollment data to database FIRST
     const { createClient } = await import('@supabase/supabase-js')

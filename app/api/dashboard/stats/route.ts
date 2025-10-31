@@ -57,17 +57,20 @@ export async function GET(request: NextRequest) {
     // Calculate progress score (based on completed sessions)
     const progressScore = Math.min(100, Math.max(0, completedSessions * 10));
     
-    // Get user credits
+    // Get user credits from user_credits table
     const { data: creditsData, error: creditsError } = await supabase
-      .from('credits')
+      .from('user_credits')
       .select('credits_balance')
       .eq('user_id', userId)
-      .single();
+      .in('user_type', ['user', 'individual']);
 
-    let totalCredits = 1; // Default fallback
-    if (!creditsError && creditsData) {
-      totalCredits = creditsData.credits_balance || 1;
+    let totalCredits = 0; // Default to 0
+    if (!creditsError && creditsData && creditsData.length > 0) {
+      // Sum all credits from different credit entries
+      totalCredits = creditsData.reduce((sum, credit) => sum + (credit.credits_balance || 0), 0);
     }
+    
+    console.log('🔍 Dashboard stats - Total credits calculated:', totalCredits)
 
     // Calculate average session time (from completed sessions)
     let averageSessionTime = 0;

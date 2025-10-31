@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import fs from 'fs';
-import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 
+// Use OpenAI for transcription (Whisper model)
+import OpenAI from 'openai';
+
+// Check which AI provider is configured
+const USE_DEEPSEEK_TRANSCRIPTION = process.env.USE_DEEPSEEK_FOR_TRANSCRIPTION === 'true';
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -51,8 +55,12 @@ export async function POST(request: NextRequest) {
       await writeFile(filePath, buffer);
       console.log(`Audio file saved to: ${filePath}`);
 
-      // Transcribe with OpenAI Whisper
+      // Transcribe with OpenAI Whisper (DeepSeek doesn't have an audio transcription API)
+      // Note: OpenAI Whisper is currently the best option for audio transcription
+      // DeepSeek is used for SOAP notes generation (text-to-text)
       console.log('Starting transcription with OpenAI Whisper...');
+      console.log('Note: Using OpenAI Whisper for transcription, DeepSeek will be used for SOAP notes generation');
+      
       const transcription = await openai.audio.transcriptions.create({
         file: fs.createReadStream(filePath),
         model: 'whisper-1',
@@ -60,12 +68,10 @@ export async function POST(request: NextRequest) {
         response_format: 'text',
       });
       console.log('Transcription completed successfully');
-      console.log('Transcription result type:', typeof transcription);
-      console.log('Transcription result:', transcription);
 
       // When using response_format: 'text', OpenAI returns the transcription as a string
       const transcriptionText = transcription as string;
-      console.log('Transcription text:', transcriptionText);
+      console.log('Transcription text length:', transcriptionText.length);
 
       // Store transcription in database
       try {

@@ -13,16 +13,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
-const ALLOWED_THERAPIST_DOMAIN = '@thequietherapy.live'
+// EMAIL POLICY UPDATE: Any valid email domain is allowed for therapist enrollment
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: "Full Name must be at least 2 characters." }),
   email: z.string()
-    .email({ message: "Invalid email address." })
-    .refine(
-      (email) => email.toLowerCase().endsWith(ALLOWED_THERAPIST_DOMAIN),
-      { message: "Therapist enrollment requires an official company email. Please use your assigned work email." }
-    ),
+    .email({ message: "Invalid email address." }),
   phone: z.string().min(10, { message: "Phone number is required." }),
   gender: z.string().min(1, { message: "Please select your gender." }),
   age: z.string().min(1, { message: "Age is required." }),

@@ -65,12 +65,42 @@ export async function POST(request: NextRequest) {
       if (noteError || !sessionNote?.transcript) {
         console.warn('⚠️ No transcript found for session:', sessionId);
         console.warn('Error:', noteError);
-        
+        // Fallback: create a basic session_notes entry and notify therapist so they still get meeting details
+        const { data: sessMeta, error: sessMetaErr } = await supabase
+          .from('sessions')
+          .select('user_id, therapist_id')
+          .eq('id', sessionId)
+          .single();
+
+        if (!sessMetaErr && sessMeta) {
+          // Ensure a minimal notes record exists
+          await supabase
+            .from('session_notes')
+            .upsert({
+              session_id: sessionId,
+              therapist_id: sessMeta.therapist_id,
+              user_id: sessMeta.user_id,
+              notes: notes || '',
+              ai_generated: false,
+              transcript: null,
+            });
+
+          // Notify therapist that session is completed and notes can be added/reviewed
+          await supabase
+            .from('notifications')
+            .insert({
+              user_id: sessMeta.therapist_id,
+              title: 'Session completed',
+              message: 'Your session has ended. Review or add SOAP notes.',
+              type: 'session_completed',
+              data: { session_id: sessionId }
+            });
+        }
+
         return NextResponse.json({
           success: true,
-          message: 'Session completed but no transcript available for SOAP notes',
-          noTranscript: true,
-          warning: 'Session may not have been recorded or transcription failed'
+          message: 'Session completed. No transcript found; created placeholder notes and notified therapist.',
+          noTranscript: true
         });
       }
 

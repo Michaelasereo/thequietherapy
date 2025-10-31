@@ -65,12 +65,12 @@ export function canBookTimeSlot(scheduledTime: Date): boolean {
     return true;
   }
   
-  // Production logic: must be at least 15 minutes before the session
+  // Production logic: must be at least 10 minutes before the session
   const now = getTestTime();
   const timeDiff = scheduledTime.getTime() - now.getTime();
   const minutesUntilSession = timeDiff / (1000 * 60);
   
-  return minutesUntilSession >= 15;
+  return minutesUntilSession >= 10;
 }
 
 /**

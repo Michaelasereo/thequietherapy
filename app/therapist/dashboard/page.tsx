@@ -172,7 +172,7 @@ const TherapistDashboardPage = memo(function TherapistDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">
-            Welcome back, {displayName}
+            Welcome back, <span className="text-brand-gold">{displayName}</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {therapist?.specialization && Array.isArray(therapist.specialization) && therapist.specialization.length > 0 

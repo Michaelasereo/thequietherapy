@@ -44,9 +44,19 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
       
       console.log('🔍 TimeSlotGrid: Fetching fresh time slots for:', { therapistId, selectedDate })
       
+      // Force cache invalidation by adding timestamp
       const timeSlots = await AvailabilityService.getTimeSlots(therapistId, selectedDate)
+      console.log('🔍 TimeSlotGrid: Received time slots from API:', {
+        totalSlots: timeSlots.length,
+        slots: timeSlots.map(s => ({ start: s.start_time, end: s.end_time, is_override: s.is_override }))
+      })
+      
       // Filter out past slots to prevent users from selecting them
       const futureSlots = filterOutPastSlots(timeSlots)
+      console.log('🔍 TimeSlotGrid: After filtering past slots:', {
+        totalSlots: futureSlots.length,
+        slots: futureSlots.map(s => ({ start: s.start_time, end: s.end_time, is_override: s.is_override }))
+      })
       setSlots(futureSlots)
       
       // Update last refreshed time
@@ -101,10 +111,26 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
     return 'Evening'
   }
 
-  const groupSlotsByTimeOfDay = () => {
-    const grouped: { [key: string]: TimeSlot[] } = {}
+  const groupSlotsByType = () => {
+    // Separate custom/override slots from general availability slots
+    const customSlots: TimeSlot[] = []
+    const generalSlots: TimeSlot[] = []
     
     slots.forEach(slot => {
+      if (slot.is_override) {
+        customSlots.push(slot)
+      } else {
+        generalSlots.push(slot)
+      }
+    })
+    
+    return { customSlots, generalSlots }
+  }
+
+  const groupSlotsByTimeOfDay = (slotsToGroup: TimeSlot[]) => {
+    const grouped: { [key: string]: TimeSlot[] } = {}
+    
+    slotsToGroup.forEach(slot => {
       const timeOfDay = getTimeOfDay(slot.start_time)
       if (!grouped[timeOfDay]) {
         grouped[timeOfDay] = []
@@ -203,7 +229,21 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
     )
   }
 
-  const groupedSlots = groupSlotsByTimeOfDay()
+  const { customSlots, generalSlots } = groupSlotsByType()
+  const groupedGeneralSlots = groupSlotsByTimeOfDay(generalSlots)
+  const groupedCustomSlots = groupSlotsByTimeOfDay(customSlots)
+  
+  // Debug logging
+  console.log('🔍 TimeSlotGrid Debug:', {
+    totalSlots: slots.length,
+    customSlots: customSlots.length,
+    generalSlots: generalSlots.length,
+    slots: slots.map(s => ({ start: s.start_time, end: s.end_time, is_override: s.is_override })),
+    groupedCustomSlots: Object.keys(groupedCustomSlots),
+    groupedGeneralSlots: Object.keys(groupedGeneralSlots),
+    loading,
+    error
+  })
 
   return (
     <>
@@ -243,46 +283,123 @@ export default function TimeSlotGrid({ therapistId, selectedDate, onSlotSelect, 
         </div>
 
         <div className="space-y-8">
-          {Object.entries(groupedSlots).map(([timeOfDay, timeSlots]) => (
-            <div key={timeOfDay} className="space-y-4">
-              <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2 text-lg">
-                <span className="w-3 h-3 bg-brand-gold rounded-full"></span>
-                {timeOfDay} ({timeSlots.length} slots)
-              </h4>
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {timeSlots.map((slot) => {
-                  const isSelected = isSlotSelected(slot)
-                  
-                  return (
-                    <Button
-                      key={`${slot.date}-${slot.start_time}`}
-                      onClick={() => onSlotSelect(slot)}
-                      variant={isSelected ? "default" : "outline"}
-                      className={`
-                        h-20 flex flex-col items-center justify-center p-4 text-sm font-medium
-                        transition-all duration-200 min-w-[120px]
-                        ${isSelected 
-                          ? 'bg-black text-white hover:bg-gray-800 shadow-md' 
-                          : 'hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm'
-                        }
-                      `}
-                    >
-                      <div className="font-semibold text-base">
-                        {formatTime(slot.start_time)}
-                      </div>
-                      <div className="text-xs opacity-75 mt-1">
-                        {formatTime(slot.end_time)}
-                      </div>
-                      <div className="text-xs opacity-60 mt-1">
-                        ({slot.session_duration || 60} mins)
-                      </div>
-                    </Button>
-                  )
-                })}
+          {/* Custom/Override Slots Section */}
+          {customSlots.length > 0 && (
+            <div className="space-y-4">
+              <div className="border-l-4 border-purple-500 pl-4">
+                <h3 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                  <span className="text-purple-600">⭐</span>
+                  Special Availability
+                  <span className="text-sm font-normal text-gray-600">({customSlots.length} slots)</span>
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Custom time slots set by the therapist for this specific date
+                </p>
               </div>
+
+              {Object.entries(groupedCustomSlots).map(([timeOfDay, timeSlots]) => (
+                <div key={`custom-${timeOfDay}`} className="space-y-4 ml-4">
+                  <h4 className="font-medium text-gray-700 mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                    {timeOfDay} ({timeSlots.length} slots)
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {timeSlots.map((slot) => {
+                      const isSelected = isSlotSelected(slot)
+                      
+                      return (
+                        <Button
+                          key={`${slot.date}-${slot.start_time}`}
+                          onClick={() => onSlotSelect(slot)}
+                          variant={isSelected ? "default" : "outline"}
+                          className={`
+                            h-20 flex flex-col items-center justify-center p-4 text-sm font-medium
+                            transition-all duration-200 min-w-[120px] relative
+                            ${isSelected 
+                              ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-md border-purple-600' 
+                              : 'hover:bg-purple-50 hover:border-purple-400 hover:shadow-sm border-purple-300'
+                            }
+                          `}
+                        >
+                          <div className="absolute top-1 right-1">
+                            <span className="text-xs">⭐</span>
+                          </div>
+                          <div className="font-semibold text-base">
+                            {formatTime(slot.start_time)}
+                          </div>
+                          <div className="text-xs opacity-75 mt-1">
+                            {formatTime(slot.end_time)}
+                          </div>
+                          <div className="text-xs opacity-60 mt-1">
+                            ({slot.session_duration || 60} mins)
+                          </div>
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          {/* General Availability Slots Section */}
+          {generalSlots.length > 0 && (
+            <div className="space-y-4">
+              {customSlots.length > 0 && (
+                <div className="border-l-4 border-brand-gold pl-4">
+                  <h3 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                    Regular Availability
+                    <span className="text-sm font-normal text-gray-600">({generalSlots.length} slots)</span>
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Standard weekly schedule slots
+                  </p>
+                </div>
+              )}
+
+              {Object.entries(groupedGeneralSlots).map(([timeOfDay, timeSlots]) => (
+                <div key={`general-${timeOfDay}`} className={`space-y-4 ${customSlots.length > 0 ? 'ml-4' : ''}`}>
+                  <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2 text-lg">
+                    <span className="w-3 h-3 bg-brand-gold rounded-full"></span>
+                    {timeOfDay} ({timeSlots.length} slots)
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {timeSlots.map((slot) => {
+                      const isSelected = isSlotSelected(slot)
+                      
+                      return (
+                        <Button
+                          key={`${slot.date}-${slot.start_time}`}
+                          onClick={() => onSlotSelect(slot)}
+                          variant={isSelected ? "default" : "outline"}
+                          className={`
+                            h-20 flex flex-col items-center justify-center p-4 text-sm font-medium
+                            transition-all duration-200 min-w-[120px]
+                            ${isSelected 
+                              ? 'bg-black text-white hover:bg-gray-800 shadow-md' 
+                              : 'hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm'
+                            }
+                          `}
+                        >
+                          <div className="font-semibold text-base">
+                            {formatTime(slot.start_time)}
+                          </div>
+                          <div className="text-xs opacity-75 mt-1">
+                            {formatTime(slot.end_time)}
+                          </div>
+                          <div className="text-xs opacity-60 mt-1">
+                            ({slot.session_duration || 60} mins)
+                          </div>
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Summary */}

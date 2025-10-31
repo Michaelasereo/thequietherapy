@@ -92,14 +92,17 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
   // Refresh therapist data
   const refreshTherapist = useCallback(async () => {
     console.log('🔍 TherapistContext: refreshTherapist called with user:', user);
+    console.log('🔍 TherapistContext: user object:', JSON.stringify(user, null, 2));
     console.log('🔍 TherapistContext: user.user_type:', user?.user_type);
     
     if (!user || user.user_type !== 'therapist') {
-      console.log('🔍 TherapistContext: Not a therapist user, skipping fetch');
+      console.log('❌ TherapistContext: Not a therapist user, skipping fetch. User type is:', user?.user_type);
       setTherapist(null)
       setLoading(false)
       return
     }
+    
+    console.log('✅ TherapistContext: User is therapist, proceeding to fetch profile...');
 
     try {
       setLoading(true)
@@ -119,6 +122,7 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
       if (response.ok) {
         const data = await response.json()
         console.log('🔍 TherapistContext: API response data:', data);
+        console.log('🔍 TherapistContext: Full therapist object from API:', JSON.stringify(data.therapist, null, 2));
         if (data.success && data.therapist) {
           console.log('🔍 TherapistContext: Setting therapist data:', data.therapist);
           console.log('🔍 TherapistContext: profile_image_url from API:', data.therapist.profile_image_url);
@@ -205,20 +209,33 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
 
   // Initial load and user changes
   useEffect(() => {
+    console.log('🔍 TherapistContext: useEffect triggered', { 
+      authLoading, 
+      hasUser: !!user, 
+      userType: user?.user_type,
+      userId: user?.id 
+    });
+    
     if (authLoading) {
+      console.log('🔍 TherapistContext: Auth still loading, waiting...')
       setLoading(true)
       return
     }
 
     if (!user) {
+      console.log('🔍 TherapistContext: No user, clearing therapist state')
       setTherapist(null)
       setLoading(false)
       return
     }
 
+    console.log('🔍 TherapistContext: Checking user type:', user.user_type, '=== "therapist"?', user.user_type === 'therapist')
+    
     if (user.user_type === 'therapist') {
+      console.log('✅ TherapistContext: User is therapist, calling refreshTherapist()')
       refreshTherapist()
     } else {
+      console.log('❌ TherapistContext: User is NOT therapist (type:', user.user_type, '), clearing state')
       setTherapist(null)
       setLoading(false)
     }

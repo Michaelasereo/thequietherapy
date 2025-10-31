@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userProfile: UserProfile = {
           id: sessionData.id,
           email: sessionData.email,
-          full_name: sessionData.name,
+          full_name: sessionData.full_name || sessionData.name || sessionData.email.split('@')[0],
           user_type: sessionData.user_type,
           credits: 0, // Default value
           package_type: 'basic', // Default value

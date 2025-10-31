@@ -33,19 +33,14 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Use the generate_availability_slots function to get all available slots
-    const { data: slots, error } = await supabase
-      .rpc('generate_availability_slots', {
-        p_therapist_id: therapistId,
-        p_start_date: startDate,
-        p_end_date: endDate
-      });
-
-    if (error) {
-      console.error('❌ Error generating availability slots:', error);
-      console.error('❌ Error details:', error.message, error.details);
-      
-      // Return empty dates array instead of error - allows frontend to show all dates as potentially available
+    // Use the new availability system instead of database function
+    const { AvailabilityService } = await import('@/lib/availability-service');
+    
+    // Get therapist availability
+    const weeklyAvailability = await AvailabilityService.getTherapistAvailability(therapistId);
+    
+    if (!weeklyAvailability || !weeklyAvailability.standardHours) {
+      console.log('❌ No availability configuration found');
       return NextResponse.json({ 
         success: true,
         availableDays: [],
@@ -55,13 +50,32 @@ export async function GET(request: NextRequest) {
         note: 'No availability configuration found - therapist may need to set up availability'
       }, { status: 200 });
     }
-
-    // Extract unique dates that have availability
-    const availableDates = [...new Set(slots?.map((slot: any) => slot.date) || [])]
-      .filter(date => date) // Remove null/undefined dates
-      .sort(); // Sort chronologically
-
-    console.log('✅ Available dates for therapist', therapistId, ':', availableDates.length, 'days');
+    
+    // Generate available dates by checking each date in the range
+    const availableDates = [];
+    
+    for (let date = new Date(startDateObj); date <= endDateObj; date.setDate(date.getDate() + 1)) {
+      const dateStr = date.toISOString().split('T')[0];
+      const dayOfWeek = date.getDay();
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayName = dayNames[dayOfWeek];
+      
+      // Check if this day is enabled in availability
+      const dayAvailability = weeklyAvailability.standardHours[dayName];
+      if (dayAvailability && dayAvailability.enabled) {
+        // Check if there are time slots or general hours
+        const hasTimeSlots = dayAvailability.timeSlots && dayAvailability.timeSlots.length > 0;
+        const hasGeneralHours = dayAvailability.generalHours && 
+          dayAvailability.generalHours.start && 
+          dayAvailability.generalHours.end;
+        
+        if (hasTimeSlots || hasGeneralHours) {
+          availableDates.push(dateStr);
+        }
+      }
+    }
+    
+    console.log('✅ Generated available dates using new system:', availableDates.length, 'days');
 
     return NextResponse.json({ 
       success: true,

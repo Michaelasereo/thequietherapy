@@ -167,104 +167,63 @@ export async function uploadTherapistAvatar(formData: FormData) {
       return { success: false, error: 'No file provided' }
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    if (!allowedTypes.includes(file.type)) {
-      return { success: false, error: 'Invalid file type. Please upload JPEG, PNG, or WebP.' }
+    console.log('📸 Avatar upload requested for:', session.email)
+
+    // ✅ USE UNIFIED AVATAR SERVICE FOR 3-WAY SYNC
+    // This ensures avatar is synced across:
+    // - users.avatar_url
+    // - therapist_enrollments.profile_image_url
+    // - therapist_profiles.profile_image_url
+    const { AvatarService } = await import('@/lib/services/avatar-service')
+    
+    const result = await AvatarService.uploadAndSyncAvatar(
+      file,
+      session.email!,
+      session.id
+    )
+
+    if (!result.success) {
+      console.error('❌ Avatar upload failed:', result.error)
+      return { success: false, error: result.error }
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024
-    if (file.size > maxSize) {
-      return { success: false, error: 'File too large. Maximum size is 5MB.' }
-    }
+    console.log('✅ Avatar uploaded and synced to all tables:', {
+      imageUrl: result.imageUrl,
+      syncedTables: result.syncedTables,
+      warnings: result.warnings
+    })
 
-    // Generate unique filename
-    const fileExt = file.name.split('.').pop()
-    const fileName = `therapist-${session.id}-${Date.now()}.${fileExt}`
-    const filePath = `therapist-profiles/${fileName}`
-
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from('profile-images')
-      .upload(filePath, buffer, {
-        contentType: file.type,
-        upsert: false
-      })
-
-    if (uploadError) {
-      console.error('❌ Upload error:', uploadError)
-      return { success: false, error: 'Failed to upload image' }
-    }
-
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from('profile-images')
-      .getPublicUrl(filePath)
-
-    const imageUrl = urlData.publicUrl
-
-    // Get current enrollment
+    // Get current enrollment for edit tracking
     const { data: currentEnrollment } = await supabase
       .from('therapist_enrollments')
-      .select('*')
+      .select('edited_fields')
       .eq('email', session.email)
       .single()
 
-    // Preserve original data
-    let originalEnrollmentData = currentEnrollment?.original_enrollment_data
-    if (!originalEnrollmentData && currentEnrollment) {
-      originalEnrollmentData = {
-        full_name: currentEnrollment.full_name,
-        phone: currentEnrollment.phone || '',
-        licensed_qualification: currentEnrollment.licensed_qualification || '',
-        bio: currentEnrollment.bio || '',
-        specialization: currentEnrollment.specialization || [],
-        languages: currentEnrollment.languages || [],
-        gender: currentEnrollment.gender || '',
-        age: currentEnrollment.age || null,
-        marital_status: currentEnrollment.marital_status || '',
-        profile_image_url: currentEnrollment.profile_image_url || ''
-      }
-    }
-
-    // Track image as edited
+    // Track image as edited field
     const editedFields = new Set(currentEnrollment?.edited_fields || [])
     editedFields.add('profile_image_url')
 
-    // Update enrollment with new image
-    const { error: updateError } = await supabase
+    await supabase
       .from('therapist_enrollments')
       .update({
-        profile_image_url: imageUrl,
-        updated_at: new Date().toISOString(),
         profile_updated_at: new Date().toISOString(),
-        original_enrollment_data: originalEnrollmentData,
         edited_fields: Array.from(editedFields)
       })
       .eq('email', session.email)
 
-    if (updateError) {
-      console.error('❌ Update error:', updateError)
-      // Try to delete uploaded file
-      await supabase.storage.from('profile-images').remove([filePath])
-      return { success: false, error: 'Failed to update profile with image' }
-    }
-
-    console.log('✅ Avatar uploaded successfully:', imageUrl)
+    console.log('✅ Edit tracking updated')
 
     // Revalidate pages
     revalidatePath('/therapist/dashboard')
     revalidatePath('/therapist/dashboard/settings')
 
-    return { 
-      success: true, 
-      imageUrl,
-      message: 'Avatar uploaded successfully'
+    return {
+      success: true,
+      imageUrl: result.imageUrl,
+      message: 'Avatar uploaded and synced successfully',
+      syncedTables: result.syncedTables,
+      warnings: result.warnings
     }
   } catch (error) {
     console.error('❌ Server action error:', error)

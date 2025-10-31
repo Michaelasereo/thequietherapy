@@ -72,24 +72,6 @@ export async function POST(request: NextRequest) {
       patient: patient.full_name
     })
 
-    // Validate the date is not too far in the future
-    const selectedDate = new Date(scheduledDate);
-    const today = new Date();
-    const maxDate = new Date();
-    maxDate.setDate(today.getDate() + 21); // 21 days from today for therapists
-    
-    if (selectedDate < today) {
-      return NextResponse.json({
-        error: 'Cannot schedule sessions in the past'
-      }, { status: 400 });
-    }
-    
-    if (selectedDate > maxDate) {
-      return NextResponse.json({
-        error: 'Cannot schedule sessions more than 21 days in advance'
-      }, { status: 400 });
-    }
-    
     // Format time to match existing booking API format
     const duration = durationMinutes || 30;
     
@@ -101,6 +83,23 @@ export async function POST(request: NextRequest) {
     // Create datetime objects with GMT+1 timezone (matching existing booking API)
     const startDateTime = new Date(`${scheduledDate}T${timeWithSeconds}+01:00`);
     const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+
+    // Validate against current time using the full start timestamp
+    const now = new Date();
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 21); // 21 days from now for therapists
+
+    if (startDateTime <= now) {
+      return NextResponse.json({
+        error: 'Cannot schedule sessions in the past'
+      }, { status: 400 });
+    }
+
+    if (startDateTime > maxDate) {
+      return NextResponse.json({
+        error: 'Cannot schedule sessions more than 21 days in advance'
+      }, { status: 400 });
+    }
 
     console.log('📅 Time formatting:', {
       input: scheduledTime,

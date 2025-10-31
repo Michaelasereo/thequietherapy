@@ -478,6 +478,7 @@ const TherapistDashboardContext = createContext<TherapistDashboardContextType | 
 // Provider component
 export function TherapistDashboardProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(therapistDashboardReducer, initialState)
+  
 
   // Fetch therapist data
   const fetchTherapistData = useCallback(async () => {
@@ -491,12 +492,15 @@ export function TherapistDashboardProvider({ children }: { children: React.React
           'Cache-Control': 'no-cache'
         }
       })
+      
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.therapist) {
-          console.log('🔍 Context: Setting therapist data:', data.therapist)
-          console.log('🔍 Context: availability_approved value:', data.therapist.availability_approved)
-          dispatch({ type: 'SET_THERAPIST', payload: data.therapist })
+        
+        // The API returns {success: true, data: {therapist: ...}}
+        const therapistData = data.data?.therapist || data.therapist
+        
+        if (data.success && therapistData) {
+          dispatch({ type: 'SET_THERAPIST', payload: therapistData })
         } else {
           dispatch({ type: 'SET_ERROR', payload: data.error || 'Failed to load therapist data' })
         }
@@ -510,6 +514,11 @@ export function TherapistDashboardProvider({ children }: { children: React.React
       dispatch({ type: 'SET_LOADING', payload: false })
     }
   }, [dispatch])
+
+  // Auto-fetch therapist data on mount
+  useEffect(() => {
+    fetchTherapistData()
+  }, [fetchTherapistData])
 
   // Refetch therapist data (for cache invalidation)
   const refetchTherapistData = useCallback(async () => {
@@ -697,6 +706,12 @@ export function TherapistDashboardProvider({ children }: { children: React.React
       window.removeEventListener('therapist-data-refresh', handleGlobalRefresh)
     }
   }, [refetchTherapistData])
+
+  // Auto-fetch therapist data on mount
+  useEffect(() => {
+    console.log('🔍 Context: Auto-fetching therapist data on mount')
+    fetchTherapistData()
+  }, [fetchTherapistData])
 
   useEffect(() => {
     if (state.therapist) {

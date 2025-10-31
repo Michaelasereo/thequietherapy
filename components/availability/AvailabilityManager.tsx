@@ -129,7 +129,7 @@ export function AvailabilityManager({
         credentials: 'include',
         body: JSON.stringify({ 
           therapist_id: therapistId,
-          availability: transformToLegacyFormat(availability) 
+          templates: transformToLegacyFormat(availability) 
         })
       });
 

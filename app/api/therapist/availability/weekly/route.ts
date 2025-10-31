@@ -98,6 +98,11 @@ export async function GET(request: NextRequest) {
       success: true,
       availability: data?.weekly_availability || null,
       data: data
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache'
+      }
     });
 
   } catch (error) {

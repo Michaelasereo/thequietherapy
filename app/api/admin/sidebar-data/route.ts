@@ -1,13 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireApiAuth } from '@/lib/server-auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Require admin authentication
+    const authResult = await requireApiAuth(['admin'])
+    if ('error' in authResult) {
+      return NextResponse.json(authResult.error, { status: 401 })
+    }
     // Fetch pending therapist verifications
     const { data: pendingTherapists, error: therapistError } = await supabase
       .from('therapist_enrollments')

@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
 import { StatefulButton } from "@/components/ui/stateful-button"
 import { StatefulStatsCard } from "@/components/ui/stateful-card"
-import { CalendarIcon, Video as VideoIcon, CheckCircle, CheckCircle2, TrendingUp, Clock, ArrowLeft, AlertCircle } from "lucide-react"
+import { CalendarIcon, Video as VideoIcon, CheckCircle, CheckCircle2, TrendingUp, Clock, ArrowLeft, AlertCircle, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -465,9 +465,27 @@ function DashboardContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle>Upcoming Sessions</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Upcoming Sessions</CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  console.log('🔄 Manual refresh triggered')
+                  fetchSessions()
+                }}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
+            {/* Debug info */}
+            <div className="text-xs text-gray-500 mb-2">
+              Debug: {state.upcomingSessions.length} upcoming sessions found
+            </div>
             {state.upcomingSessions.length > 0 ? (
               <div className="space-y-4">
                 {/* Info about credits */}

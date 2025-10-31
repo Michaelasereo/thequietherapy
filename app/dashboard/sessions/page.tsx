@@ -20,6 +20,8 @@ import PostSessionModal from '@/components/post-session-modal'
 import { formatTime, formatDate, getSessionStartTime } from '@/lib/utils'
 import AddToCalendarButton from '@/components/add-to-calendar-button'
 import SessionDetailsModal from '@/components/session-details-modal'
+import SOAPNotesDisplay from '@/components/soap-notes-display'
+import PendingSessionApproval from '@/components/pending-session-approval'
 // import { supabase } from "@/lib/supabase" // Removed - not used and causing WebSocket connection attempts
 // import { useRealtimeData } from "@/hooks/useRealtimeData" // Disabled - causing connection errors
 
@@ -377,9 +379,7 @@ export default function SessionsPage() {
                   )}
                 </div>
                 <div className="text-sm text-gray-700 bg-white p-3 rounded border">
-                  <pre className="whitespace-pre-wrap font-mono text-xs">
-                    {session.session_notes.soap_notes}
-                  </pre>
+                  <SOAPNotesDisplay soapNotes={session.session_notes.soap_notes} showToggle={false} />
                 </div>
               </div>
             )}
@@ -524,6 +524,19 @@ export default function SessionsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pending Approvals */}
+      <Card className="shadow-sm border-yellow-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-yellow-700">
+            <Clock className="h-5 w-5" />
+            Pending Approvals
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PendingSessionApproval onApprovalComplete={handleSessionUpdate} />
+        </CardContent>
+      </Card>
 
       {/* In Progress Sessions */}
       {categorizedSessions.inProgress.length > 0 && (

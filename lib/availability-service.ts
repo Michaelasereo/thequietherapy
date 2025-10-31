@@ -417,12 +417,13 @@ export class AvailabilityService {
    */
   static calculateEndTime(startTime: string, durationMinutes: number): string {
     const [hours, minutes] = startTime.split(':').map(Number);
-    const startDate = new Date();
-    startDate.setHours(hours, minutes, 0, 0);
     
-    const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+    // Calculate end time without timezone conversions
+    const totalMinutes = hours * 60 + minutes + durationMinutes;
+    const endHours = Math.floor(totalMinutes / 60) % 24;
+    const endMinutes = totalMinutes % 60;
     
-    return endDate.toTimeString().slice(0, 5);
+    return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
   }
 
   /**

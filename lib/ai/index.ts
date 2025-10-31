@@ -2,8 +2,13 @@
 // Centralized AI service with proper error handling and fallbacks
 
 import OpenAI from 'openai'
+import { generateSOAPNotesWithDeepSeek } from './deepseek-service'
 
-// Initialize OpenAI client with proper error handling
+// Check which provider to use
+const USE_DEEPSEEK = process.env.USE_DEEPSEEK_FOR_SOAP_NOTES !== 'false' // Default to DeepSeek if configured
+const DEEPSEEK_CONFIGURED = !!process.env.DEEPSEEK_API_KEY
+
+// Initialize OpenAI client with proper error handling (for transcription only)
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 })
@@ -40,11 +45,30 @@ export async function generateSOAPNotes(
       }
     }
 
-    // Check if OpenAI is properly configured
+    // Use DeepSeek if configured and enabled (default)
+    if (USE_DEEPSEEK && DEEPSEEK_CONFIGURED) {
+      console.log('🤖 Using DeepSeek for SOAP notes generation')
+      try {
+        const deepseekResult = await generateSOAPNotesWithDeepSeek(transcript, sessionData)
+        return {
+          success: true,
+          soapNotes: deepseekResult.raw || JSON.stringify(deepseekResult.structured),
+          provider: 'deepseek',
+          generatedAt: deepseekResult.generatedAt
+        }
+      } catch (deepseekError) {
+        console.error('❌ DeepSeek generation failed, falling back to OpenAI:', deepseekError)
+        // Fall through to OpenAI
+      }
+    }
+
+    // Check if OpenAI is properly configured (fallback)
     if (!process.env.OPENAI_API_KEY) {
-      console.warn('⚠️ OpenAI API key not configured, using mock data')
+      console.warn('⚠️ No AI API key configured, using mock data')
       return generateMockSOAPNotes(transcript, sessionData)
     }
+
+    console.log('🤖 Using OpenAI for SOAP notes generation')
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini', // Cost-effective option

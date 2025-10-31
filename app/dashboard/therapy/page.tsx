@@ -10,6 +10,7 @@ import { Video, Calendar, Clock, User, AlertCircle, CheckCircle, ExternalLink } 
 import { toast } from "@/components/ui/use-toast"
 import { useAuth } from '@/context/auth-context'
 import { getUserSessions, getUpcomingSessions } from "@/lib/session-management"
+import PendingSessionApproval from "@/components/pending-session-approval"
 
 interface Session {
   id: string
@@ -48,18 +49,39 @@ export default function GoToTherapyPage() {
       // Fetch upcoming sessions
       const upcomingSessions = await getUpcomingSessions(user.id)
       if (upcomingSessions && upcomingSessions.length > 0) {
-        const sessionData = upcomingSessions[0]
-        setUpcomingSession({
-          id: sessionData.id,
-          therapist_name: sessionData.therapist_name || sessionData.therapist?.full_name,
-          therapist_email: sessionData.therapist_email || sessionData.therapist?.email,
-          start_time: sessionData.start_time || sessionData.scheduled_date || sessionData.created_at,
-          duration: sessionData.duration || 60,
-          room_url: sessionData.session_url,
-          room_name: sessionData.room_name,
-          status: sessionData.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
-          notes: sessionData.notes
+        // Filter out completed or already ended sessions
+        const now = new Date()
+        const candidates = upcomingSessions.filter((s: any) => {
+          const status = s.status
+          const start = new Date(s.start_time || s.scheduled_date || s.created_at)
+          const durationMin = s.duration || s.duration_minutes || 60
+          const end = new Date(start.getTime() + durationMin * 60 * 1000)
+          const notEnded = end > now
+          const isUpcomingLike = ['scheduled', 'in_progress', 'confirmed', 'pending_approval'].includes(status)
+          return isUpcomingLike && notEnded
         })
+
+        // Choose the nearest one
+        candidates.sort((a: any, b: any) => new Date(a.start_time || a.scheduled_date || a.created_at).getTime() - new Date(b.start_time || b.scheduled_date || b.created_at).getTime())
+
+        const sessionData = candidates[0]
+        if (sessionData) {
+          setUpcomingSession({
+            id: sessionData.id,
+            therapist_name: sessionData.therapist_name || sessionData.therapist?.full_name,
+            therapist_email: sessionData.therapist_email || sessionData.therapist?.email,
+            start_time: sessionData.start_time || sessionData.scheduled_date || sessionData.created_at,
+            duration: sessionData.duration || sessionData.duration_minutes || 60,
+            room_url: sessionData.session_url || sessionData.daily_room_url,
+            room_name: sessionData.room_name || sessionData.daily_room_name,
+            status: sessionData.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+            notes: sessionData.notes
+          })
+        } else {
+          setUpcomingSession(null)
+        }
+      } else {
+        setUpcomingSession(null)
       }
       
       // Fetch all sessions and filter for history
@@ -94,7 +116,6 @@ export default function GoToTherapyPage() {
   }
 
   const isSessionAvailable = (session: Session) => {
-    if (!session.room_url) return false
     const sessionTime = new Date(session.start_time)
     const now = new Date()
     const tenMinutesBefore = new Date(sessionTime.getTime() - 10 * 60 * 1000)
@@ -117,15 +138,6 @@ export default function GoToTherapyPage() {
   }
 
   const joinSession = (session: Session) => {
-    if (!session.room_url) {
-      toast({
-        title: "Session Not Available",
-        description: "Session room is not available yet",
-        variant: "destructive",
-      })
-      return
-    }
-    
     if (!isSessionAvailable(session)) {
       toast({
         title: "Session Not Available",

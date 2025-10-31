@@ -11,6 +11,7 @@ interface VideoSessionProps {
   roomName?: string;
   meetingToken?: string;
   sessionDuration?: number; // Duration in minutes
+  scheduledStartISO?: string; // ISO string of scheduled session start
   onLeave?: () => void;
   onError?: (error: string) => void;
 }
@@ -20,6 +21,7 @@ export default function VideoSession({
   roomName, 
   meetingToken,
   sessionDuration = 60, // Default to 60 minutes
+  scheduledStartISO,
   onLeave, 
   onError 
 }: VideoSessionProps) {
@@ -36,7 +38,11 @@ export default function VideoSession({
   const handleIframeLoad = () => {
     setIsLoading(false);
     setError(null);
-    setSessionStartTime(new Date());
+    // Use scheduled start if provided; otherwise default to now
+    const now = new Date();
+    const scheduledStart = scheduledStartISO ? new Date(scheduledStartISO) : now;
+    // Store the scheduled start to drive countdown from official start time
+    setSessionStartTime(scheduledStart);
   };
 
   // Timer effect
@@ -45,8 +51,9 @@ export default function VideoSession({
 
     const timer = setInterval(() => {
       const now = new Date();
-      const elapsed = Math.floor((now.getTime() - sessionStartTime.getTime()) / 1000);
-      const remaining = Math.max(0, (sessionDuration * 60) - elapsed);
+      // End time is scheduled start + duration
+      const sessionEndTimeMs = sessionStartTime.getTime() + sessionDuration * 60 * 1000;
+      const remaining = Math.max(0, Math.floor((sessionEndTimeMs - now.getTime()) / 1000));
       setTimeRemaining(remaining);
 
       // Auto-end session when time is up

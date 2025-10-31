@@ -1,95 +1,156 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireApiAuth } from '@/lib/server-auth'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
+/**
+ * SECURED: book-simple endpoint now proxies to main booking endpoint
+ * with proper authentication and validation.
+ * 
+ * This maintains backward compatibility while ensuring all bookings
+ * go through the secure, atomic booking flow with credit deduction.
+ */
 export async function POST(request: NextRequest) {
   try {
+    // 🚨 CRITICAL: Require authentication before processing
+    const authResult = await requireApiAuth(['individual'])
+    if ('error' in authResult) {
+      return authResult.error
+    }
+
+    const { session } = authResult
+    const authenticatedUserId = session.user.id // Enforce authenticated user
+
+    // Parse incoming request (may include legacy fields)
+    const requestBody = await request.json()
     const {
-      user_id,
+      user_id, // Legacy field - will be ignored, using authenticated user instead
       therapist_id,
-      therapist_email,
-      therapist_name,
       session_date,
       start_time,
-      end_time,
-      duration = 60,
-      session_type = 'individual',
-      status = 'scheduled',
+      end_time, // Legacy field - duration is calculated instead
+      duration = 60, // Default to 60 minutes (book-simple legacy default)
+      session_type = 'video', // Map 'individual' to 'video' for main endpoint
       patient_name,
       patient_email,
       patient_phone,
       complaints
-    } = await request.json()
+    } = requestBody
 
-    if (!therapist_id || !session_date || !start_time || !patient_email) {
+    // Validate required fields
+    if (!therapist_id || !session_date || !start_time) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { 
+          success: false, 
+          error: 'Missing required fields: therapist_id, session_date, start_time' 
+        },
         { status: 400 }
       )
     }
 
-    console.log('📅 Creating session booking:', {
-      therapist_id,
-      therapist_email,
-      session_date,
-      start_time,
-      patient_email
-    })
-
-    // Create session with combined date and time
-    const sessionDateTime = new Date(`${session_date}T${start_time}`)
-    const sessionEndTime = end_time 
-      ? new Date(`${session_date}T${end_time}`)
-      : new Date(sessionDateTime.getTime() + duration * 60000)
-
-    // Generate a unique session ID
-    const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-
-    // Create the session record (matching actual schema)
-    const { data: session, error: sessionError } = await supabase
-      .from('sessions')
-      .insert({
-        id: sessionId,
-        user_id: user_id || patient_email, // Use email as fallback user ID
-        therapist_id: therapist_id,
-        start_time: sessionDateTime.toISOString(),
-        end_time: sessionEndTime.toISOString(),
-        duration: duration,
-        session_type: session_type,
-        status: status,
-        notes: `Patient: ${patient_name} (${patient_email}), Phone: ${patient_phone || 'N/A'}, Concerns: ${complaints || 'N/A'}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-
-    if (sessionError) {
-      console.error('❌ Error creating session:', sessionError)
-      return NextResponse.json(
-        { success: false, error: 'Failed to create session', details: sessionError.message },
-        { status: 500 }
-      )
+    // Calculate duration from end_time if provided (legacy support)
+    let calculatedDuration = duration
+    if (end_time && start_time) {
+      const start = new Date(`${session_date}T${start_time}:00`)
+      const end = new Date(`${session_date}T${end_time}:00`)
+      const diffMinutes = Math.round((end.getTime() - start.getTime()) / 60000)
+      if (diffMinutes > 0) {
+        calculatedDuration = diffMinutes
+      }
     }
 
-    console.log('✅ Session created successfully:', session.id)
+    // Build notes from legacy fields if provided
+    let notes = ''
+    if (patient_name || patient_email || patient_phone || complaints) {
+      const noteParts = []
+      if (patient_name) noteParts.push(`Patient: ${patient_name}`)
+      if (patient_email) noteParts.push(`Email: ${patient_email}`)
+      if (patient_phone) noteParts.push(`Phone: ${patient_phone}`)
+      if (complaints) noteParts.push(`Concerns: ${complaints}`)
+      notes = noteParts.join(', ')
+    }
 
-    // TODO: Send confirmation emails to both patient and therapist
-    // TODO: Create Daily.co room for the session
-    // TODO: Add session to therapist's calendar
+    // Map session_type from legacy 'individual' to 'video'
+    const mappedSessionType = session_type === 'individual' ? 'video' : session_type
 
-    return NextResponse.json({
-      success: true,
-      session: session,
-      message: 'Session booked successfully'
+    // Transform request to match main booking endpoint format
+    const mainEndpointPayload = {
+      therapist_id,
+      session_date,
+      start_time,
+      duration: calculatedDuration,
+      session_type: mappedSessionType,
+      notes: notes || `Booking by ${session.user.full_name || session.user.email}`
+    }
+
+    console.log('🔄 book-simple: Proxying to main booking endpoint', {
+      authenticated_user_id: authenticatedUserId,
+      therapist_id,
+      session_date,
+      start_time,
+      duration: calculatedDuration,
+      legacy_user_id: user_id ? 'IGNORED (using authenticated user)' : 'not provided'
     })
 
+    // Proxy to main booking endpoint
+    // Forward all cookies for authentication
+    const cookieHeader = request.headers.get('cookie')
+    const authHeader = request.headers.get('authorization')
+
+    // Build headers with authentication
+    const proxyHeaders: HeadersInit = {
+      'Content-Type': 'application/json',
+    }
+    
+    if (cookieHeader) {
+      proxyHeaders['Cookie'] = cookieHeader
+    }
+    
+    if (authHeader) {
+      proxyHeaders['Authorization'] = authHeader
+    }
+
+    // Forward other relevant headers
+    const forwardedHeaders = ['x-forwarded-for', 'user-agent', 'referer']
+    forwardedHeaders.forEach(headerName => {
+      const value = request.headers.get(headerName)
+      if (value) {
+        proxyHeaders[headerName] = value
+      }
+    })
+
+    const baseUrl = request.nextUrl.origin
+    const mainEndpointUrl = new URL('/api/sessions/book', baseUrl)
+
+    try {
+      const proxyResponse = await fetch(mainEndpointUrl.toString(), {
+        method: 'POST',
+        headers: proxyHeaders,
+        body: JSON.stringify(mainEndpointPayload)
+      })
+
+      const proxyResponseData = await proxyResponse.json()
+
+      // Maintain backward compatibility with book-simple response format
+      if (proxyResponse.ok && proxyResponseData.data?.session) {
+        return NextResponse.json({
+          success: true,
+          session: proxyResponseData.data.session,
+          message: 'Session booked successfully'
+        })
+      }
+
+      // Forward error responses
+      return NextResponse.json(
+        proxyResponseData,
+        { status: proxyResponse.status }
+      )
+
+    } catch (fetchError) {
+      console.error('❌ Error proxying to main booking endpoint:', fetchError)
+      throw fetchError
+    }
+
   } catch (error) {
-    console.error('💥 Error in book-simple API:', error)
+    console.error('💥 Error in secured book-simple API:', error)
     return NextResponse.json(
       { 
         success: false, 

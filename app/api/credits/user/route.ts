@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to fetch credits')
     }
 
-    // Calculate total available credits
-    const totalCredits = credits?.reduce((sum, credit) => sum + credit.credits_balance, 0) || 0
+    // Calculate total available credits from user_credits table
+    let totalCredits = credits?.reduce((sum, credit) => sum + credit.credits_balance, 0) || 0
     console.log('🔍 Total credits calculated:', totalCredits)
 
     // Get credit history

@@ -34,28 +34,51 @@ export async function POST(request: NextRequest) {
     const event = JSON.parse(body)
     
     // CRITICAL: Idempotency check - prevent duplicate processing
-    const { data: existingEvent } = await supabase
-      .from('payment_events')
-      .select('id, processed_at')
-      .eq('id', event.id)
-      .single()
+    let isDuplicate = false
     
-    if (existingEvent) {
-      console.log('✅ Webhook already processed:', event.id)
+    // Try to check payment_events table if it exists
+    try {
+      const { data: existingEvent } = await supabase
+        .from('payment_events')
+        .select('id, processed_at')
+        .eq('id', event.id)
+        .single()
+      
+      if (existingEvent) {
+        console.log('✅ Webhook already processed:', event.id)
+        isDuplicate = true
+      }
+    } catch (tableError) {
+      // Table might not exist in development - log but continue
+      console.log('⚠️ payment_events table not found, skipping idempotency check')
+    }
+    
+    if (isDuplicate) {
       return NextResponse.json({ status: 'already_processed', id: event.id })
     }
 
     console.log('🔔 Paystack webhook received:', event.event, 'ID:', event.id)
 
-    // Store event immediately for idempotency within transaction
-    const { error: eventError } = await supabase.rpc('process_payment_webhook', {
-      p_event_id: event.id,
-      p_event_data: event
-    })
+    // Store event for idempotency (with fallback if RPC doesn't exist)
+    try {
+      const { error: eventError } = await supabase.rpc('process_payment_webhook', {
+        p_event_id: event.id,
+        p_event_data: event
+      })
 
-    if (eventError) {
-      console.error('❌ Error processing webhook:', eventError)
-      return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
+      if (eventError) {
+        console.warn('⚠️ RPC function not available, using direct insert:', eventError.message)
+        // Fallback: direct insert
+        await supabase.from('payment_events').insert({
+          id: event.id,
+          event_type: event.event,
+          event_data: event,
+          processed_at: new Date().toISOString()
+        })
+      }
+    } catch (fallbackError) {
+      // If payment_events table doesn't exist, log and continue
+      console.log('⚠️ Could not store webhook event (development mode):', fallbackError)
     }
 
     // Invalidate donation stats cache when payment is successful

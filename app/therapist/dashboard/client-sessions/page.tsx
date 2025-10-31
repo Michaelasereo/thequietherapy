@@ -55,8 +55,10 @@ export default function TherapistClientSessionsPage() {
         console.log('🔍 TherapistClientSessionsPage: Raw sessions:', sessions)
         console.log('🔍 TherapistClientSessionsPage: Sessions count:', sessions.length)
         
-        // Filter sessions by status
-        const scheduled = sessions.filter((s: any) => s.status === 'scheduled')
+        // Filter sessions by status (include pending_approval in scheduled)
+        const scheduled = sessions.filter((s: any) => 
+          s.status === 'scheduled' || s.status === 'pending_approval' || s.status === 'confirmed'
+        )
         const upcoming = sessions.filter((s: any) => s.status === 'in_progress')
         const past = sessions.filter((s: any) => s.status === 'completed' || s.status === 'cancelled')
         

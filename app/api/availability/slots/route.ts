@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServerClient } from '@/lib/supabase';
 import { AvailabilityService } from '@/lib/availability-service';
 
 /**
@@ -43,12 +43,17 @@ export async function GET(request: NextRequest) {
     let availableSlots: any[] = [];
 
     if (weeklyAvailability && weeklyAvailability.standardHours && (weeklyAvailability.standardHours as any)[dayName]) {
-      console.log(`✅ Using availability for ${dayName}:`, (weeklyAvailability.standardHours as any)[dayName]);
-      availableSlots = generateSlotsFromWeeklyAvailability(
-        weeklyAvailability,
-        dayName,
-        date
-      );
+      const dayAvailability = (weeklyAvailability.standardHours as any)[dayName];
+      console.log(`✅ Using availability for ${dayName}:`, dayAvailability);
+      
+      // 🎯 PRIORITY: Check for custom slots first
+      if (dayAvailability.customSlots && dayAvailability.customSlots.length > 0) {
+        console.log('🎯 Found custom slots, using them instead of general hours:', dayAvailability.customSlots);
+        availableSlots = generateSlotsFromCustomSlots(dayAvailability.customSlots, date);
+      } else {
+        console.log('⚙️ No custom slots, using general hours');
+        availableSlots = generateSlotsFromWeeklyAvailability(weeklyAvailability, dayName, date);
+      }
     } else {
       console.log(`❌ No availability found for ${dayName}`);
       console.log('🔍 Full weekly availability structure:', JSON.stringify(weeklyAvailability, null, 2));
@@ -56,36 +61,11 @@ export async function GET(request: NextRequest) {
 
     console.log('🎯 Generated Available Slots:', availableSlots);
 
-    // Check for overrides (unavailable dates)
-    const { data: overrides } = await supabase
-      .from('availability_overrides')
-      .select('*')
-      .eq('therapist_id', therapistId)
-      .eq('override_date', date)
-      .eq('is_active', true);
-
-    console.log('🚫 Availability Overrides:', overrides);
-
-    // Filter out slots that are overridden
-    if (overrides && overrides.length > 0) {
-      const override = overrides[0];
-      if (override.is_available === false) {
-        availableSlots = []; // Completely unavailable
-        console.log('🚫 Date is overridden as unavailable:', override.reason || 'No reason provided');
-      } else if (override.is_available === true && override.start_time && override.end_time) {
-        // Apply custom hours override - replace slots with custom hours
-        console.log('🕐 Applying custom hours override:', { start: override.start_time, end: override.end_time });
-        const customSlots = generateTimeSlots(
-          override.start_time, 
-          override.end_time, 
-          override.session_duration || 60, 
-          date
-        );
-        availableSlots = customSlots;
-      }
-    }
+    // No database override system - we only use weekly availability custom slots
+    console.log('🎯 Using weekly availability system only - no database overrides');
 
     // Check existing bookings for this date
+    const supabase = createServerClient();
     const { data: existingBookings } = await supabase
       .from('sessions')
       .select('session_date, session_time')
@@ -107,6 +87,8 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ Final Available Slots:', availableSlots.length);
 
+    // CRITICAL: Set cache headers to prevent browser/client caching
+    // This ensures real-time availability updates are always fetched fresh
     return NextResponse.json({
       success: true,
       date,
@@ -114,8 +96,21 @@ export async function GET(request: NextRequest) {
       slots: availableSlots,
       total_slots: availableSlots.length,
       source: 'availability_service',
-      message: availableSlots.length > 0 ? 'Available slots found' : 'No available slots for this date'
-    }, { status: 200 });
+      message: availableSlots.length > 0 ? 'Available slots found' : 'No available slots for this date',
+      debug: {
+        total_slots: availableSlots.length,
+        custom_slots: availableSlots.filter(s => s.is_override).length,
+        general_slots: availableSlots.filter(s => !s.is_override).length,
+        source: 'weekly_availability'
+      }
+    }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
 
   } catch (error) {
     console.error('❌ Availability slots error:', error);
@@ -124,6 +119,30 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Helper function to generate slots from custom slots (override slots)
+function generateSlotsFromCustomSlots(customSlots: any[], date: string) {
+  const slots = [];
+  
+  console.log('🎯 Processing custom slots:', customSlots);
+  
+  for (const customSlot of customSlots) {
+    if (customSlot.isAvailable !== false) { // Only process available slots
+      const startTime = customSlot.start;
+      const endTime = customSlot.end;
+      const duration = customSlot.duration || 60;
+      
+      console.log(`🕐 Processing custom slot: ${startTime} - ${endTime} (${duration} mins)`);
+      
+      // Generate time slots from custom slot
+      const generatedSlots = generateTimeSlots(startTime, endTime, duration, date, true); // Mark as override
+      slots.push(...generatedSlots);
+    }
+  }
+  
+  console.log(`✅ Generated ${slots.length} custom override slots`);
+  return slots;
 }
 
 // Helper function to generate slots from new weekly availability format
@@ -148,7 +167,7 @@ function generateSlotsFromWeeklyAvailability(weeklyAvailability: any, dayName: s
       const sessionDuration = dayAvailability.generalHours.sessionDuration || weeklyAvailability.sessionSettings?.sessionDuration || 60;
       
       // Generate time slots from generalHours
-      const generatedSlots = generateTimeSlots(startTime, endTime, sessionDuration, date);
+      const generatedSlots = generateTimeSlots(startTime, endTime, sessionDuration, date, false);
       slots.push(...generatedSlots);
     } else {
       // Fallback to timeSlots (old format)
@@ -163,7 +182,7 @@ function generateSlotsFromWeeklyAvailability(weeklyAvailability: any, dayName: s
         const sessionDuration = weeklyAvailability.sessionSettings?.sessionDuration || 60;
         
         // Generate time slots
-        const generatedSlots = generateTimeSlots(startTime, endTime, sessionDuration, date);
+        const generatedSlots = generateTimeSlots(startTime, endTime, sessionDuration, date, false);
         slots.push(...generatedSlots);
       }
     }
@@ -183,7 +202,7 @@ function generateSlotsFromTemplates(templateAvailability: any[], date: string) {
     const endTime = template.end_time;
     const sessionDuration = template.session_duration || 50;
     
-    const generatedSlots = generateTimeSlots(startTime, endTime, sessionDuration, date);
+    const generatedSlots = generateTimeSlots(startTime, endTime, sessionDuration, date, false);
     slots.push(...generatedSlots);
   }
   
@@ -191,19 +210,49 @@ function generateSlotsFromTemplates(templateAvailability: any[], date: string) {
 }
 
 // Helper function to generate time slots
-function generateTimeSlots(startTime: string, endTime: string, duration: number, date: string) {
+function generateTimeSlots(startTime: string, endTime: string, duration: number, date: string, isOverride: boolean = false) {
   const slots = [];
-  const start = new Date(`${date}T${startTime}`);
-  const end = new Date(`${date}T${endTime}`);
   
-  let current = new Date(start);
+  // Parse time strings directly to avoid timezone issues
+  const parseTime = (timeStr: string): { hours: number, minutes: number } => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return { hours, minutes };
+  };
   
-  while (current < end) {
-    const slotEnd = new Date(current.getTime() + duration * 60000);
+  const formatTime = (hours: number, minutes: number): string => {
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
+  
+  const addMinutes = (hours: number, minutes: number, minutesToAdd: number): { hours: number, minutes: number } => {
+    const totalMinutes = hours * 60 + minutes + minutesToAdd;
+    return {
+      hours: Math.floor(totalMinutes / 60) % 24,
+      minutes: totalMinutes % 60
+    };
+  };
+  
+  const timeToMinutes = (hours: number, minutes: number): number => {
+    return hours * 60 + minutes;
+  };
+  
+  const startParsed = parseTime(startTime);
+  const endParsed = parseTime(endTime);
+  const startMinutes = timeToMinutes(startParsed.hours, startParsed.minutes);
+  const endMinutes = timeToMinutes(endParsed.hours, endParsed.minutes);
+  
+  let currentMinutes = startMinutes;
+  
+  while (currentMinutes < endMinutes) {
+    const slotEndMinutes = currentMinutes + duration;
     
-    if (slotEnd <= end) {
-      const timeString = current.toTimeString().slice(0, 5); // "HH:MM" format
-      const endTimeString = slotEnd.toTimeString().slice(0, 5);
+    if (slotEndMinutes <= endMinutes) {
+      const currentHours = Math.floor(currentMinutes / 60);
+      const currentMins = currentMinutes % 60;
+      const slotEndHours = Math.floor(slotEndMinutes / 60);
+      const slotEndMins = slotEndMinutes % 60;
+      
+      const timeString = formatTime(currentHours, currentMins);
+      const endTimeString = formatTime(slotEndHours, slotEndMins);
       
       slots.push({
         date: date,
@@ -214,12 +263,12 @@ function generateTimeSlots(startTime: string, endTime: string, duration: number,
         session_type: 'individual',
         max_sessions: 1,
         is_available: true,
-        is_override: false
+        is_override: isOverride
       });
     }
     
     // Move to next slot
-    current = new Date(slotEnd.getTime());
+    currentMinutes += duration;
   }
   
   return slots;

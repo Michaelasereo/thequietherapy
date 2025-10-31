@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Admin signup restriction - only allow specific email
-    if (userType === 'admin' && email !== 'michaelasereoo@gmail.com') {
+    if (userType === 'admin' && email !== 'asereopeyemimichael@gmail.com') {
       console.log('❌ Admin signup attempt with unauthorized email:', email)
       return NextResponse.json(
         { success: false, error: 'Admin signup is restricted to authorized personnel only.' },

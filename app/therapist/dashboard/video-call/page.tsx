@@ -57,18 +57,37 @@ export default function TherapistVideoCallPage() {
       setLoading(true)
       
       // Fetch today's sessions
-      const todaysResponse = await fetch('/api/therapist/sessions/today')
+      const [todaysResponse, inProgressResponse] = await Promise.all([
+        fetch('/api/therapist/sessions/today'),
+        fetch('/api/therapist/sessions/in-progress')
+      ])
+
+      let merged: TherapistSession[] = []
+
       if (todaysResponse.ok) {
         const todaysData = await todaysResponse.json()
-        setTodaysSessions(todaysData.sessions || [])
-        
-        // Find the next upcoming session
-        const now = new Date()
-        const upcoming = todaysData.sessions?.find((session: TherapistSession) => 
-          new Date(session.start_time) > now && session.status === 'scheduled'
-        )
-        setUpcomingSession(upcoming || null)
+        merged = (todaysData.sessions || [])
       }
+
+      if (inProgressResponse.ok) {
+        const inProgData = await inProgressResponse.json()
+        const inProg = (inProgData.sessions || [])
+        // Merge uniquely by id
+        const byId = new Map<string, TherapistSession>()
+        for (const s of [...merged, ...inProg]) {
+          byId.set(s.id, s)
+        }
+        merged = Array.from(byId.values())
+      }
+
+      setTodaysSessions(merged)
+      
+      // Find the next upcoming session
+      const now = new Date()
+      const upcoming = merged.find((session: TherapistSession) => 
+        new Date(session.start_time) > now && session.status === 'scheduled'
+      )
+      setUpcomingSession(upcoming || null)
     } catch (err) {
       console.error('Error fetching session data:', err)
       setError('Failed to load session data')
@@ -277,6 +296,17 @@ export default function TherapistVideoCallPage() {
                     </div>
 
                     <div className="flex items-center gap-2 pt-2">
+                      {(() => {
+                        const patientSlug = session.patient_email?.split?.('@')?.[0] || null
+                        return patientSlug ? (
+                          <Button size="sm" variant="ghost" asChild>
+                            <Link href={`/therapist/dashboard/patients/${patientSlug}`}>
+                              <User className="h-4 w-4 mr-2" />
+                              Patient Profile
+                            </Link>
+                          </Button>
+                        ) : null
+                      })()}
                       {joinable && session.room_url && (
                         <Button 
                           onClick={() => joinSession(session)}
@@ -326,12 +356,7 @@ export default function TherapistVideoCallPage() {
                         </div>
                       )}
 
-                      <Button size="sm" variant="ghost" asChild>
-                        <Link href={`/therapist/dashboard/patients/${session.patient_email.split('@')[0]}`}>
-                          <User className="h-4 w-4 mr-2" />
-                          Patient Profile
-                        </Link>
-                      </Button>
+                      
                     </div>
                   </div>
                 )

@@ -305,6 +305,7 @@ export default function SessionPage() {
           roomName={roomName || undefined}
           meetingToken={meetingToken || undefined}
           sessionDuration={session.duration}
+          scheduledStartISO={session.start_time}
           onLeave={handleLeaveSession}
           onError={handleVideoError}
         />

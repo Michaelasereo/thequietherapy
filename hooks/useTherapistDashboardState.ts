@@ -376,7 +376,9 @@ export function useTherapistData() {
   const { state, fetchTherapistData, fetchClients, fetchSessions, fetchStats } = useTherapistDashboard()
 
   const therapistInfo = useMemo(() => {
-    if (!state.therapist) return null
+    if (!state.therapist) {
+      return null
+    }
     const info = {
       id: state.therapist.id,
       name: state.therapist.full_name,
@@ -393,8 +395,6 @@ export function useTherapistData() {
       hourlyRate: state.therapist.hourly_rate,
       availability: state.therapist.availability
     }
-    console.log('🔍 Hook: therapistInfo computed:', info)
-    console.log('🔍 Hook: availability_approved from state:', state.therapist.availability_approved)
     return info
   }, [state.therapist])
 

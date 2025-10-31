@@ -95,110 +95,55 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate UNIQUE filename with timestamp and random string
-    // This makes cache busting unnecessary!
-    const fileExtension = file.name.split('.').pop()
-    const randomString = Math.random().toString(36).substring(2, 9)
-    const fileName = `therapist-${session.id}-${Date.now()}-${randomString}.${fileExtension}`
-    const filePath = `therapist-profiles/${session.id}/${fileName}` // Organize by user ID
+    console.log('📸 Avatar upload requested for:', userInfo?.email || session.email)
 
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    // ✅ USE UNIFIED AVATAR SERVICE FOR 3-WAY SYNC
+    // This ensures avatar is synced across all 3 tables
+    const { AvatarService } = await import('@/lib/services/avatar-service')
+    
+    const result = await AvatarService.uploadAndSyncAvatar(
+      file,
+      userInfo?.email || session.email!,
+      session.id
+    )
 
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('profile-images')
-      .upload(filePath, buffer, {
-        contentType: file.type,
-        upsert: false, // Never overwrite - always create new file
-        cacheControl: '3600' // Cache for 1 hour (safe since filename is unique)
-      })
-
-    if (uploadError) {
-      console.error('❌ Upload error:', uploadError)
-      return NextResponse.json(
-        { error: 'Failed to upload image' },
-        { status: 500 }
-      )
-    }
-
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from('profile-images')
-      .getPublicUrl(filePath)
-
-    const imageUrl = urlData.publicUrl
-    console.log('✅ New image uploaded:', imageUrl)
-
-    // Preserve original enrollment data on first image upload
-    let originalEnrollmentData = currentEnrollment?.original_enrollment_data
-    if (!originalEnrollmentData && currentEnrollment) {
-      originalEnrollmentData = {
-        full_name: currentEnrollment.full_name,
-        phone: currentEnrollment.phone || '',
-        licensed_qualification: currentEnrollment.licensed_qualification || '',
-        bio: currentEnrollment.bio || '',
-        specialization: currentEnrollment.specialization || [],
-        languages: currentEnrollment.languages || [],
-        gender: currentEnrollment.gender || '',
-        age: currentEnrollment.age || null,
-        marital_status: currentEnrollment.marital_status || '',
-        profile_image_url: currentEnrollment.profile_image_url || ''
-      }
-    }
-
-    // Track profile_image_url as edited
-    const editedFields = new Set(currentEnrollment?.edited_fields || [])
-    editedFields.add('profile_image_url')
-
-    // Update therapist enrollment with profile image URL and edit tracking
-    const { error: updateError } = await supabase
-      .from('therapist_enrollments')
-      .update({ 
-        profile_image_url: imageUrl,
-        updated_at: new Date().toISOString(),
-        profile_updated_at: new Date().toISOString(),
-        original_enrollment_data: originalEnrollmentData,
-        edited_fields: Array.from(editedFields)
-      })
-      .eq('email', userInfo?.email || session.email)
-
-    if (updateError) {
-      console.error('❌ Database update error:', updateError)
-      
-      // ROLLBACK: Delete the uploaded image since DB update failed
-      console.log('🔄 Rolling back: Deleting uploaded image...')
-      try {
-        const { error: deleteError } = await supabase.storage
-          .from('profile-images')
-          .remove([filePath])
-        
-        if (deleteError) {
-          console.error('⚠️ Rollback failed (orphaned file will remain):', deleteError)
-        } else {
-          console.log('✅ Rollback successful: Uploaded image deleted')
-        }
-      } catch (rollbackError) {
-        console.error('⚠️ Rollback exception (orphaned file):', rollbackError)
-      }
-      
+    if (!result.success) {
+      console.error('❌ Avatar upload failed:', result.error)
       return NextResponse.json(
         { 
           success: false,
-          error: 'Failed to update enrollment with image',
-          details: updateError.message 
+          error: result.error 
         },
         { status: 500 }
       )
     }
 
-    console.log('✅ Profile image uploaded successfully:', imageUrl)
+    console.log('✅ Avatar uploaded and synced to all tables:', {
+      imageUrl: result.imageUrl,
+      syncedTables: result.syncedTables,
+      warnings: result.warnings
+    })
+
+    // Track profile_image_url as edited
+    const editedFields = new Set(currentEnrollment?.edited_fields || [])
+    editedFields.add('profile_image_url')
+
+    await supabase
+      .from('therapist_enrollments')
+      .update({
+        profile_updated_at: new Date().toISOString(),
+        edited_fields: Array.from(editedFields)
+      })
+      .eq('email', userInfo?.email || session.email)
+
+    console.log('✅ Edit tracking updated')
 
     return NextResponse.json({
       success: true,
-      message: 'Profile image uploaded successfully',
-      imageUrl: imageUrl
+      message: 'Profile image uploaded and synced successfully',
+      imageUrl: result.imageUrl,
+      syncedTables: result.syncedTables,
+      warnings: result.warnings
     })
 
   } catch (error) {

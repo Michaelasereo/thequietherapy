@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
 
 // Types for dashboard state
 interface UserData {
@@ -477,7 +477,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }
 
   // Fetch sessions with proper error handling and data validation
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     try {
       if (!state.user?.id) {
         console.log('🔍 DashboardContext: No user ID, skipping session fetch')
@@ -530,9 +530,38 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             // Properly categorize sessions by status and time
             const now = new Date()
             const upcoming = validatedSessions.filter((session: any) => {
-              const sessionDate = new Date(session.date)
-              return (session.status === 'scheduled' || session.status === 'in_progress') && 
-                     sessionDate >= now
+              // Use session's start_time if available, otherwise construct from date and time
+              let sessionDateTime: Date
+              if (session.date && session.time) {
+                // Construct datetime from date and time
+                const [hours, minutes] = session.time.split(':')
+                sessionDateTime = new Date(session.date)
+                sessionDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+              } else {
+                sessionDateTime = now // Fallback to now if no date/time
+              }
+              // Compute an estimated end time; default to 60 minutes if unknown
+              const durationMinutes = Number(session.duration_minutes || session.duration || 60)
+              const sessionEndTime = new Date(sessionDateTime.getTime() + durationMinutes * 60 * 1000)
+              
+              console.log('🔍 Session datetime comparison:', {
+                sessionId: session.id,
+                sessionDate: session.date,
+                sessionTime: session.time,
+                sessionDateTime: sessionDateTime.toISOString(),
+                now: now.toISOString(),
+                isUpcoming: sessionDateTime >= now,
+                status: session.status
+              })
+              // Show scheduled sessions in the future
+              if (session.status === 'scheduled') {
+                return sessionDateTime >= now
+              }
+              // Also show in-progress sessions until their end time so late users can still join
+              if (session.status === 'in_progress') {
+                return sessionEndTime > now
+              }
+              return false
             })
             
             const past = validatedSessions.filter((session: any) => 
@@ -546,6 +575,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
               past: past.length,
               total: validatedSessions.length 
             })
+            
+            console.log('🔍 DashboardContext: Upcoming sessions details:', upcoming.map(s => ({
+              id: s.id,
+              date: s.date,
+              time: s.time,
+              status: s.status,
+              therapist: s.therapist
+            })))
             
             dispatch({ 
               type: 'SET_SESSIONS', 
@@ -583,10 +620,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         payload: { upcoming: [], past: [] } 
       })
     }
-  }
+  }, [state.user?.id])
 
   // Fetch dashboard stats with real data calculation
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       if (!state.user?.id) {
         console.log('🔍 DashboardContext: No user ID, setting zero stats')
@@ -685,10 +722,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       }
       dispatch({ type: 'UPDATE_STATS', payload: errorStats })
     }
-  }
+  }, [state.user?.id])
 
   // Refresh credits from API
-  const refreshCredits = async () => {
+  const refreshCredits = useCallback(async () => {
     try {
       const creditsResponse = await fetch('/api/user/credits', {
         credentials: 'include',
@@ -714,13 +751,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Failed to refresh credits:', error)
     }
-  }
+  }, [state.user])
 
   // Refresh stats from API
-  const refreshStats = async () => {
+  const refreshStats = useCallback(async () => {
     console.log('🔍 DashboardContext: Manual refresh stats called')
     await fetchStats()
-  }
+  }, [fetchStats])
 
   // Helper functions
   const toggleSidebar = () => {
@@ -802,6 +839,19 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [state.user?.id]) // Only depend on user ID, not the entire user object
+
+  // Listen for booking completion events to refresh sessions
+  useEffect(() => {
+    const handleBookingCompleted = () => {
+      console.log('🔄 DashboardContext: Booking completed, refreshing sessions...')
+      fetchSessions()
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('bookingCompleted', handleBookingCompleted)
+      return () => window.removeEventListener('bookingCompleted', handleBookingCompleted)
+    }
+  }, [fetchSessions])
 
   const value: DashboardContextType = {
     state,

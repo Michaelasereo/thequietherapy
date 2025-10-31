@@ -93,6 +93,65 @@
   }
 }
 
+/* Mobile UX Improvements */
+@media (max-width: 768px) {
+  /* Prevent iOS zoom on input focus - critical for mobile UX */
+  input[type="email"],
+  input[type="password"],
+  input[type="text"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Increase touch targets to at least 44px for accessibility */
+  button,
+  a,
+  input[type="button"],
+  input[type="submit"],
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improve mobile form spacing */
+  form {
+    padding: 1rem;
+  }
+
+  /* Better mobile card padding */
+  .card,
+  [class*="Card"] {
+    padding: 1rem;
+  }
+
+  /* Improve mobile text readability */
+  body {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* Better mobile table/grid layouts */
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Cross-platform mobile fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific fixes */
+  input,
+  textarea,
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+  }
+}
+
 /* Remove the custom gradient background rule */
 /* .bg-primary {
   background: var(--primary);

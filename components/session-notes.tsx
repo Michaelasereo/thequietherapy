@@ -18,6 +18,7 @@ import {
   AlertCircle
 } from "lucide-react"
 import { toast } from "sonner"
+import SOAPNotesDisplay from '@/components/soap-notes-display'
 
 interface SOAPNotes {
   subjective: string
@@ -332,42 +333,7 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
             <CardContent className="space-y-4">
               {soapNotes ? (
                 <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium">Subjective</Label>
-                    <Textarea 
-                      value={soapNotes.subjective} 
-                      readOnly 
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Objective</Label>
-                    <Textarea 
-                      value={soapNotes.objective} 
-                      readOnly 
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Assessment</Label>
-                    <Textarea 
-                      value={soapNotes.assessment} 
-                      readOnly 
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Plan</Label>
-                    <Textarea 
-                      value={soapNotes.plan} 
-                      readOnly 
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
+                  <SOAPNotesDisplay soapNotes={soapNotes} />
                   
                   {notesData?.ai_notes_generated_at && (
                     <div className="flex items-center gap-2 text-xs text-gray-500">

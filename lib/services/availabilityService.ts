@@ -70,19 +70,17 @@ export const AvailabilityService = {
    */
   async getTimeSlots(therapistId: string, date: string): Promise<TimeSlot[]> {
     try {
-      // Check cache first
-      const cached = availabilityCache.get(therapistId, date, 'slots')
-      if (cached) {
-        console.log('📦 Using cached time slots for:', { therapistId, date })
-        return cached
-      }
+      // CRITICAL: Skip cache for slot fetches to ensure real-time availability
+      // Therapists need to see changes immediately when they update availability
+      console.log('🔍 Fetching fresh time slots (cache bypassed for real-time updates):', { therapistId, date })
 
       // Add cache-busting to ensure fresh data
       const cacheBuster = Date.now();
       const response = await fetch(`/api/availability/slots?therapist_id=${therapistId}&date=${date}&_t=${cacheBuster}`, {
         cache: 'no-store', // Ensure fresh data
         headers: {
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
       });
       
@@ -93,8 +91,7 @@ export const AvailabilityService = {
       const { slots } = await response.json();
       const timeSlots = slots || [];
       
-      // Cache the result
-      availabilityCache.set(therapistId, date, 'slots', timeSlots)
+      console.log('✅ Fetched fresh time slots:', timeSlots.length)
       
       return timeSlots;
     } catch (error) {

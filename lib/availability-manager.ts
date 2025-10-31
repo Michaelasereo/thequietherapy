@@ -477,17 +477,39 @@ export class AvailabilityManager {
     date: string
   ): TimeSlot[] {
     const slots: TimeSlot[] = [];
-    const start = new Date(`${date}T${startTime}`);
-    const end = new Date(`${date}T${endTime}`);
     
-    let current = new Date(start);
+    // Parse time strings directly to avoid timezone issues
+    const parseTime = (timeStr: string): { hours: number, minutes: number } => {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return { hours, minutes };
+    };
     
-    while (current < end) {
-      const slotEnd = new Date(current.getTime() + duration * 60000);
+    const formatTime = (hours: number, minutes: number): string => {
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    };
+    
+    const timeToMinutes = (hours: number, minutes: number): number => {
+      return hours * 60 + minutes;
+    };
+    
+    const startParsed = parseTime(startTime);
+    const endParsed = parseTime(endTime);
+    const startMinutes = timeToMinutes(startParsed.hours, startParsed.minutes);
+    const endMinutes = timeToMinutes(endParsed.hours, endParsed.minutes);
+    
+    let currentMinutes = startMinutes;
+    
+    while (currentMinutes < endMinutes) {
+      const slotEndMinutes = currentMinutes + duration;
       
-      if (slotEnd <= end) {
-        const timeString = current.toTimeString().slice(0, 5);
-        const endTimeString = slotEnd.toTimeString().slice(0, 5);
+      if (slotEndMinutes <= endMinutes) {
+        const currentHours = Math.floor(currentMinutes / 60);
+        const currentMins = currentMinutes % 60;
+        const slotEndHours = Math.floor(slotEndMinutes / 60);
+        const slotEndMins = slotEndMinutes % 60;
+        
+        const timeString = formatTime(currentHours, currentMins);
+        const endTimeString = formatTime(slotEndHours, slotEndMins);
         
         slots.push({
           date: date,
@@ -501,7 +523,8 @@ export class AvailabilityManager {
         });
       }
       
-      current = new Date(slotEnd.getTime());
+      // Move to next slot
+      currentMinutes += duration;
     }
     
     return slots;

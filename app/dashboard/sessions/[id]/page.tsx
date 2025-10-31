@@ -9,6 +9,7 @@ import { ArrowLeft, Calendar, Clock, User, FileText, MessageSquare, Star, CheckC
 import { toast } from '@/components/ui/use-toast';
 import { SessionData } from '@/lib/session-management';
 import { formatTime, formatDate } from '@/lib/utils';
+import SOAPNotesDisplay from '@/components/soap-notes-display';
 
 export default function SessionDetailsPage() {
   const params = useParams();
@@ -294,9 +295,7 @@ export default function SessionDetailsPage() {
                     {sessionNotes.ai_notes_generated ? 'AI Generated' : 'Manual'}
                   </Badge>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <pre className="text-sm whitespace-pre-wrap font-mono">{sessionNotes.soap_notes}</pre>
-                </div>
+                <SOAPNotesDisplay soapNotes={sessionNotes.soap_notes} variant="card" />
               </div>
             )}
 

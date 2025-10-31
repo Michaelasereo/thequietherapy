@@ -56,8 +56,11 @@ export const filterOutPastSlots = (slots: any[]): any[] => {
     
     // Create datetime in local timezone to avoid timezone issues
     const slotDateTime = new Date(`${slot.date}T${slot.start_time}`);
-    // Add buffer to allow for booking very soon timeslots
-    const bufferTime = new Date(now.getTime() + 10 * 60000); // 10 minutes from now
+    
+    // For override slots, be more lenient with the buffer time
+    const isOverrideSlot = slot.is_override === true;
+    const bufferMinutes = isOverrideSlot ? 5 : 10; // 5 minutes buffer for override slots (very lenient)
+    const bufferTime = new Date(now.getTime() + bufferMinutes * 60000);
     
     console.log('🔍 Slot filtering:', {
       slotDate: slot.date,
@@ -65,7 +68,9 @@ export const filterOutPastSlots = (slots: any[]): any[] => {
       slotDateTime: slotDateTime.toISOString(),
       now: now.toISOString(),
       bufferTime: bufferTime.toISOString(),
-      isFuture: slotDateTime > bufferTime
+      isFuture: slotDateTime > bufferTime,
+      isOverrideSlot,
+      bufferMinutes
     });
     
     return slotDateTime > bufferTime;

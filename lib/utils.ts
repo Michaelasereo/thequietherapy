@@ -10,17 +10,22 @@ export function formatTime(dateString: string | null | undefined): string {
   if (!dateString) return 'Time not available';
   
   try {
-    // Handle combined datetime string
-    let date: Date;
-    if (dateString.includes('T')) {
-      date = new Date(dateString);
-    } else {
-      // Handle time-only strings (e.g., "14:00:00")
-      const [hours, minutes] = dateString.split(':');
-      date = new Date();
-      date.setHours(parseInt(hours), parseInt(minutes));
+    // Handle time-only strings (e.g., "14:00" or "14:00:00") WITHOUT timezone conversion
+    if (!dateString.includes('T') && dateString.includes(':')) {
+      const [hoursStr, minutesStr] = dateString.split(':');
+      const hours = parseInt(hoursStr);
+      const minutes = parseInt(minutesStr);
+      
+      // Format directly without Date object to avoid timezone issues
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHour = hours % 12 || 12;
+      const displayMinutes = String(minutes).padStart(2, '0');
+      
+      return `${displayHour}:${displayMinutes} ${ampm}`;
     }
     
+    // Handle combined datetime string
+    const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
@@ -58,11 +63,15 @@ export function formatDate(dateString: string | null | undefined): string {
 
 // Helper function to get session start time reliably
 export function getSessionStartTime(session: any): Date {
-  if (session.start_time) {
-    return new Date(session.start_time);
+  // Prefer separate date/time fields to avoid timezone issues
+  if (session.session_date && session.session_time) {
+    return new Date(`${session.session_date}T${session.session_time}`);
   }
   if (session.scheduled_date && session.scheduled_time) {
-    return new Date(session.scheduled_date + 'T' + session.scheduled_time);
+    return new Date(`${session.scheduled_date}T${session.scheduled_time}`);
+  }
+  if (session.start_time) {
+    return new Date(session.start_time);
   }
   return new Date(); // Fallback
 }

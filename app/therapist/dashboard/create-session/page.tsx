@@ -19,7 +19,9 @@ import {
   ArrowRight, 
   CheckCircle,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Zap,
+  CalendarCheck
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/auth-context';
@@ -41,7 +43,9 @@ export default function CreateSessionPage() {
     start_time: '',
     duration: '30',
     session_type: 'video',
-    notes: ''
+    notes: '',
+    is_custom: false,
+    is_instant: false
   });
 
   const monthNames = [
@@ -57,14 +61,15 @@ export default function CreateSessionPage() {
     '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
   ];
 
-  // Fetch patients who've had sessions with this therapist
+  // Fetch all patients who have ANY session with this therapist (past, present, or future)
   useEffect(() => {
     const fetchPatients = async () => {
       if (!user?.id) return;
       
       try {
-        // Fetch sessions and extract unique patients
-        const response = await fetch(`/api/sessions?therapist_id=${user.id}&order=created_at.desc&limit=100`, {
+        // Fetch ALL sessions (regardless of status or date) to get patients
+        // This includes past, present, and future sessions so therapists can see all their patients
+        const response = await fetch(`/api/sessions?therapist_id=${user.id}&order=created_at.desc&limit=200`, {
           credentials: 'include'
         });
         
@@ -197,7 +202,18 @@ export default function CreateSessionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.user_id || !formData.session_date || !formData.start_time) {
+    // Validate based on session type
+    if (!formData.user_id) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a patient.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // For instant sessions, no date/time required
+    if (!formData.is_instant && (!formData.session_date || !formData.start_time)) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -209,21 +225,80 @@ export default function CreateSessionPage() {
     setLoading(true);
     
     try {
-      const response = await fetch('/api/therapist/schedule-next-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          therapistId: user?.id,
-          patientId: formData.user_id,
-          scheduledDate: formData.session_date,
-          scheduledTime: formData.start_time,
-          durationMinutes: parseInt(formData.duration),
-          notes: formData.notes
-        }),
-      });
+      // Use custom session API for custom/instant sessions
+      if (formData.is_custom || formData.is_instant) {
+        const response = await fetch('/api/therapist/create-custom-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            patient_id: formData.user_id,
+            session_date: formData.session_date || undefined,
+            session_time: formData.start_time || undefined,
+            duration_minutes: parseInt(formData.duration),
+            session_type: formData.session_type,
+            notes: formData.notes,
+            title: `Session with ${formData.user_name}`,
+            is_instant: formData.is_instant
+          }),
+        });
+
+        let result;
+        const responseText = await response.text();
+        console.log('📅 Custom session raw response:', responseText);
+        
+        try {
+          result = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('❌ Failed to parse response:', parseError);
+          throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}`);
+        }
+        
+        console.log('📅 Custom session response status:', response.status);
+        console.log('📅 Custom session response data:', result);
+
+        if (response.ok && result.success) {
+          setSuccess(true);
+          toast({
+            title: formData.is_instant 
+              ? "Instant Session Created! ⚡" 
+              : "Custom Session Created! 🎉",
+            description: formData.is_instant
+              ? `${formData.user_name} can approve and join immediately.`
+              : `Session pending approval from ${formData.user_name}.`,
+          });
+          
+          setTimeout(() => {
+            router.push('/therapist/dashboard/client-sessions');
+          }, 2000);
+        } else {
+          console.error('❌ API Error Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            result: result
+          });
+          const errorMsg = result.error || result.details || result.message || `Failed to create session (Status: ${response.status})`;
+          throw new Error(errorMsg);
+        }
+      } else {
+        // Use regular session API for standard sessions
+        const response = await fetch('/api/therapist/schedule-next-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            therapistId: user?.id,
+            patientId: formData.user_id,
+            scheduledDate: formData.session_date,
+            scheduledTime: formData.start_time,
+            durationMinutes: parseInt(formData.duration),
+            notes: formData.notes
+          }),
+        });
 
       const result = await response.json();
       
@@ -246,6 +321,7 @@ export default function CreateSessionPage() {
         console.error('❌ API Error:', result);
         throw new Error(errorMsg);
       }
+      } // Close the else block for regular sessions
     } catch (error) {
       console.error('❌ Error creating session:', error);
       
@@ -323,7 +399,7 @@ export default function CreateSessionPage() {
                 <Alert className="border-brand-gold bg-brand-gold/10">
                   <AlertCircle className="h-4 w-4 text-brand-gold" />
                   <AlertDescription className="text-gray-900 text-sm">
-                    Select a patient from your client list to schedule a session. These are patients you've previously seen.
+                    Select a patient from your client list to schedule a session. This includes all patients who have booked sessions with you.
                   </AlertDescription>
                 </Alert>
 
@@ -335,7 +411,12 @@ export default function CreateSessionPage() {
                         type="button"
                         onClick={() => {
                           setFormData({ ...formData, user_id: patient.id, user_name: patient.full_name });
-                          setCurrentStep('date');
+                          // For instant sessions, skip date/time selection
+                          if (formData.is_instant) {
+                            setCurrentStep('confirm');
+                          } else {
+                            setCurrentStep('date');
+                          }
                         }}
                         className={`
                           p-4 text-left border-2 rounded-lg transition-all
@@ -361,7 +442,7 @@ export default function CreateSessionPage() {
                   <div className="text-center py-8">
                     <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                     <p className="text-muted-foreground">No patients found</p>
-                    <p className="text-sm text-muted-foreground mt-1">Patients will appear here after you've had sessions with them</p>
+                    <p className="text-sm text-muted-foreground mt-1">Patients will appear here once they book a session with you</p>
                   </div>
                 )}
               </CardContent>
@@ -553,28 +634,100 @@ export default function CreateSessionPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <Calendar className="h-5 w-5 text-gray-900" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Date</p>
-                        <p className="font-medium">
-                          {new Date(formData.session_date).toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            month: 'long', 
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </p>
+                    {!formData.is_instant && (
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Calendar className="h-5 w-5 text-gray-900" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Date</p>
+                          <p className="font-medium">
+                            {new Date(formData.session_date).toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              month: 'long', 
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <Clock className="h-5 w-5 text-gray-900" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Time</p>
-                        <p className="font-medium">{formData.start_time}</p>
+                    {!formData.is_instant && (
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Clock className="h-5 w-5 text-gray-900" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Time</p>
+                          <p className="font-medium">{formData.start_time}</p>
+                        </div>
                       </div>
+                    )}
+
+                    {formData.is_instant && (
+                      <div className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <Zap className="h-5 w-5 text-yellow-600" />
+                        <div>
+                          <p className="text-xs text-yellow-600 font-medium">Instant Session</p>
+                          <p className="font-medium text-yellow-700">Patient can join immediately after approval</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Session Type Selection - Custom/Instant vs Regular */}
+                  <div className="space-y-2">
+                    <Label>Session Type</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, is_custom: false, is_instant: false })}
+                        className={`
+                          p-3 rounded-lg border-2 transition-all text-sm font-medium
+                          ${!formData.is_custom && !formData.is_instant
+                            ? 'bg-black text-white border-black' 
+                            : 'bg-white border-gray-200 hover:border-gray-400'
+                          }
+                        `}
+                      >
+                        <CalendarCheck className="h-4 w-4 mx-auto mb-1" />
+                        Regular
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, is_custom: true, is_instant: false })}
+                        className={`
+                          p-3 rounded-lg border-2 transition-all text-sm font-medium
+                          ${formData.is_custom && !formData.is_instant
+                            ? 'bg-blue-600 text-white border-blue-600' 
+                            : 'bg-white border-gray-200 hover:border-gray-400'
+                          }
+                        `}
+                      >
+                        <Calendar className="h-4 w-4 mx-auto mb-1" />
+                        Custom
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, is_custom: true, is_instant: true });
+                        }}
+                        className={`
+                          p-3 rounded-lg border-2 transition-all text-sm font-medium
+                          ${formData.is_instant
+                            ? 'bg-yellow-600 text-white border-yellow-600' 
+                            : 'bg-white border-gray-200 hover:border-gray-400'
+                          }
+                        `}
+                      >
+                        <Zap className="h-4 w-4 mx-auto mb-1" />
+                        Instant
+                      </button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      {formData.is_instant 
+                        ? '⚡ Patient approves and joins immediately'
+                        : formData.is_custom 
+                          ? '📅 Custom session - patient must approve before joining'
+                          : '📅 Regular session - no approval needed'}
+                    </p>
                   </div>
 
                   {/* Duration Selection */}
@@ -639,7 +792,9 @@ export default function CreateSessionPage() {
                           start_time: '',
                           duration: '30',
                           session_type: 'video',
-                          notes: ''
+                          notes: '',
+                          is_custom: false,
+                          is_instant: false
                         });
                       }}
                       disabled={loading}

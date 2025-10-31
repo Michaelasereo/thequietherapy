@@ -180,14 +180,25 @@ export async function joinSession(sessionId: string, userId: string): Promise<{ 
 
     const session = sessionData
 
-    // Check if session is ready to join (within 1 hour of start time)
-    const sessionDateTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
-    const now = new Date()
-    const timeDiff = sessionDateTime.getTime() - now.getTime()
-    const thirtyMinutes = 30 * 60 * 1000 // 30 minutes for therapy session
+    // Allow joining if session is in_progress (instant sessions, or user rejoining)
+    if (session.status === 'in_progress') {
+      // Skip time checks for in_progress sessions - allow rejoin unless completed
+      if (session.status === 'completed' || session.status === 'cancelled') {
+        return { success: false, error: 'This session has ended and cannot be rejoined.' }
+      }
+      // Continue to room creation/joining below
+    } else {
+      // For scheduled sessions, check if session is ready to join (within 1 hour of start time)
+      if (session.scheduled_date && session.scheduled_time) {
+        const sessionDateTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
+        const now = new Date()
+        const timeDiff = sessionDateTime.getTime() - now.getTime()
+        const thirtyMinutes = 30 * 60 * 1000 // 30 minutes for therapy session
 
-    if (timeDiff > thirtyMinutes) {
-      return { success: false, error: 'Session not ready yet. You can join 30 minutes before the start time.' }
+        if (timeDiff > thirtyMinutes) {
+          return { success: false, error: 'Session not ready yet. You can join 30 minutes before the start time.' }
+        }
+      }
     }
 
     // Check if user has credits (for patients joining therapist-scheduled sessions)
@@ -249,12 +260,21 @@ export async function joinSession(sessionId: string, userId: string): Promise<{ 
     if (!session.daily_room_url) {
       try {
         const { createTherapySessionRoom } = await import('@/lib/daily')
+        
+        // Determine scheduled time - use start_time if available, otherwise construct from scheduled_date/time
+        let scheduledTime = new Date()
+        if (session.start_time) {
+          scheduledTime = new Date(session.start_time)
+        } else if (session.scheduled_date && session.scheduled_time) {
+          scheduledTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
+        }
+        
         const room = await createTherapySessionRoom({
           sessionId: sessionId,
           therapistName: 'Therapist', // Will be updated with actual name
           patientName: 'Patient', // Will be updated with actual name
           duration: session.duration_minutes || session.planned_duration_minutes || 30,
-          scheduledTime: sessionDateTime
+          scheduledTime: scheduledTime
         })
 
         await supabase

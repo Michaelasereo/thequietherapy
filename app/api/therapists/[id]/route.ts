@@ -26,108 +26,84 @@ export async function GET(
     let therapist = null
     
     try {
-      // Query users table with therapist_profiles join to get real profile data
-      const { data: therapistData, error } = await supabase
+      // First get user data
+      const { data: userData, error: userError } = await supabase
         .from('users')
-        .select(`
-          id, 
-          full_name, 
-          email, 
-          created_at, 
-          updated_at,
-          therapist_profiles (
-            bio,
-            profile_image_url,
-            specialization,
-            languages,
-            experience_years,
-            education,
-            hourly_rate,
-            verification_status,
-            is_verified,
-            phone,
-            mdcn_code
-          )
-        `)
+        .select('id, full_name, email, is_verified, is_active, created_at, updated_at')
         .eq('id', id)
         .eq('user_type', 'therapist')
         .single()
 
-      if (error) {
-        throw error
+      if (userError || !userData) {
+        throw new Error('User not found')
       }
 
-      if (therapistData) {
-        const profile = therapistData.therapist_profiles || {}
-        
-        // Transform data with real profile data
-        therapist = {
-          id: therapistData.id,
-          full_name: therapistData.full_name || 'Unknown Therapist',
-          email: therapistData.email,
-          specializations: profile?.[0]?.specialization ? [profile?.[0]?.specialization] : ['General Therapy'],
-          bio: profile?.[0]?.bio || 'Professional therapist ready to help you.',
-          experience_years: profile?.[0]?.experience_years || 0,
-          education: profile?.[0]?.education || 'Professional qualification',
-          languages: profile?.[0]?.languages ? (typeof profile?.[0]?.languages === 'string' ? JSON.parse(profile?.[0]?.languages) : [profile?.[0]?.languages]) : ['English'],
-          session_rate: profile?.[0]?.hourly_rate || 5000,
-          availability_status: 'available' as const,
-          rating: 4.5, // Default rating - could be calculated from reviews later
-          total_sessions: 0, // Could be calculated from sessions table later
-          profile_image_url: profile?.[0]?.profile_image_url,
-          verification_status: profile?.[0]?.verification_status || 'pending',
-          gender: 'Not specified', // Not in current schema - could be added later
-          age: 'Not specified', // Not in current schema - could be added later
-          maritalStatus: 'Not specified', // Not in current schema - could be added later
-          created_at: therapistData.created_at,
-          updated_at: therapistData.updated_at
-        }
+      // Then get enrollment data by email
+      const { data: enrollmentData, error: enrollmentError } = await supabase
+        .from('therapist_enrollments')
+        .select(`
+          id,
+          bio,
+          profile_image_url,
+          specialization,
+          languages,
+          licensed_qualification,
+          hourly_rate,
+          status,
+          is_active,
+          gender,
+          age,
+          marital_status,
+          phone,
+          created_at,
+          updated_at
+        `)
+        .eq('email', userData.email)
+        .eq('status', 'approved')
+        .single()
+
+      if (enrollmentError || !enrollmentData) {
+        throw new Error('Enrollment not found or not approved')
+      }
+
+      // Parse specialization and languages if they're JSON strings
+      const specializations = Array.isArray(enrollmentData.specialization) 
+        ? enrollmentData.specialization 
+        : (typeof enrollmentData.specialization === 'string' 
+          ? [enrollmentData.specialization] 
+          : ['General Therapy'])
+      
+      const languages = Array.isArray(enrollmentData.languages)
+        ? enrollmentData.languages
+        : (typeof enrollmentData.languages === 'string'
+          ? JSON.parse(enrollmentData.languages)
+          : ['English'])
+
+      // Transform data with real enrollment data
+      therapist = {
+        id: userData.id,
+        full_name: userData.full_name || 'Unknown Therapist',
+        email: userData.email,
+        specializations,
+        bio: enrollmentData.bio || 'Professional therapist ready to help you.',
+        experience_years: 0, // Could be calculated later
+        education: enrollmentData.licensed_qualification || 'Professional qualification',
+        languages,
+        session_rate: enrollmentData.hourly_rate || 5000,
+        availability_status: (userData.is_active && enrollmentData.is_active) ? 'available' : 'offline',
+        rating: 4.8, // Default rating - could be calculated from reviews later
+        total_sessions: 0, // Could be calculated from sessions table later
+        profile_image_url: enrollmentData.profile_image_url,
+        verification_status: enrollmentData.status === 'approved' ? 'verified' : 'pending',
+        gender: enrollmentData.gender || 'Not specified',
+        age: enrollmentData.age || 'Not specified',
+        maritalStatus: enrollmentData.marital_status || 'Not specified',
+        created_at: enrollmentData.created_at,
+        updated_at: enrollmentData.updated_at
       }
 
     } catch (dbError) {
-      console.warn('Database query failed, using mock data:', dbError)
-    }
-
-    // If not found in database, try to get from therapist_profiles table
-    if (!therapist) {
-      try {
-        const { data: profileData, error: profileError } = await supabase
-          .from('therapist_profiles')
-          .select(`
-            *,
-            users!therapist_profiles_user_id_fkey(id, full_name, email, created_at, updated_at)
-          `)
-          .eq('user_id', id)
-          .single()
-
-        if (!profileError && profileData && profileData.users) {
-          therapist = {
-            id: profileData.users.id,
-            full_name: profileData.users.full_name || 'Unknown Therapist',
-            email: profileData.users.email,
-            specializations: Array.isArray(profileData.specializations) 
-              ? profileData.specializations[0] || 'General Therapy'
-              : profileData.specializations || 'General Therapy',
-            bio: profileData.bio || 'Professional therapist',
-            experience_years: profileData.experience_years || 0,
-            education: profileData.education || 'Professional qualification',
-            languages: profileData.languages || ['English'],
-            session_rate: profileData.session_rate || 5000,
-            availability_status: profileData.availability_status || 'offline',
-            rating: profileData.rating || 0,
-            total_sessions: profileData.total_sessions || 0,
-            profile_image_url: profileData.profile_image_url,
-            verification_status: profileData.verification_status || 'pending',
-            gender: profileData.gender || 'Not specified',
-            age: profileData.age || 'Not specified',
-            maritalStatus: profileData.marital_status || 'Not specified',
-            created_at: profileData.users.created_at,
-            updated_at: profileData.users.updated_at
-          }
-        }
-      } catch (profileError) {
-        console.warn('Error fetching from therapist_profiles:', profileError)
-      }
+      console.warn('Database query failed:', dbError)
     }
 
     if (!therapist) {

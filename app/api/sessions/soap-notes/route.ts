@@ -39,13 +39,24 @@ export async function POST(request: NextRequest) {
       .eq('id', sessionId)
       .single();
 
-    if (sessionError || !sessionData) {
+    // Allow test sessions (session IDs starting with 'test-')
+    const isTestSession = sessionId.startsWith('test-')
+    
+    if ((sessionError || !sessionData) && !isTestSession) {
       console.error('Error fetching session data:', sessionError);
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
       );
     }
+    
+    // For test sessions, use default values
+    const sessionInfo = isTestSession ? {
+      users: [{ full_name: 'Test Patient' }],
+      therapist: [{ full_name: 'Test Therapist' }],
+      duration: 30,
+      session_type: 'Individual therapy'
+    } : sessionData
 
     // Get existing transcript if not provided
     let sessionTranscript = transcript;
@@ -75,10 +86,10 @@ export async function POST(request: NextRequest) {
 You are a licensed mental health professional. Based on the therapy session transcript below, generate comprehensive SOAP notes following medical documentation standards.
 
 Session Details:
-- Patient: ${sessionData.users?.[0]?.full_name || 'Patient'}
-- Therapist: ${sessionData.therapist?.[0]?.full_name || 'Therapist'}
-- Duration: ${sessionData.duration || 30} minutes
-- Type: ${sessionData.session_type || 'Individual therapy'}
+- Patient: ${sessionInfo.users?.[0]?.full_name || 'Patient'}
+- Therapist: ${sessionInfo.therapist?.[0]?.full_name || 'Therapist'}
+- Duration: ${sessionInfo.duration || 30} minutes
+- Type: ${sessionInfo.session_type || 'Individual therapy'}
 
 Session Transcript:
 ${sessionTranscript}
@@ -135,12 +146,42 @@ Format the response as a JSON object with these exact keys: subjective, objectiv
         throw new Error('No response from AI');
       }
 
-      // Parse the JSON response
+      console.log('AI Response (raw):', aiResponse.substring(0, 500));
+
+      // Parse the JSON response - handle markdown code blocks
       let soapNotes;
       try {
-        soapNotes = JSON.parse(aiResponse);
+        // Extract JSON from markdown code blocks if present
+        let jsonText = aiResponse.trim();
+        
+        // Remove markdown code blocks
+        if (jsonText.startsWith('```')) {
+          const lines = jsonText.split('\n');
+          const startIdx = lines.findIndex(l => l.includes('```')) + 1;
+          const endIdx = lines.findLastIndex(l => l.includes('```'));
+          jsonText = lines.slice(startIdx, endIdx).join('\n').trim();
+        }
+        
+        // Try to find JSON object boundaries if there's extra text
+        const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          jsonText = jsonMatch[0];
+        }
+        
+        const parsed = JSON.parse(jsonText);
+        
+        // Ensure all values are strings
+        soapNotes = {
+          subjective: typeof parsed.subjective === 'string' ? parsed.subjective : JSON.stringify(parsed.subjective),
+          objective: typeof parsed.objective === 'string' ? parsed.objective : JSON.stringify(parsed.objective),
+          assessment: typeof parsed.assessment === 'string' ? parsed.assessment : JSON.stringify(parsed.assessment),
+          plan: typeof parsed.plan === 'string' ? parsed.plan : JSON.stringify(parsed.plan)
+        };
+        
+        console.log('Parsed SOAP notes:', soapNotes);
       } catch (parseError) {
         console.error('Error parsing AI response:', parseError);
+        console.error('Raw response:', aiResponse);
         // Fallback: create basic SOAP structure
         soapNotes = {
           subjective: "Patient reported various concerns during the session.",
@@ -150,24 +191,28 @@ Format the response as a JSON object with these exact keys: subjective, objectiv
         };
       }
 
-      // Store SOAP notes in database
-      const { data: soapData, error: soapError } = await supabase
-        .from('session_notes')
-        .upsert({
-          session_id: sessionId,
-          soap_notes: soapNotes,
-          ai_generated: true,
-          ai_notes_generated_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'session_id'
-        })
-        .select()
-        .single();
+      // Store SOAP notes in database (skip for test sessions)
+      if (!isTestSession) {
+        const { data: soapData, error: soapError } = await supabase
+          .from('session_notes')
+          .upsert({
+            session_id: sessionId,
+            soap_notes: soapNotes,
+            ai_generated: true,
+            ai_notes_generated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'session_id'
+          })
+          .select()
+          .single();
 
-      if (soapError) {
-        console.error('Error storing SOAP notes:', soapError);
-        // Don't fail the request, just log the error
+        if (soapError) {
+          console.error('Error storing SOAP notes:', soapError);
+          // Don't fail the request, just log the error
+        }
+      } else {
+        console.log('Test session - skipping database storage of SOAP notes')
       }
 
       console.log('SOAP notes generated successfully');
