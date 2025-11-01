@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userType, setUserType] = useState<'individual' | 'therapist' | 'partner' | 'admin' | null>(null)
   const isValidatingRef = useRef(false)
   const lastValidationRef = useRef<number>(0)
+  const failedValidationCountRef = useRef<number>(0)
 
   // Validate session using SessionManager
   const validateSession = async (retryCount = 0, forceRefresh = false): Promise<boolean> => {
@@ -63,6 +64,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const now = Date.now()
     if (!forceRefresh && now - lastValidationRef.current < 10000 && user) {
       return true
+    }
+
+    // Stop retrying after 3 failed attempts to prevent infinite loops
+    if (!forceRefresh && failedValidationCountRef.current >= 3) {
+      isValidatingRef.current = false
+      return false
     }
 
     isValidatingRef.current = true
@@ -91,11 +98,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserType(sessionData.user_type as 'individual' | 'therapist' | 'partner' | 'admin')
         lastValidationRef.current = now
         isValidatingRef.current = false
+        failedValidationCountRef.current = 0 // Reset on success
         return true
       } else {
         setUser(null)
         setUserType(null)
         isValidatingRef.current = false
+        failedValidationCountRef.current++
         return false
       }
       
@@ -103,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null)
       setUserType(null)
       isValidatingRef.current = false
+      failedValidationCountRef.current++
       return false
     }
   }
