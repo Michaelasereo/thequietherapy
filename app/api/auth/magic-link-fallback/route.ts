@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { authConfig } from '@/lib/auth-config'
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,9 +39,8 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // Create verification URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://thequietherapy.live'
-    const verificationUrl = `${baseUrl}/api/auth/verify-magic-link?token=${token}&auth_type=${user_type || 'individual'}`
+    // Create verification URL using centralized config
+    const verificationUrl = `${authConfig.appUrl}/api/auth/verify-magic-link?token=${token}&auth_type=${user_type || 'individual'}`
 
     console.log('✅ Fallback magic link created:', { 
       token: token.substring(0, 8) + '...',

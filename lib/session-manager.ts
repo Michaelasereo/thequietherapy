@@ -1,14 +1,12 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { authConfig } from './auth-config'
 
-// Safe JWT_SECRET access for Edge Functions compatibility
+// Safe JWT_SECRET access using centralized config
 const getJWTSecret = () => {
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    throw new Error('JWT_SECRET environment variable is required')
-  }
-  return new TextEncoder().encode(secret)
+  authConfig.validateSecret() // Runtime validation
+  return new TextEncoder().encode(authConfig.jwtSecret)
 }
 
 export interface SessionData {

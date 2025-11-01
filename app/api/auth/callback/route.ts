@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { authConfig } from '@/lib/auth-config';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,7 +25,7 @@ function getDashboardUrl(userType: string | null): string {
 }
 
 export async function GET(req: Request) {
-  const base = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const base = authConfig.appUrl;
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
   const userType = searchParams.get('user_type') || 'individual';
