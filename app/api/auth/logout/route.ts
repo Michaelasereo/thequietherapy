@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 0, // Expire immediately
       path: '/',
+      domain: process.env.NODE_ENV === 'production' ? 'thequietherapy.live' : undefined,
     })
     
     // Clear legacy cookies
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
       response.cookies.set(cookieName, '', {
         maxAge: 0,
         path: '/',
+        domain: process.env.NODE_ENV === 'production' ? 'thequietherapy.live' : undefined,
       })
     })
 
@@ -60,6 +62,7 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 0,
       path: '/',
+      domain: process.env.NODE_ENV === 'production' ? 'thequietherapy.live' : undefined,
     })
     
     return response

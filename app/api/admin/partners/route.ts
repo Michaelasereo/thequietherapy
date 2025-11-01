@@ -27,7 +27,7 @@ export async function GET() {
         memberCount: 0, // Will be calculated from partner members
         totalCredits: user.partner_credits || 0,
         usedCredits: 0, // Will be calculated from credit transactions
-        status: user.is_active ? 'active' : 'inactive',
+        status: user.partner_status || (user.is_active ? 'active' : 'inactive'),
         is_verified: user.is_verified || false,
         created_at: user.created_at,
         lastActivity: user.last_login_at || user.updated_at

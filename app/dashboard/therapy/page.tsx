@@ -72,8 +72,8 @@ export default function GoToTherapyPage() {
             therapist_email: sessionData.therapist_email || sessionData.therapist?.email,
             start_time: sessionData.start_time || sessionData.scheduled_date || sessionData.created_at,
             duration: sessionData.duration || sessionData.duration_minutes || 60,
-            room_url: sessionData.session_url || sessionData.daily_room_url,
-            room_name: sessionData.room_name || sessionData.daily_room_name,
+            room_url: sessionData.session_url || (sessionData as any).daily_room_url,
+            room_name: sessionData.room_name || (sessionData as any).daily_room_name,
             status: sessionData.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
             notes: sessionData.notes
           })

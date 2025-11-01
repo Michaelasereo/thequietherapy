@@ -41,6 +41,17 @@ export default function PartnerMembersPage() {
   const [showCSVModal, setShowCSVModal] = useState(false)
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  
+  // Manual add state
+  const [manualName, setManualName] = useState("")
+  const [manualEmail, setManualEmail] = useState("")
+  const [manualStatusType, setManualStatusType] = useState<'doctor' | 'student'>('doctor')
+  const [manualCaderLevel, setManualCaderLevel] = useState("")
+  const [manualPhone, setManualPhone] = useState("")
+  const [manualDepartment, setManualDepartment] = useState("")
+  const [manualEmployeeId, setManualEmployeeId] = useState("")
+  const [addingManual, setAddingManual] = useState(false)
+  
   const { toast } = useToast()
 
   useEffect(() => {
@@ -144,6 +155,65 @@ David,david.wilson@hospital.com,doctor,house officer,+2348012345682,Internal Med
     window.URL.revokeObjectURL(url)
   }
 
+  const handleManualAdd = async () => {
+    // Validate required fields
+    if (!manualName || !manualEmail || !manualCaderLevel) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields (Name, Email, Cader Level)",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setAddingManual(true)
+
+    try {
+      // Create CSV content for single member
+      const csvContent = `firstname,email,statustype,caderlevel,phone,department,employeeid\n${manualName},${manualEmail},${manualStatusType},${manualCaderLevel},${manualPhone || ''},${manualDepartment || ''},${manualEmployeeId || ''}`
+
+      const response = await fetch('/api/partner/upload-members', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/csv'
+        },
+        body: csvContent
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast({
+          title: "Member Added",
+          description: `${result.uploaded} member added successfully`
+        })
+        
+        // Reset form
+        setManualName("")
+        setManualEmail("")
+        setManualStatusType('doctor')
+        setManualCaderLevel("")
+        setManualPhone("")
+        setManualDepartment("")
+        setManualEmployeeId("")
+        
+        // Refresh list
+        fetchMembers()
+      } else {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to add member')
+      }
+    } catch (error) {
+      console.error('Error adding member:', error)
+      toast({
+        title: "Add Failed",
+        description: error instanceof Error ? error.message : "Failed to add member",
+        variant: "destructive"
+      })
+    } finally {
+      setAddingManual(false)
+    }
+  }
+
   const filteredMembers = members.filter(member =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -242,12 +312,76 @@ David,david.wilson@hospital.com,doctor,house officer,+2348012345682,Internal Med
         <CardHeader>
           <CardTitle>Manual Add Member</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input placeholder="Name" />
-            <Input placeholder="Email" />
-            <Button>Add</Button>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Full Name *</Label>
+              <Input 
+                placeholder="John Doe" 
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Email *</Label>
+              <Input 
+                placeholder="john.doe@hospital.com" 
+                value={manualEmail}
+                onChange={(e) => setManualEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Status Type *</Label>
+              <Select value={manualStatusType} onValueChange={(value: 'doctor' | 'student') => setManualStatusType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="doctor">Doctor</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Cader/Level *</Label>
+              <Input 
+                placeholder="consultant, resident, 300level, etc" 
+                value={manualCaderLevel}
+                onChange={(e) => setManualCaderLevel(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Phone</Label>
+              <Input 
+                placeholder="+2348012345678" 
+                value={manualPhone}
+                onChange={(e) => setManualPhone(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Department</Label>
+              <Input 
+                placeholder="Cardiology" 
+                value={manualDepartment}
+                onChange={(e) => setManualDepartment(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Employee ID</Label>
+              <Input 
+                placeholder="EMP001" 
+                value={manualEmployeeId}
+                onChange={(e) => setManualEmployeeId(e.target.value)}
+              />
+            </div>
           </div>
+          <Button 
+            onClick={handleManualAdd} 
+            disabled={addingManual || !manualName || !manualEmail || !manualCaderLevel}
+            className="w-full md:w-auto"
+          >
+            {addingManual ? "Adding..." : "Add Member"}
+          </Button>
         </CardContent>
       </Card>
 

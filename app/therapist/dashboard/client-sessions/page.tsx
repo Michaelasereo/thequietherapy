@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -32,7 +32,7 @@ export default function TherapistClientSessionsPage() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
 
   // Fetch sessions data
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     if (!user?.id) {
       console.log('🔍 TherapistClientSessionsPage: No user ID, skipping fetch')
       return
@@ -54,23 +54,45 @@ export default function TherapistClientSessionsPage() {
         
         console.log('🔍 TherapistClientSessionsPage: Raw sessions:', sessions)
         console.log('🔍 TherapistClientSessionsPage: Sessions count:', sessions.length)
+        console.log('🔍 TherapistClientSessionsPage: All session statuses:', sessions.map((s: any) => ({ id: s.id, status: s.status })))
         
-        // Filter sessions by status (include pending_approval in scheduled)
-        const scheduled = sessions.filter((s: any) => 
-          s.status === 'scheduled' || s.status === 'pending_approval' || s.status === 'confirmed'
-        )
-        const upcoming = sessions.filter((s: any) => s.status === 'in_progress')
-        const past = sessions.filter((s: any) => s.status === 'completed' || s.status === 'cancelled')
+        // Filter sessions by status - be more inclusive for scheduled/upcoming
+        // Scheduled: any session that's not completed/cancelled and hasn't started yet
+        const now = new Date()
+        const scheduled = sessions.filter((s: any) => {
+          const status = s.status?.toLowerCase() || ''
+          const isScheduledStatus = ['scheduled', 'pending_approval', 'confirmed', 'pending'].includes(status)
+          
+          // Also check if session hasn't started yet (future date)
+          const sessionDate = s.start_time ? new Date(s.start_time) : 
+                            (s.scheduled_date && s.scheduled_time ? new Date(`${s.scheduled_date}T${s.scheduled_time}`) : null)
+          const isFuture = sessionDate && sessionDate > now
+          
+          return isScheduledStatus || (isFuture && status !== 'completed' && status !== 'cancelled')
+        })
         
-        console.log('🔍 TherapistClientSessionsPage: Scheduled sessions:', scheduled)
-        console.log('🔍 TherapistClientSessionsPage: Upcoming sessions:', upcoming)
-        console.log('🔍 TherapistClientSessionsPage: Past sessions:', past)
+        // Upcoming: in progress sessions
+        const upcoming = sessions.filter((s: any) => {
+          const status = s.status?.toLowerCase() || ''
+          return status === 'in_progress' || status === 'in-progress'
+        })
+        
+        // Past: completed or cancelled
+        const past = sessions.filter((s: any) => {
+          const status = s.status?.toLowerCase() || ''
+          return status === 'completed' || status === 'cancelled' || status === 'no_show'
+        })
+        
+        console.log('🔍 TherapistClientSessionsPage: Scheduled sessions:', scheduled.length, scheduled.map((s: any) => ({ id: s.id, status: s.status })))
+        console.log('🔍 TherapistClientSessionsPage: Upcoming sessions:', upcoming.length, upcoming.map((s: any) => ({ id: s.id, status: s.status })))
+        console.log('🔍 TherapistClientSessionsPage: Past sessions:', past.length, past.map((s: any) => ({ id: s.id, status: s.status })))
         
         setScheduledSessions(scheduled)
         setUpcomingSessions(upcoming)
         setPastSessions(past)
       } else {
         console.warn('🔍 TherapistClientSessionsPage: No sessions data in response')
+        console.warn('🔍 TherapistClientSessionsPage: Response data:', data)
         setScheduledSessions([])
         setUpcomingSessions([])
         setPastSessions([])
@@ -83,12 +105,12 @@ export default function TherapistClientSessionsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id])
 
   // Initial data fetch
   useEffect(() => {
     fetchSessions()
-  }, [user?.id])
+  }, [fetchSessions])
 
   // Real-time data hooks disabled - causing connection errors
   // const sessionsRealtime = useRealtimeData({
@@ -247,18 +269,18 @@ export default function TherapistClientSessionsPage() {
     })
   }
 
-  const handleOpenPostSession = (sessionId: string) => {
+  const handleOpenPostSession = useCallback((sessionId: string) => {
     setSelectedSessionId(sessionId)
     setIsModalOpen(true)
-  }
+  }, [])
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false)
     setSelectedSessionId(null)
     fetchSessions() // Refresh sessions when modal closes
-  }
+  }, [fetchSessions])
 
-  const handleOpenSessionDetails = (sessionId: string) => {
+  const handleOpenSessionDetails = useCallback((sessionId: string) => {
     console.log('🔍 Opening session details for:', sessionId)
     // Find the session in our current list to check what data we have
     const session = scheduledSessions.find(s => s.id === sessionId)
@@ -267,12 +289,12 @@ export default function TherapistClientSessionsPage() {
     
     setSelectedDetailsSessionId(sessionId)
     setIsDetailsModalOpen(true)
-  }
+  }, [scheduledSessions])
 
-  const handleCloseDetailsModal = () => {
+  const handleCloseDetailsModal = useCallback(() => {
     setIsDetailsModalOpen(false)
     setSelectedDetailsSessionId(null)
-  }
+  }, [])
 
   if (loading) {
     return (
@@ -369,6 +391,11 @@ export default function TherapistClientSessionsPage() {
                         <p className="text-sm text-muted-foreground">
                           Client: {session.users?.full_name || 'Unknown Client'} • {session.title || 'Follow-up Session'}
                         </p>
+                        {session.complaints && (
+                          <p className="text-xs text-gray-900 mt-1">
+                            Complaint: {session.complaints}
+                          </p>
+                        )}
                         {session.notes && (
                           <p className="text-xs text-gray-600 mt-1">
                             Note: {session.notes}

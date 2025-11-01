@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireApiAuth } from '@/lib/server-auth'
+import { createServerClient } from '@/lib/supabase'
 import { createMagicLinkForAuthType } from '@/lib/auth'
+import { v4 as uuidv4 } from 'uuid'
 
 // Type assertion for FormData to avoid TypeScript issues
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabase = createServerClient()
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURE Authentication Check - only partners can upload members
+    const authResult = await requireApiAuth(['partner'])
+    if ('error' in authResult) {
+      return authResult.error
+    }
+
+    const { session } = authResult
+    const partnerId = session.user.id // This is now TRUSTED and verified
+
+    console.log('🔍 Partner CSV upload started for:', partnerId)
+
     let text: string
     
     // Check if it's a file upload or direct CSV content
@@ -41,18 +51,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Get partner ID (you'll need to implement session handling)
-    const { data: partner, error: partnerError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('user_type', 'partner')
-      .single()
-
-    if (partnerError) {
-      console.error('Error fetching partner:', partnerError)
-      return NextResponse.json({ error: 'Partner not found' }, { status: 404 })
-    }
-
     const members = []
     const errors = []
     let uploaded = 0
@@ -62,7 +60,7 @@ export async function POST(request: NextRequest) {
       try {
         const values = lines[i].split(',').map(v => v.trim())
         const memberData: any = {
-          partner_id: partner.id,
+          partner_id: partnerId,
           first_name: values[headers.indexOf('firstname')] || '',
           email: values[headers.indexOf('email')] || '',
           status_type: values[headers.indexOf('statustype')] || '',
@@ -93,7 +91,7 @@ export async function POST(request: NextRequest) {
           .from('partner_members')
           .select('id')
           .eq('email', memberData.email)
-          .eq('partner_id', partner.id)
+          .eq('partner_id', partnerId)
           .single()
 
         if (existingMember) {
@@ -134,7 +132,7 @@ export async function POST(request: NextRequest) {
               department: memberData.department,
               employee_id: memberData.employee_id,
               uploaded_by_partner: true,
-              partner_id: partner.id
+              partner_id: partnerId
             }
           })
           .select()
@@ -184,8 +182,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      uploaded,
+      successfulRecords: uploaded,
+      failedRecords: errors.length,
       total: lines.length - 1,
+      uploaded,
       errors: errors.slice(0, 10), // Limit errors to first 10
       members: members.slice(0, 5) // Show first 5 successful uploads
     })

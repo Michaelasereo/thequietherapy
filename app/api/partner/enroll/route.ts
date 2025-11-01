@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Create partner user with auto-approval but under review status
+    // Create partner user with pending status but temporary approval for access
     const { data: newPartner, error: createError } = await supabase
       .from('users')
       .insert({
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         user_type: 'partner',
         company_name: organizationName,
         organization_type: organizationType,
-        partner_status: 'under_review', // Auto-approved but under review
+        partner_status: 'pending', // Pending admin approval
         temporary_approval: true, // Allow full access during review
         is_verified: true, // Auto-verified for immediate access
         is_active: true,
@@ -89,7 +89,9 @@ export async function POST(request: NextRequest) {
       console.error('Error creating partner:', createError)
       return NextResponse.json({
         success: false,
-        error: 'Failed to create partner account'
+        error: 'Failed to create partner account',
+        details: createError.message,
+        code: createError.code
       }, { status: 500 })
     }
 

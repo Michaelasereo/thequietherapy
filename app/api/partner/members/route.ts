@@ -1,36 +1,32 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireApiAuth } from '@/lib/server-auth'
+import { createServerClient } from '@/lib/supabase'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabase = createServerClient()
 
 export async function GET() {
   try {
-    // Get partner ID from session (you'll need to implement session handling)
-    const { data: partner, error: partnerError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('user_type', 'partner')
-      .single()
-
-    if (partnerError) {
-      console.error('Error fetching partner:', partnerError)
-      return NextResponse.json([])
+    // Secure authentication check
+    const authResult = await requireApiAuth(['partner'])
+    if ('error' in authResult) {
+      return authResult.error
     }
+
+    const { session } = authResult
+    const partnerId = session.user.id // This is now TRUSTED and verified
 
     // Get partner members
     const { data: members, error: membersError } = await supabase
       .from('partner_members')
       .select(`
         id,
-        name,
+        first_name,
         email,
         credits_assigned,
+        status,
         created_at
       `)
-      .eq('partner_id', partner.id)
+      .eq('partner_id', partnerId)
       .order('created_at', { ascending: false })
 
     if (membersError) {
@@ -41,11 +37,15 @@ export async function GET() {
     // Transform the data to match the expected interface
     const transformedMembers = members?.map(member => ({
       id: member.id,
-      name: member.name,
+      name: member.first_name,
       email: member.email,
-      creditsAssigned: member.credits_assigned || 0
+      creditsAssigned: member.credits_assigned || 0,
+      sessionsUsed: 0, // TODO: Get from sessions table
+      status: member.status || 'pending',
+      joinedAt: member.created_at
     })) || []
 
+    console.log('📊 Returning members:', transformedMembers.length)
     return NextResponse.json(transformedMembers)
 
   } catch (error) {

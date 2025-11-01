@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireApiAuth } from '@/lib/server-auth'
+import { createServerClient } from '@/lib/supabase'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabase = createServerClient()
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURE Authentication Check - only admins can change partner state
+    const authResult = await requireApiAuth(['admin'])
+    if ('error' in authResult) {
+      return authResult.error
+    }
+
     const { partnerId, action, reason } = await request.json()
 
     if (!partnerId || !action) {

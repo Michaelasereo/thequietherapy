@@ -114,8 +114,13 @@ const TherapistDashboardPage = memo(function TherapistDashboardPage() {
     },
   ]
 
-  // Use real session data from API
-  const therapistUpcomingSessions = sessions.filter((s: any) => s.status === 'scheduled' || s.status === 'in_progress')
+  // Use real session data from API - include all scheduled statuses
+  const therapistUpcomingSessions = sessions.filter((s: any) => 
+    s.status === 'scheduled' || 
+    s.status === 'in_progress' || 
+    s.status === 'confirmed' || 
+    s.status === 'pending_approval'
+  )
 
   const format = (date: Date, formatStr: string) => {
     return date.toLocaleDateString('en-US', {

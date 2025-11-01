@@ -29,7 +29,7 @@ export default function TestTranscriptionPage() {
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const timerRef = useRef<number | null>(null)
   const sessionIdRef = useRef<string>(`test-session-${Date.now()}`)
 
   // Cleanup on unmount

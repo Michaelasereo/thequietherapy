@@ -134,11 +134,21 @@ export default function PartnersPage() {
     try {
       setProcessingId(partnerId)
       
-      // This would be replaced with actual API call
-      setPartners(prev => prev.map(partner => 
-        partner.id === partnerId ? { ...partner, status: 'active', is_verified: true } : partner
-      ))
-      toast.success('Partner approved successfully')
+      const response = await fetch('/api/admin/partner-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ partnerId, action: 'approve' })
+      })
+      
+      if (response.ok) {
+        setPartners(prev => prev.map(partner => 
+          partner.id === partnerId ? { ...partner, status: 'active', is_verified: true } : partner
+        ))
+        toast.success('Partner approved successfully')
+        fetchPartners() // Refresh to get latest data
+      } else {
+        toast.error('Failed to approve partner')
+      }
     } catch (error) {
       console.error('Error approving partner:', error)
       toast.error('Failed to approve partner')
@@ -163,6 +173,7 @@ export default function PartnersPage() {
         ))
         toast.success('Partner application rejected')
         setRejectionReason("")
+        fetchPartners() // Refresh to get latest data
       } else {
         toast.error('Failed to reject partner')
       }
@@ -195,6 +206,7 @@ export default function PartnersPage() {
           } : partner
         ))
         toast.success(`Partner ${action}ed successfully`)
+        fetchPartners() // Refresh to get latest data
       } else {
         toast.error(`Failed to ${action} partner`)
       }
