@@ -10,6 +10,7 @@ import { Logo } from "@/components/ui/logo"
 const navLinks = [
   { name: "Therapy", href: "#therapy" },
   { name: "Campaigns", href: "/campaigns" },
+  { name: "Shop Journals", href: "/shop-journals" },
   { name: "Support", href: "/support" },
   { name: "About Us", href: "#about" },
   { name: "FAQs", href: "/faqs" },

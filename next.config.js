@@ -11,8 +11,6 @@ const nextConfig = {
       bodySizeLimit: '10mb'
     },
   },
-  // Output configuration for Netlify
-  output: 'standalone',
   // Security Headers Configuration
   async headers() {
     return [
@@ -29,13 +27,13 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com https://*.daily.co https://thequietherapy.daily.co https://challenges.cloudflare.com https://*.cloudflare.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com https://*.daily.co https://thequietherapy.daily.co https://challenges.cloudflare.com https://*.cloudflare.com https://app.ecwid.com https://*.ecwid.com https://d34ikvsdm2rlij.cloudfront.net https://*.cloudfront.net",
               "worker-src 'self' blob:",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://*.supabase.co https://api.stripe.com https://checkout.stripe.com wss://*.supabase.co https://*.daily.co wss://*.daily.co https://thequietherapy.daily.co wss://thequietherapy.daily.co https://challenges.cloudflare.com https://*.cloudflare.com",
-              "frame-src 'self' https://js.stripe.com https://checkout.stripe.com https://*.daily.co https://thequietherapy.daily.co https://challenges.cloudflare.com https://*.cloudflare.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.cloudfront.net",
+              "font-src 'self' https://fonts.gstatic.com https://*.cloudfront.net",
+              "img-src 'self' data: https: blob: https://*.ecwid.com https://*.cloudfront.net",
+              "connect-src 'self' https://*.supabase.co https://api.stripe.com https://checkout.stripe.com wss://*.supabase.co https://*.daily.co wss://*.daily.co https://thequietherapy.daily.co wss://thequietherapy.daily.co https://challenges.cloudflare.com https://*.cloudflare.com https://*.ecwid.com https://*.cloudfront.net https://storefront.ecwid.dev:16088",
+              "frame-src 'self' https://js.stripe.com https://checkout.stripe.com https://*.daily.co https://thequietherapy.daily.co https://challenges.cloudflare.com https://*.cloudflare.com https://*.ecwid.com https://*.cloudfront.net",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
@@ -125,6 +123,7 @@ const nextConfig = {
   images: {
     domains: [
       'localhost',
+      'thequietherapy.live',
       'frzciymslvpohhyefmtr.supabase.co' // Supabase storage domain
     ],
     unoptimized: true

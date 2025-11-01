@@ -35,7 +35,7 @@ export class ClientSessionManager {
       const data = await response.json()
       return data.user || null
     } catch (error) {
-      console.error('Failed to get session:', error)
+      // Session check failed - expected if no session exists
       return null
     }
   }

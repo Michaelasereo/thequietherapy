@@ -97,13 +97,13 @@ export class ServerSessionManager {
       const { payload } = await jwtVerify(sessionCookie.value, JWT_SECRET)
       return payload as any as SessionData
     } catch (error) {
-      console.error('Session validation error:', error)
+      // Session expired or invalid - this is expected behavior
       return null
     }
   }
 
   /**
-   * Validate session token (middleware-safe)
+   * Validate session token (middleware-safe, Edge-compatible)
    */
   static validateSession(token: string): SessionData | null {
     try {
@@ -113,7 +113,31 @@ export class ServerSessionManager {
         return null
       }
 
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString())
+      // Decode base64 in Edge-compatible way
+      const base64Url = parts[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      
+      // Convert base64 to bytes then to string (Edge-compatible)
+      let jsonPayload: string
+      try {
+        // Try Node.js Buffer first (server-side)
+        if (typeof Buffer !== 'undefined') {
+          jsonPayload = Buffer.from(base64, 'base64').toString('utf-8')
+        } else {
+          // Edge Runtime: decode base64 manually
+          const binaryString = base64
+            .split('')
+            .map(char => String.fromCharCode(
+              'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.indexOf(char)
+            ))
+            .join('')
+          jsonPayload = decodeURIComponent(escape(binaryString))
+        }
+      } catch {
+        return null
+      }
+      
+      const payload = JSON.parse(jsonPayload)
       const sessionData = payload as SessionData
 
       // Basic validation
