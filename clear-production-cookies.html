@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Production Cookies</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .message {
+            background: #e7f3ff;
+            border: 1px solid #2196F3;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .success {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧹 Clear Production Cookies</h1>
+    <div class="message">
+        <p><strong>This will clear all authentication cookies from this domain.</strong></p>
+        <p>After clearing, you'll be logged out and need to sign in again.</p>
+    </div>
+    
+    <button onclick="clearAllCookies()">Clear All Cookies</button>
+    
+    <div class="success" id="success">
+        ✅ All cookies cleared! Redirecting...
+    </div>
+
+    <script>
+        function clearAllCookies() {
+            // List of cookies we want to clear
+            const cookiesToClear = [
+                'quiet_session',
+                'supabase.auth.token',
+                'sb-auth-token',
+                'session_token',
+                'user_session',
+                'admin_session',
+                'therapist_session',
+                'partner_session'
+            ];
+            
+            // Clear each cookie
+            cookiesToClear.forEach(cookieName => {
+                // Clear from root domain
+                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                // Clear from current domain
+                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=thequietherapy.live;`;
+                // Clear without domain
+                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost;`;
+            });
+            
+            // Clear all cookies by iterating through existing ones
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            // Show success message
+            document.getElementById('success').style.display = 'block';
+            
+            // Redirect to home page after a short delay
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
+
