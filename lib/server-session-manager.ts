@@ -2,11 +2,14 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is not set')
+// Safe JWT_SECRET access for Edge Functions compatibility
+const getJWTSecret = () => {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set')
+  }
+  return new TextEncoder().encode(secret)
 }
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
 export interface SessionData {
   id: string
@@ -58,7 +61,7 @@ export class ServerSessionManager {
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime(expiresAt)
-      .sign(JWT_SECRET)
+      .sign(getJWTSecret())
 
     // Set cookie with explicit domain for production
     const cookieOptions = {
@@ -94,7 +97,7 @@ export class ServerSessionManager {
         return null
       }
 
-      const { payload } = await jwtVerify(sessionCookie.value, JWT_SECRET)
+      const { payload } = await jwtVerify(sessionCookie.value, getJWTSecret())
       return payload as any as SessionData
     } catch (error) {
       // Session expired or invalid - this is expected behavior

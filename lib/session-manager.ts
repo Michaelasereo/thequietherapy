@@ -2,10 +2,14 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required')
+// Safe JWT_SECRET access for Edge Functions compatibility
+const getJWTSecret = () => {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required')
+  }
+  return new TextEncoder().encode(secret)
 }
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
 export interface SessionData {
   id: string
@@ -33,7 +37,7 @@ export class SessionManager {
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('24h') // Healthcare-grade: 24 hours
-      .sign(JWT_SECRET)
+      .sign(getJWTSecret())
 
     // Set the cookie
     const cookieStore = await cookies()
@@ -63,7 +67,7 @@ export class SessionManager {
 
       // Removed sensitive cookie logging for security
 
-      const { payload } = await jwtVerify(token, JWT_SECRET)
+      const { payload } = await jwtVerify(token, getJWTSecret())
       const sessionData = payload as any as SessionData
 
       // Basic validation
@@ -99,7 +103,7 @@ export class SessionManager {
       }
 
       try {
-        const { payload } = await jwtVerify(token, JWT_SECRET)
+        const { payload } = await jwtVerify(token, getJWTSecret())
         const sessionData = payload as any as SessionData
 
         // Check if token is nearing expiration (less than 6 hours remaining)
@@ -163,7 +167,7 @@ export class SessionManager {
       // Removed sensitive cookie logging for security
 
       // Verify JWT token
-      const { payload } = await jwtVerify(sessionCookie, JWT_SECRET)
+      const { payload } = await jwtVerify(sessionCookie, getJWTSecret())
       const sessionData = payload as any as SessionData
 
       // Basic validation
@@ -227,7 +231,7 @@ export class SessionManager {
     const token = request.cookies.get(this.COOKIE_NAME)?.value
     if (token) {
       try {
-        await jwtVerify(token, JWT_SECRET)
+        await jwtVerify(token, getJWTSecret())
       } catch (error) {
         // Token is expired or invalid, clear it
         if (error instanceof Error && error.message.includes('exp')) {
