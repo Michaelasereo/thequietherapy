@@ -1,36 +1,49 @@
 /**
  * Centralized authentication configuration
- * Follows singleton pattern for consistent access across all auth flows
- * Environment-agnostic and edge-runtime compatible
+ * Lazy-loading singleton pattern for edge-runtime compatibility
+ * NEVER initializes at module load - only at runtime
  */
 
 class AuthConfig {
   private static instance: AuthConfig | null = null;
+  private _isInitialized = false;
   
-  public readonly jwtSecret: string;
-  public readonly appUrl: string;
-  public readonly isProduction: boolean;
-  public readonly nodeEnv: string;
+  // Private mutable properties (initialized lazily)
+  private _jwtSecret: string = '';
+  private _appUrl: string = '';
+  private _isProduction: boolean = false;
+  private _nodeEnv: string = 'development';
 
   private constructor() {
-    this.nodeEnv = process.env.NODE_ENV || 'development';
-    this.isProduction = this.nodeEnv === 'production';
+    // Empty constructor - NO initialization here!
+    // This prevents failures during Edge function bundling
+  }
+
+  /**
+   * Lazy initialization - called only at runtime
+   */
+  private initialize(): void {
+    if (this._isInitialized) return;
+
+    this._nodeEnv = process.env.NODE_ENV || 'development';
+    this._isProduction = this._nodeEnv === 'production';
     
     // JWT Secret with intelligent fallbacks
-    this.jwtSecret = this.getJwtSecret();
+    this._jwtSecret = this.getJwtSecret();
     
-    // App URL with smart fallbacks based on environment
-    this.appUrl = this.getAppUrl();
+    // App URL with smart fallbacks
+    this._appUrl = this.getAppUrl();
     
-    // Validate configuration in production only
-    if (this.isProduction) {
-      this.validateProductionConfig();
+    this._isInitialized = true;
+    
+    // Log warning in production if misconfigured (don't throw)
+    if (this._isProduction && !this._jwtSecret) {
+      console.error('❌ JWT_SECRET is required in production but not set');
     }
   }
 
   /**
    * Get JWT secret with fallbacks
-   * Never fails during build time
    */
   private getJwtSecret(): string {
     // Primary source
@@ -38,19 +51,12 @@ class AuthConfig {
       return process.env.JWT_SECRET;
     }
     
-    // Fallback for edge runtime compatibility
-    if (process.env.NEXT_PUBLIC_JWT_SECRET) {
-      console.warn('⚠️ Using NEXT_PUBLIC_JWT_SECRET - consider using JWT_SECRET instead');
-      return process.env.NEXT_PUBLIC_JWT_SECRET;
-    }
-    
     // Development fallback (NEVER in production)
-    if (!this.isProduction) {
-      console.warn('⚠️ No JWT_SECRET found, using development fallback');
+    if (process.env.NODE_ENV !== 'production') {
       return 'dev-secret-change-in-production-replace-with-real-secret';
     }
     
-    // Production without secret is a configuration error
+    // Production without secret - return empty (validation happens at runtime)
     return '';
   }
 
@@ -64,7 +70,7 @@ class AuthConfig {
     }
     
     // Production fallback
-    if (this.isProduction) {
+    if (process.env.NODE_ENV === 'production') {
       return 'https://thequietherapy.live';
     }
     
@@ -73,20 +79,26 @@ class AuthConfig {
   }
 
   /**
-   * Validate production configuration
-   * Throws errors in production if misconfigured
+   * Public getters - trigger lazy initialization
    */
-  private validateProductionConfig(): void {
-    if (!this.jwtSecret || this.jwtSecret.length < 32) {
-      throw new Error(
-        'JWT_SECRET must be set and at least 32 characters in production. ' +
-        'Set JWT_SECRET in Netlify environment variables.'
-      );
-    }
+  public get jwtSecret(): string {
+    this.initialize();
+    return this._jwtSecret;
+  }
 
-    if (this.appUrl.includes('localhost')) {
-      console.warn('⚠️ Production app URL includes localhost - check NEXT_PUBLIC_APP_URL');
-    }
+  public get appUrl(): string {
+    this.initialize();
+    return this._appUrl;
+  }
+
+  public get isProduction(): boolean {
+    this.initialize();
+    return this._isProduction;
+  }
+
+  public get nodeEnv(): string {
+    this.initialize();
+    return this._nodeEnv;
   }
 
   /**
@@ -94,8 +106,13 @@ class AuthConfig {
    * Use this in functions that need JWT secret
    */
   public validateSecret(): void {
-    if (!this.jwtSecret) {
-      throw new Error('JWT_SECRET not configured');
+    this.initialize(); // Ensure initialized
+    if (!this._jwtSecret) {
+      if (this._isProduction) {
+        throw new Error('JWT_SECRET not configured');
+      } else {
+        console.warn('⚠️ JWT_SECRET not set in development');
+      }
     }
   }
 
@@ -121,19 +138,19 @@ class AuthConfig {
    * Debug info (safe to log)
    */
   public getDebugInfo() {
+    this.initialize();
     return {
-      isProduction: this.isProduction,
-      nodeEnv: this.nodeEnv,
-      appUrl: this.appUrl,
-      hasJwtSecret: !!this.jwtSecret,
-      jwtSecretLength: this.jwtSecret?.length || 0,
+      isProduction: this._isProduction,
+      nodeEnv: this._nodeEnv,
+      appUrl: this._appUrl,
+      hasJwtSecret: !!this._jwtSecret,
+      jwtSecretLength: this._jwtSecret?.length || 0,
     };
   }
 }
 
-// Export singleton instance
+// Export singleton instance WITHOUT triggering initialization
 export const authConfig = AuthConfig.getInstance();
 
 // Export class for testing
 export { AuthConfig };
-
