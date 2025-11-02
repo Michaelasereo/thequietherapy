@@ -22,16 +22,30 @@ interface PaymentInitiationRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔐 Payment initiation request received')
+    
     // 1. SECURE Authentication Check
+    console.log('🔍 Checking authentication...')
     const authResult = await requireApiAuth(['individual'])
+    
     if ('error' in authResult) {
-      return authResult.error
+      console.error('❌ Authentication failed')
+      // Return proper error response
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Authentication required. Please log in to continue.' 
+        },
+        { status: 401 }
+      )
     }
 
     const { session } = authResult
     const userId = session.user.id
     const userEmail = session.user.email
     const userName = session.user.full_name
+    
+    console.log('✅ User authenticated:', { userId, userEmail })
 
     // 2. Parse and validate request
     const { package_type }: PaymentInitiationRequest = await request.json()
@@ -65,8 +79,10 @@ export async function POST(request: NextRequest) {
       callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/book?payment=success`,
       metadata: {
         user_id: userId,
+        type: 'credits', // Mark as credit purchase
         package_type: package_type,
         sessions_included: packageDef.sessions_included,
+        credits: packageDef.sessions_included, // Number of credits being purchased
         custom_fields: [
           {
             display_name: "Package",
@@ -83,6 +99,13 @@ export async function POST(request: NextRequest) {
       channels: ['card', 'bank', 'ussd', 'mobile_money'] // Payment methods for Nigerian users
     }
 
+    console.log('🔗 Calling Paystack API with data:', {
+      email: paystackData.email,
+      amount: paystackData.amount,
+      reference: paystackData.reference,
+      hasSecretKey: !!process.env.PAYSTACK_SECRET_KEY
+    })
+
     const paystackResponse = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
       method: 'POST',
       headers: {
@@ -93,11 +116,30 @@ export async function POST(request: NextRequest) {
     })
 
     const paystackResult = await paystackResponse.json()
+    console.log('📦 Paystack API response:', {
+      status: paystackResponse.status,
+      ok: paystackResponse.ok,
+      paystackStatus: paystackResult.status,
+      hasData: !!paystackResult.data,
+      hasAuthorizationUrl: !!paystackResult.data?.authorization_url,
+      message: paystackResult.message
+    })
 
     if (!paystackResponse.ok || !paystackResult.status) {
-      console.error('Paystack initialization failed:', paystackResult)
+      console.error('❌ Paystack initialization failed:', {
+        status: paystackResponse.status,
+        statusText: paystackResponse.statusText,
+        result: paystackResult
+      })
       throw new Error(`PAYSTACK_INIT_ERROR: ${paystackResult.message || 'Payment initialization failed'}`)
     }
+
+    if (!paystackResult.data?.authorization_url) {
+      console.error('❌ Paystack response missing authorization_url:', paystackResult)
+      throw new Error('Paystack did not return payment URL')
+    }
+
+    console.log('✅ Paystack payment initialized successfully:', paystackResult.data.reference)
 
     const { error: pendingPaymentError } = await supabase
       .from('pending_payments')    

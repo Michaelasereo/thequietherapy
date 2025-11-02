@@ -40,10 +40,10 @@ export default function CreditPurchaseFlow({ userId, onPurchaseComplete }: Credi
 
   const fetchPackages = async () => {
     try {
-      const response = await fetch('/api/credit-packages')
+      const response = await fetch('/api/packages')
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok && data.success) {
         // Filter out free signup package
         const paidPackages = data.data.packages.filter(
           (pkg: CreditPackage) => pkg.package_type !== 'signup_free'
@@ -71,37 +71,55 @@ export default function CreditPurchaseFlow({ userId, onPurchaseComplete }: Credi
     setError(null)
 
     try {
+      console.log('🚀 Initiating payment for package:', selectedPackage.package_type)
+      
       // Initiate payment
       const response = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           package_type: selectedPackage.package_type
         })
       })
 
       const data = await response.json()
+      console.log('📦 Payment API response:', { status: response.status, ok: response.ok, data })
 
       if (!response.ok) {
+        const errorMsg = data.error || data.message || 'Payment initiation failed'
+        console.error('❌ Payment initiation failed:', errorMsg, data)
+        throw new Error(errorMsg)
+      }
+
+      // Check response structure
+      if (!data.success) {
+        console.error('❌ API returned success: false', data)
         throw new Error(data.error || 'Payment initiation failed')
       }
 
       // Redirect to Paystack payment page
-      if (data.data.payment_url) {
-        window.location.href = data.data.payment_url
+      const paymentUrl = data.data?.payment_url
+      if (paymentUrl) {
+        console.log('✅ Payment URL received, redirecting to:', paymentUrl)
+        window.location.href = paymentUrl
       } else {
-        throw new Error('Payment URL not received')
+        console.error('❌ Payment URL missing from response:', data)
+        throw new Error('Payment URL not received from server')
       }
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment initiation failed')
+      console.error('❌ Payment error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Payment initiation failed'
+      setError(errorMessage)
       toast({
         title: 'Payment Error',
-        description: err instanceof Error ? err.message : 'Payment initiation failed',
+        description: errorMessage,
         variant: 'destructive'
       })
       setProcessing(false)
-      setShowConfirmDialog(false)
+      // Keep dialog open so user can retry
+      // setShowConfirmDialog(false)
     }
   }
 
