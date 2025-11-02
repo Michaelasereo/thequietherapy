@@ -403,12 +403,6 @@ export default function TherapistVideoCallPage() {
               </Link>
             </Button>
             
-            <Button variant="outline" asChild className="h-20 flex-col">
-              <Link href="/test-video-complete-flow">
-                <Video className="h-6 w-6 mb-2" />
-                <span>Test Video System</span>
-              </Link>
-            </Button>
           </div>
         </CardContent>
       </Card>

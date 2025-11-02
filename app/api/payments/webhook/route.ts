@@ -81,8 +81,10 @@ export async function POST(request: NextRequest) {
       console.log('⚠️ Could not store webhook event (development mode):', fallbackError)
     }
 
-    // Invalidate donation stats cache when payment is successful
+    // Process payment based on event type
     if (event.event === 'charge.success') {
+      await handleSuccessfulPayment(event.data)
+      
       try {
         // Clear cache by making a request to the stats API with cache-busting
         const statsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/donations/stats`, {
@@ -92,6 +94,8 @@ export async function POST(request: NextRequest) {
       } catch (cacheError) {
         console.warn('⚠️ Failed to invalidate donation stats cache:', cacheError)
       }
+    } else if (event.event === 'charge.failed') {
+      await handleFailedPayment(event.data)
     }
 
     return NextResponse.json({ received: true, event_id: event.id })
@@ -157,7 +161,9 @@ async function handleSuccessfulPayment(paymentData: any) {
       .from('user_credits')
       .insert({
         user_id: pendingPayment.user_id,
+        user_type: 'user',
         package_type: pendingPayment.package_type,
+        credits_balance: packageDef.sessions_included,
         credits_purchased: packageDef.sessions_included,
         amount_paid_kobo: pendingPayment.amount_kobo,
         payment_reference: reference,

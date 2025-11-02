@@ -64,9 +64,21 @@ export default function CreditPurchaseFlow({ userId, onPurchaseComplete }: Credi
     setShowConfirmDialog(true)
   }
 
-  const handlePurchase = async () => {
-    if (!selectedPackage) return
+  const handlePurchase = async (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
+    
+    if (!selectedPackage) {
+      console.error('❌ No package selected')
+      toast({
+        title: 'Error',
+        description: 'Please select a package first',
+        variant: 'destructive'
+      })
+      return
+    }
 
+    console.log('🚀 handlePurchase called for package:', selectedPackage.package_type)
     setProcessing(true)
     setError(null)
 
@@ -83,11 +95,17 @@ export default function CreditPurchaseFlow({ userId, onPurchaseComplete }: Credi
         })
       })
 
+      console.log('📡 Fetch response received:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      })
+
       const data = await response.json()
-      console.log('📦 Payment API response:', { status: response.status, ok: response.ok, data })
+      console.log('📦 Payment API response data:', data)
 
       if (!response.ok) {
-        const errorMsg = data.error || data.message || 'Payment initiation failed'
+        const errorMsg = data.error || data.message || `Payment initiation failed (${response.status})`
         console.error('❌ Payment initiation failed:', errorMsg, data)
         throw new Error(errorMsg)
       }
@@ -99,13 +117,16 @@ export default function CreditPurchaseFlow({ userId, onPurchaseComplete }: Credi
       }
 
       // Redirect to Paystack payment page
-      const paymentUrl = data.data?.payment_url
+      const paymentUrl = data.data?.payment_url || data.data?.authorization_url || data.payment_url
       if (paymentUrl) {
         console.log('✅ Payment URL received, redirecting to:', paymentUrl)
-        window.location.href = paymentUrl
+        // Small delay to ensure state updates
+        setTimeout(() => {
+          window.location.href = paymentUrl
+        }, 100)
       } else {
         console.error('❌ Payment URL missing from response:', data)
-        throw new Error('Payment URL not received from server')
+        throw new Error('Payment URL not received from server. Please try again.')
       }
 
     } catch (err) {
@@ -119,7 +140,6 @@ export default function CreditPurchaseFlow({ userId, onPurchaseComplete }: Credi
       })
       setProcessing(false)
       // Keep dialog open so user can retry
-      // setShowConfirmDialog(false)
     }
   }
 
@@ -321,8 +341,14 @@ export default function CreditPurchaseFlow({ userId, onPurchaseComplete }: Credi
                 </Button>
                 <Button
                   className="flex-1"
-                  onClick={handlePurchase}
-                  disabled={processing}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log('🔘 Proceed to Payment button clicked')
+                    handlePurchase(e)
+                  }}
+                  disabled={processing || !selectedPackage}
+                  type="button"
                 >
                   {processing ? (
                     <>

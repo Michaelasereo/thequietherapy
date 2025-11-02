@@ -40,6 +40,12 @@ export async function GET(request: NextRequest) {
       enrollmentMap.set(enrollment.email, enrollment)
     })
 
+    // Create a map of therapist users by email
+    const userMap = new Map()
+    therapistUsers?.forEach(user => {
+      userMap.set(user.email, user)
+    })
+
     // Transform the data to match the expected interface
     const transformedTherapists = (therapistUsers || []).map(user => {
       const enrollment = enrollmentMap.get(user.email)
@@ -61,9 +67,34 @@ export async function GET(request: NextRequest) {
       }
     }) || []
 
-    console.log(`✅ Fetched ${transformedTherapists.length} therapists`)
+    // Add pending enrollments that don't have a user account yet
+    const pendingEnrollmentsWithoutUsers = therapistEnrollments?.filter(enrollment => {
+      return enrollment.status === 'pending' && !userMap.has(enrollment.email)
+    }) || []
 
-    return NextResponse.json(transformedTherapists, {
+    const pendingTherapists = pendingEnrollmentsWithoutUsers.map(enrollment => ({
+      id: enrollment.id, // Use enrollment ID for pending therapists
+      full_name: enrollment.full_name || 'Unknown Therapist',
+      email: enrollment.email,
+      phone: enrollment.phone || null,
+      mdcn_code: enrollment.mdcn_code || 'N/A',
+      specialization: Array.isArray(enrollment.specialization) ? enrollment.specialization : [],
+      languages: Array.isArray(enrollment.languages) ? enrollment.languages : [],
+      is_verified: false,
+      is_active: false,
+      status: enrollment.status || 'pending',
+      rating: 0,
+      totalSessions: 0,
+      created_at: enrollment.created_at,
+      lastActivity: enrollment.created_at
+    }))
+
+    // Combine regular therapists with pending ones
+    const allTherapists = [...transformedTherapists, ...pendingTherapists]
+
+    console.log(`✅ Fetched ${allTherapists.length} therapists (${transformedTherapists.length} approved, ${pendingTherapists.length} pending)`)
+
+    return NextResponse.json(allTherapists, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',

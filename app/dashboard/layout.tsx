@@ -22,20 +22,65 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Redirect if not authenticated (only on client after mount)
+  // Add extra delay for magic link redirects to allow cookie to be processed
   useEffect(() => {
     if (mounted && !loading && !isAuthenticated) {
-      console.log('🔍 DashboardLayout: No session found, redirecting to login')
-      router.push('/login')
+      // Check if we just came from a magic link redirect
+      const urlParams = new URLSearchParams(window.location.search)
+      const mightBeMagicLinkRedirect = urlParams.has('token') || urlParams.has('auth_type')
+      
+      if (mightBeMagicLinkRedirect) {
+        // Wait a bit longer before redirecting - cookie might still be processing
+        console.log('🔍 DashboardLayout: Magic link redirect detected, waiting for session...')
+        const timeoutId = setTimeout(() => {
+          if (!isAuthenticated) {
+            console.log('🔍 DashboardLayout: No session found after magic link, redirecting to login')
+            router.push('/login')
+          }
+        }, 2000) // Give 2 seconds for cookie to be available
+        
+        return () => clearTimeout(timeoutId)
+      } else {
+        console.log('🔍 DashboardLayout: No session found, redirecting to login')
+        router.push('/login')
+      }
     }
   }, [mounted, loading, isAuthenticated, router])
 
   // Show loading state while checking authentication
+  // Add timeout to prevent infinite loading
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ DashboardLayout: Loading timeout (8s), showing error state')
+        setLoadingTimeout(true)
+      }, 8000)
+      
+      return () => clearTimeout(timeout)
+    } else {
+      setLoadingTimeout(false)
+    }
+  }, [loading])
+
   if (!mounted || loading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
+          {loadingTimeout && (
+            <div className="mt-4">
+              <p className="text-sm text-red-600 mb-2">Loading is taking longer than expected</p>
+              <button
+                onClick={() => window.location.href = '/login'}
+                className="text-sm text-blue-600 hover:underline"
+              >
+                Go to Login
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )

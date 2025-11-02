@@ -35,10 +35,38 @@ export function UserCreditsDisplay({ className = "", showPurchaseButton = true }
   const { toast } = useToast()
 
   useEffect(() => {
-    if (!credits) {
+    fetchUserCredits() // Always fetch on mount
+    
+    // Listen for payment completion events
+    const handlePaymentCompleted = () => {
+      console.log('🔄 UserCreditsDisplay: Payment completed, refreshing credits...')
       fetchUserCredits()
     }
-  }, [credits]) // Only fetch if we don't have credits yet
+    
+    // Listen for page visibility changes (user returns from payment)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('🔄 UserCreditsDisplay: Page visible, refreshing credits...')
+        fetchUserCredits()
+      }
+    }
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('paymentCompleted', handlePaymentCompleted)
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      
+      // Periodic refresh (every 30 seconds) to prevent stale data
+      const interval = setInterval(() => {
+        fetchUserCredits()
+      }, 30000)
+      
+      return () => {
+        window.removeEventListener('paymentCompleted', handlePaymentCompleted)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        clearInterval(interval)
+      }
+    }
+  }, []) // Only run on mount
 
   const fetchUserCredits = async () => {
     try {

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyMagicLinkForAuthType } from '@/lib/auth'
-import { cookies } from 'next/headers'
+import { ServerSessionManager } from '@/lib/server-session-manager'
+import { authConfig } from '@/lib/auth-config'
 
 export async function GET(request: NextRequest) {
+  // Get base URL from config
+  const baseUrl = authConfig.appUrl
+  
   try {
     const { searchParams } = new URL(request.url)
     const token = searchParams.get('token')
@@ -21,23 +25,6 @@ export async function GET(request: NextRequest) {
     const result = await verifyMagicLinkForAuthType(token, authType as any)
 
     if (result.success && result.user) {
-      // Set appropriate cookie based on auth type
-      const cookieStore = await cookies()
-      const cookieName = `trpi_${authType}_user`
-      
-      cookieStore.set(cookieName, JSON.stringify({
-        id: result.user.id,
-        email: result.user.email,
-        full_name: result.user.full_name,
-        auth_type: authType,
-        session_token: result.user.session_token
-      }), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-        path: '/',
-      })
-
       // Redirect to appropriate dashboard based on auth type
       let redirectUrl: string
       switch (authType) {
@@ -57,9 +44,26 @@ export async function GET(request: NextRequest) {
           redirectUrl = '/dashboard'
       }
 
-      console.log('✅ Magic link verified successfully, redirecting to:', redirectUrl)
+      // Use absolute URL with baseUrl to ensure correct redirect
+      const redirectAbsoluteUrl = new URL(redirectUrl, baseUrl).toString()
+      const response = NextResponse.redirect(redirectAbsoluteUrl)
+
+      // Create unified session using ServerSessionManager
+      const sessionData = {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.full_name || result.user.email.split('@')[0],
+        user_type: result.user.user_type || authType,
+        is_verified: result.user.is_verified ?? true,
+        is_active: result.user.is_active ?? true,
+      }
+
+      // Create JWT session token using SessionManager and pass response object
+      await ServerSessionManager.createSession(sessionData, response)
+
+      console.log('✅ Magic link verified successfully, redirecting to:', redirectAbsoluteUrl)
       
-      return NextResponse.redirect(new URL(redirectUrl, request.url))
+      return response
     } else {
       console.log('❌ Magic link verification failed:', result.error)
       
@@ -82,12 +86,12 @@ export async function GET(request: NextRequest) {
           loginUrl = '/login?error=invalid_link'
       }
       
-      return NextResponse.redirect(new URL(loginUrl, request.url))
+      return NextResponse.redirect(new URL(loginUrl, baseUrl))
     }
   } catch (error) {
     console.error('❌ Verify API error:', error)
     
     // Redirect to login with error
-    return NextResponse.redirect(new URL('/login?error=server_error', request.url))
+    return NextResponse.redirect(new URL('/login?error=server_error', baseUrl))
   }
 }

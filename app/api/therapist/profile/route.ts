@@ -30,7 +30,43 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Get therapist profile data from the correct table
+    // ✅ ALWAYS fetch from therapist_enrollments first (source of truth for profile_image_url)
+    let enrollmentData = null
+    console.log('🔍 Fetching enrollment data from therapist_enrollments...')
+    
+    // First try to find by user_id
+    let { data: enrollment, error: enrollmentError } = await supabase
+      .from('therapist_enrollments')
+      .select('*')
+      .eq('user_id', therapistUserId)
+      .single()
+    
+    console.log('🔍 Enrollment data by user_id:', enrollment)
+    console.log('🔍 Enrollment error by user_id:', enrollmentError)
+    
+    // If user_id lookup fails, try by email
+    if (enrollmentError || !enrollment) {
+      console.log('🔍 user_id lookup failed, trying email lookup...')
+      const { data: enrollmentByEmail, error: enrollmentByEmailError } = await supabase
+        .from('therapist_enrollments')
+        .select('*')
+        .eq('email', email)
+        .single()
+      
+      console.log('🔍 Enrollment data by email:', enrollmentByEmail)
+      console.log('🔍 Enrollment error by email:', enrollmentByEmailError)
+      
+      if (enrollmentByEmail && !enrollmentByEmailError) {
+        enrollment = enrollmentByEmail
+        enrollmentError = enrollmentByEmailError
+      }
+    }
+    
+    if (enrollment && !enrollmentError) {
+      enrollmentData = enrollment
+    }
+
+    // Get therapist profile data from therapist_profiles table (for additional fields)
     const { data: profile, error: profileError } = await supabase
       .from('therapist_profiles')
       .select('*')
@@ -39,44 +75,6 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Profile data:', profile)
     console.log('🔍 Profile error:', profileError)
-
-    // If no profile found, try to get data from therapist_enrollments table
-    let enrollmentData = null
-    if (profileError || !profile) {
-      console.log('🔍 No profile found, checking therapist_enrollments table...')
-      
-      // First try to find by user_id
-      let { data: enrollment, error: enrollmentError } = await supabase
-        .from('therapist_enrollments')
-        .select('*')
-        .eq('user_id', therapistUserId)
-        .single()
-      
-      console.log('🔍 Enrollment data by user_id:', enrollment)
-      console.log('🔍 Enrollment error by user_id:', enrollmentError)
-      
-      // If user_id lookup fails, try by email
-      if (enrollmentError || !enrollment) {
-        console.log('🔍 user_id lookup failed, trying email lookup...')
-        const { data: enrollmentByEmail, error: enrollmentByEmailError } = await supabase
-          .from('therapist_enrollments')
-          .select('*')
-          .eq('email', email)
-          .single()
-        
-        console.log('🔍 Enrollment data by email:', enrollmentByEmail)
-        console.log('🔍 Enrollment error by email:', enrollmentByEmailError)
-        
-        if (enrollmentByEmail && !enrollmentByEmailError) {
-          enrollment = enrollmentByEmail
-          enrollmentError = enrollmentByEmailError
-        }
-      }
-      
-      if (enrollment && !enrollmentError) {
-        enrollmentData = enrollment
-      }
-    }
 
     // Get user account data
     let { data: user, error: userError } = await supabase
@@ -193,31 +191,59 @@ export async function GET(request: NextRequest) {
                  user?.avatar_url === profile?.profile_image_url
     })
     console.log('🔍 API: Enrollment data for approval status:', enrollmentData)
-    console.log('🔍 API: Specialization raw data:', dataSource?.specialization)
-    console.log('🔍 API: Languages raw data:', dataSource?.languages)
+    console.log('🔍 API: Specialization raw data:', enrollmentData?.specializations || enrollmentData?.specialization || dataSource?.specializations || dataSource?.specialization)
+    console.log('🔍 API: Languages raw data:', enrollmentData?.languages_array || enrollmentData?.languages || dataSource?.languages_array || dataSource?.languages)
     
-    // Parse specialization data
+    // Parse specialization data - check enrollmentData first, then dataSource
+    // Check both specializations (array) and specialization (legacy)
     let parsedSpecialization = []
-    if (dataSource?.specialization) {
-      if (typeof dataSource.specialization === 'string') {
-        parsedSpecialization = dataSource.specialization.split(', ').filter(Boolean)
-      } else if (Array.isArray(dataSource.specialization)) {
-        parsedSpecialization = dataSource.specialization
+    const specSource = enrollmentData || dataSource
+    if (specSource?.specializations) {
+      // Check specializations array first (preferred)
+      if (Array.isArray(specSource.specializations)) {
+        parsedSpecialization = specSource.specializations.filter(Boolean)
+      }
+    } else if (specSource?.specialization) {
+      // Fall back to specialization field (legacy)
+      if (typeof specSource.specialization === 'string') {
+        // Try to parse as JSON first
+        try {
+          parsedSpecialization = JSON.parse(specSource.specialization)
+        } catch {
+          // If not JSON, split by comma
+          parsedSpecialization = specSource.specialization.split(',').map((s: string) => s.trim()).filter(Boolean)
+        }
+      } else if (Array.isArray(specSource.specialization)) {
+        parsedSpecialization = specSource.specialization.filter(Boolean)
       }
     }
     console.log('🔍 Parsed specialization:', parsedSpecialization)
     
-    // Parse languages data
+    // Parse languages data - check enrollmentData first, then dataSource
+    // Check both languages_array (array) and languages (legacy)
     let parsedLanguages = ["English"] // Default fallback
-    if (dataSource?.languages) {
+    const langSource = enrollmentData || dataSource
+    if (langSource?.languages_array) {
+      // Check languages_array first (preferred)
+      if (Array.isArray(langSource.languages_array)) {
+        parsedLanguages = langSource.languages_array.filter(Boolean)
+      }
+    } else if (langSource?.languages) {
+      // Fall back to languages field (legacy)
       try {
-        if (typeof dataSource.languages === 'string') {
-          parsedLanguages = JSON.parse(dataSource.languages)
-        } else if (Array.isArray(dataSource.languages)) {
-          parsedLanguages = dataSource.languages
+        if (typeof langSource.languages === 'string') {
+          // Try to parse as JSON first
+          try {
+            parsedLanguages = JSON.parse(langSource.languages)
+          } catch {
+            // If not JSON, split by comma
+            parsedLanguages = langSource.languages.split(',').map((l: string) => l.trim()).filter(Boolean)
+          }
+        } else if (Array.isArray(langSource.languages)) {
+          parsedLanguages = langSource.languages.filter(Boolean)
         }
       } catch (error) {
-        console.error('🔍 Error parsing languages JSON:', error)
+        console.error('🔍 Error parsing languages:', error)
         parsedLanguages = ["English"]
       }
     }
@@ -273,9 +299,9 @@ export async function GET(request: NextRequest) {
       status: dataSource?.status || dataSource?.verification_status || 'pending',
       experience_years: dataSource?.experience_years || 0,
       profile_image_url: profileImageUrl, // ✅ SINGLE STANDARDIZED FIELD
-      gender: dataSource?.gender || '',
-      maritalStatus: dataSource?.marital_status || '',
-      age: dataSource?.age || '',
+      gender: enrollmentData?.gender || dataSource?.gender || '',
+      maritalStatus: enrollmentData?.marital_status || dataSource?.marital_status || '',
+      age: enrollmentData?.age?.toString() || dataSource?.age?.toString() || '',
       created_at: dataSource?.created_at || new Date().toISOString(),
       updated_at: dataSource?.updated_at || new Date().toISOString(),
       // Edit tracking metadata

@@ -20,6 +20,8 @@ export class ClientSessionManager {
    */
   static async getSession(): Promise<SessionData | null> {
     try {
+      console.log('🔍 ClientSessionManager: Fetching session from /api/auth/me...')
+      
       const response = await fetch('/api/auth/me', {
         method: 'GET',
         credentials: 'include',
@@ -28,14 +30,25 @@ export class ClientSessionManager {
         },
       })
 
+      console.log('🔍 ClientSessionManager: Response status:', response.status)
+      console.log('🔍 ClientSessionManager: Response ok:', response.ok)
+
       if (!response.ok) {
+        console.log('⚠️ ClientSessionManager: Response not OK, returning null')
         return null
       }
 
       const data = await response.json()
+      console.log('✅ ClientSessionManager: Session data received:', {
+        hasUser: !!data.user,
+        userId: data.user?.id,
+        email: data.user?.email
+      })
+      
       return data.user || null
     } catch (error) {
       // Session check failed - expected if no session exists
+      console.error('❌ ClientSessionManager: Error fetching session:', error)
       return null
     }
   }

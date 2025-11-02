@@ -175,10 +175,22 @@ export async function createMagicLinkForAuthType(
     console.log('📧 Sending magic link email...')
     const emailResult = await sendMagicLinkEmail(email, verificationUrl, type, { ...metadata, auth_type: authType })
     
+    const isDevelopment = process.env.NODE_ENV !== 'production'
+    
     if (!emailResult.success) {
       console.error('❌ Failed to send magic link email:', emailResult.error)
       // Don't fail the entire request if email fails, just log it
       console.log('⚠️ Magic link created but email failed to send. Token:', token.substring(0, 8) + '...')
+      
+      // In development, return the magic link so frontend can display it
+      if (isDevelopment && emailResult.magicLink) {
+        return { 
+          success: true, 
+          token,
+          magicLink: emailResult.magicLink,
+          message: 'Magic link created! Check the console or use the link below (email failed to send in development).'
+        }
+      }
     } else {
       console.log('✅ Magic link email sent successfully')
       
@@ -194,7 +206,12 @@ export async function createMagicLinkForAuthType(
       })
     }
 
-    return { success: true, token }
+    return { 
+      success: true, 
+      token,
+      // Include magic link in development even if email succeeded (for convenience)
+      ...(isDevelopment && { magicLink: verificationUrl })
+    }
   } catch (error) {
     console.error('❌ createMagicLinkForAuthType error:', error)
     return { success: false, error: 'Failed to create magic link' }

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Pencil, Save, X, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { usePatientData } from "@/hooks/usePatientData"
-import { PatientSocialHistory } from "@/lib/patient-data"
+import { PatientSocialHistory } from "@/lib/client-data"
 import { toast } from "sonner"
 import { useAuth } from "@/context/auth-context"
 

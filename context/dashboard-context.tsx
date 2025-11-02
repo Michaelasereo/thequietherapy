@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react'
 
 // Types for dashboard state
 interface UserData {
@@ -404,6 +404,12 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 // Provider component
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(dashboardReducer, initialState)
+  
+  // Use ref to access latest state without causing re-renders
+  const stateRef = useRef(state)
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
 
   // Fetch user data from the session API
   const fetchUserData = async () => {
@@ -479,19 +485,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   // Fetch sessions with proper error handling and data validation
   const fetchSessions = useCallback(async () => {
     try {
-      if (!state.user?.id) {
+      const currentState = stateRef.current
+      if (!currentState.user?.id) {
         console.log('🔍 DashboardContext: No user ID, skipping session fetch')
         return
       }
       
-      console.log('🔍 DashboardContext: Fetching sessions for user:', state.user.id)
+      console.log('🔍 DashboardContext: Fetching sessions for user:', currentState.user.id)
       
       // Add timeout to prevent hanging
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
       
       try {
-        const response = await fetch(`/api/sessions?user_id=${state.user.id}&order=scheduled_date.desc`, {
+        const response = await fetch(`/api/sessions?user_id=${currentState.user.id}&order=scheduled_date.desc`, {
           signal: controller.signal,
           credentials: 'include',
           headers: {
@@ -620,12 +627,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         payload: { upcoming: [], past: [] } 
       })
     }
-  }, [state.user?.id])
+  }, [])
 
   // Fetch dashboard stats with real data calculation
   const fetchStats = useCallback(async () => {
     try {
-      if (!state.user?.id) {
+      const currentState = stateRef.current
+      if (!currentState.user?.id) {
         console.log('🔍 DashboardContext: No user ID, setting zero stats')
         // If no user, use zero stats - NOT mock data
         const zeroStats: DashboardStats = {
@@ -665,7 +673,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: 'UPDATE_STATS', payload: realStats })
           
           // Also fetch sessions if we haven't loaded them yet
-          if (state.upcomingSessions.length === 0 && state.pastSessions.length === 0 && apiStats.totalSessions > 0) {
+          if (currentState.upcomingSessions.length === 0 && currentState.pastSessions.length === 0 && apiStats.totalSessions > 0) {
             console.log('🔍 DashboardContext: Stats show sessions exist, fetching session details...')
             fetchSessions()
           }
@@ -675,9 +683,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       
       // If API fails, fallback to calculating from local state
       console.warn('🔍 DashboardContext: API failed, calculating from local state as fallback')
-      const totalSessions = state.upcomingSessions.length + state.pastSessions.length
-      const upcomingSessions = state.upcomingSessions.length
-      const completedSessions = state.pastSessions.filter(s => s.status === 'completed').length
+      const totalSessions = currentState.upcomingSessions.length + currentState.pastSessions.length
+      const upcomingSessions = currentState.upcomingSessions.length
+      const completedSessions = currentState.pastSessions.filter(s => s.status === 'completed').length
       const progressScore = Math.min(100, Math.max(0, completedSessions * 10))
       
       // Get fresh credits from API - use same endpoint as header
@@ -722,7 +730,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       }
       dispatch({ type: 'UPDATE_STATS', payload: errorStats })
     }
-  }, [state.user?.id])
+  }, [fetchSessions])
 
   // Refresh credits from API
   const refreshCredits = useCallback(async () => {
@@ -736,12 +744,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       
       if (creditsResponse.ok) {
         const creditsData = await creditsResponse.json()
-        if (creditsData.success && creditsData.credits && state.user) {
+        if (creditsData.success && creditsData.credits && stateRef.current.user) {
           const freshCredits = creditsData.credits.balance || 1
           console.log('🔍 Credits refreshed:', freshCredits)
           
           // Update user credits in state
-          const updatedUser = { ...state.user, credits: freshCredits }
+          const updatedUser = { ...stateRef.current.user, credits: freshCredits }
           dispatch({ type: 'SET_USER', payload: updatedUser })
           
           // Update stats as well
@@ -751,7 +759,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Failed to refresh credits:', error)
     }
-  }, [state.user])
+  }, [])
 
   // Refresh stats from API
   const refreshStats = useCallback(async () => {
@@ -847,11 +855,45 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       fetchSessions()
     }
 
+    const handlePaymentCompleted = () => {
+      console.log('🔄 DashboardContext: Payment completed, refreshing credits...')
+      refreshCredits()
+      refreshStats()
+    }
+
     if (typeof window !== 'undefined') {
       window.addEventListener('bookingCompleted', handleBookingCompleted)
-      return () => window.removeEventListener('bookingCompleted', handleBookingCompleted)
+      window.addEventListener('paymentCompleted', handlePaymentCompleted)
+      
+      // Also refresh credits when page becomes visible (user returns from payment)
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          console.log('🔄 DashboardContext: Page visible, refreshing credits...')
+          refreshCredits()
+        }
+      }
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      
+      return () => {
+        window.removeEventListener('bookingCompleted', handleBookingCompleted)
+        window.removeEventListener('paymentCompleted', handlePaymentCompleted)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+      }
     }
-  }, [fetchSessions])
+  }, [fetchSessions, refreshCredits, refreshStats])
+  
+  // Periodic refresh to prevent stale credits (every 30 seconds)
+  useEffect(() => {
+    if (!state.user?.id) return
+    
+    const interval = setInterval(() => {
+      console.log('🔄 DashboardContext: Periodic credits refresh...')
+      refreshCredits()
+    }, 30000) // Refresh every 30 seconds
+    
+    return () => clearInterval(interval)
+  }, [state.user?.id, refreshCredits])
 
   const value: DashboardContextType = {
     state,

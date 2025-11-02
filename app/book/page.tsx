@@ -22,6 +22,8 @@ interface PatientBiodata {
   gender: "Male" | "Female" | "Non-binary" | "Prefer not to say"
   maritalStatus: "Single" | "Married" | "Divorced" | "Widowed" | "Other"
   therapistPreference?: string
+  therapistGenderPreference?: string
+  therapistSpecializationPreference?: string
 }
 
 interface TimeSlot {
@@ -46,6 +48,8 @@ export default function BookingPage() {
     gender: "Male",
     maritalStatus: "Single",
     therapistPreference: "",
+    therapistGenderPreference: "",
+    therapistSpecializationPreference: ""
   })
   const [selectedTherapistId, setSelectedTherapistId] = useState<string>("")
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
@@ -61,7 +65,9 @@ export default function BookingPage() {
       age: data.age || "",
       gender: data.gender || "Male",
       maritalStatus: data.maritalStatus || "Single",
-      therapistPreference: data.therapistSpecializationPreference || ""
+      therapistPreference: data.therapistSpecializationPreference || "",
+      therapistGenderPreference: data.therapistGenderPreference || "",
+      therapistSpecializationPreference: data.therapistSpecializationPreference || ""
     }
     setPatientData(patientBiodata)
     setCurrentStep(2)
@@ -132,6 +138,8 @@ export default function BookingPage() {
             onNext={handleStep2Complete}
             onBack={() => setCurrentStep(1)}
             initialSelectedTherapistId={selectedTherapistId}
+            preferredGender={patientData.therapistGenderPreference}
+            preferredSpecialization={patientData.therapistSpecializationPreference}
           />
         )
       case 3:

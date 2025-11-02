@@ -43,12 +43,20 @@ export default function TherapistEarningsPage() {
 
   // Use data from the API (same structure as dashboard)
   const earningsThisMonth = dashboardData?.therapist?.earningsThisMonth || 0
+  const totalEarnings = dashboardData?.therapist?.totalEarnings || 0
   const completedSessions = dashboardData?.therapist?.completedSessions || 0
-  const totalEarnings = completedSessions * 5000 // ₦5,000 per session
+  const completedSessionsThisMonth = dashboardData?.therapist?.completedSessionsThisMonth || 0
   
-  // Get completed sessions for transactions
+  // Get completed sessions for transactions - sort by date (most recent first)
   const sessions = dashboardData?.sessions || []
-  const completedSessionsList = sessions.filter((s: any) => s.status === 'completed')
+  const completedSessionsList = sessions
+    .filter((s: any) => s.status === 'completed')
+    .sort((a: any, b: any) => {
+      const dateA = new Date(a.start_time || a.created_at)
+      const dateB = new Date(b.start_time || b.created_at)
+      return dateB.getTime() - dateA.getTime()
+    })
+    .slice(0, 20) // Limit to 20 most recent transactions
 
   return (
     <div className="space-y-6">
@@ -61,7 +69,7 @@ export default function TherapistEarningsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">₦{earningsThisMonth.toLocaleString()}</div>
-            <p className="text-muted-foreground">Based on completed sessions this month.</p>
+            <p className="text-muted-foreground">From {completedSessionsThisMonth} completed session{completedSessionsThisMonth !== 1 ? 's' : ''} this month.</p>
           </CardContent>
         </Card>
 
@@ -71,7 +79,7 @@ export default function TherapistEarningsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">₦{totalEarnings.toLocaleString()}</div>
-            <p className="text-muted-foreground">All time earnings from completed sessions.</p>
+            <p className="text-muted-foreground">All time earnings from {completedSessions} completed session{completedSessions !== 1 ? 's' : ''}.</p>
           </CardContent>
         </Card>
 
@@ -104,13 +112,17 @@ export default function TherapistEarningsPage() {
                 {completedSessionsList.map((session: any) => (
                   <TableRow key={session.id}>
                     <TableCell>
-                      {new Date(session.start_time || `${session.scheduled_date}T${session.scheduled_time}`).toLocaleDateString()}
+                      {new Date(session.start_time || session.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
                     </TableCell>
                     <TableCell>
                       Session with {session.users?.full_name || 'Unknown Client'}
                     </TableCell>
-                    <TableCell className="text-right text-green-600">
-                      +₦5,000
+                    <TableCell className="text-right text-green-600 font-medium">
+                      +₦{(session.amount_earned || 5000).toLocaleString()}
                     </TableCell>
                   </TableRow>
                 ))}

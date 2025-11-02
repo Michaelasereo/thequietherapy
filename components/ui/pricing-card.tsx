@@ -43,12 +43,21 @@ export function PricingCard({
 
   const pricePerSession = Math.round(price / sessions)
 
-  const handlePurchase = async () => {
-    if (!onPurchase || isProcessing) return
+  const handlePurchase = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     
+    if (!onPurchase || isProcessing || loading) {
+      console.log('⚠️ Purchase handler blocked:', { hasHandler: !!onPurchase, isProcessing, loading })
+      return
+    }
+    
+    console.log('🔘 PricingCard: Purchase button clicked for package:', packageType)
     setIsProcessing(true)
     try {
       await onPurchase(packageType)
+    } catch (error) {
+      console.error('❌ PricingCard: Purchase error:', error)
     } finally {
       setIsProcessing(false)
     }
@@ -126,10 +135,16 @@ export function PricingCard({
         </div>
 
         <Button 
-          onClick={handlePurchase}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            console.log('🔘 PricingCard: Button clicked')
+            handlePurchase(e)
+          }}
           disabled={isProcessing || loading}
           className={`w-full ${recommended ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
           size="lg"
+          type="button"
         >
           {getButtonText()}
         </Button>

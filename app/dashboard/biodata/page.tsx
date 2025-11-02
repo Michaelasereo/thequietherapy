@@ -6,10 +6,23 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Pencil, Save, X, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { usePatientData } from "@/hooks/usePatientData"
-import { PatientBiodata } from "@/lib/patient-data"
+import { PatientBiodata } from "@/lib/client-data"
+
+// Therapy specializations for preferences
+const therapySpecializations = [
+  "Anxiety & Stress Management",
+  "Depression & Mood Disorders",
+  "Relationship & Family Therapy",
+  "Trauma & PTSD",
+  "Addiction & Recovery",
+  "Cognitive Behavioral Therapy (CBT)",
+  "Grief Counseling",
+  "Adolescent Therapy"
+] as const
 
 // Countries list
 const countries = [
@@ -214,7 +227,7 @@ export default function PatientBiodataPage() {
   const [formData, setFormData] = useState<Partial<PatientBiodata>>({})
   const [therapyFormData, setTherapyFormData] = useState({
     complaints: '',
-    therapist_preference: '',
+    therapist_preference: [] as string[],
   })
 
   // Load data on mount
@@ -229,9 +242,24 @@ export default function PatientBiodataPage() {
     if (biodata) {
       console.log('✅ Setting form data with biodata:', biodata)
       setFormData(biodata)
+      
+      // Parse therapist_preference if it's a string
+      let preferences: string[] = []
+      if (biodata.therapist_preference) {
+        if (typeof biodata.therapist_preference === 'string') {
+          try {
+            preferences = JSON.parse(biodata.therapist_preference)
+          } catch {
+            preferences = biodata.therapist_preference.split(',').map(p => p.trim()).filter(p => p)
+          }
+        } else if (Array.isArray(biodata.therapist_preference)) {
+          preferences = biodata.therapist_preference
+        }
+      }
+      
       setTherapyFormData({
         complaints: biodata.complaints || '',
-        therapist_preference: biodata.therapist_preference || '',
+        therapist_preference: preferences,
       })
     }
   }, [biodata])
@@ -242,6 +270,16 @@ export default function PatientBiodataPage() {
 
   const handleTherapyInputChange = (field: string, value: string) => {
     setTherapyFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleTherapyPreferenceToggle = (preference: string) => {
+    setTherapyFormData(prev => {
+      const currentPrefs = prev.therapist_preference || []
+      const newPrefs = currentPrefs.includes(preference)
+        ? currentPrefs.filter(p => p !== preference)
+        : [...currentPrefs, preference]
+      return { ...prev, therapist_preference: newPrefs }
+    })
   }
 
   const handleSave = async () => {
@@ -263,9 +301,14 @@ export default function PatientBiodataPage() {
   const handleTherapySave = async () => {
     console.log('Saving therapy data:', therapyFormData)
     try {
+      // Convert array to JSON string for storage
+      const preferenceValue = Array.isArray(therapyFormData.therapist_preference) 
+        ? JSON.stringify(therapyFormData.therapist_preference)
+        : therapyFormData.therapist_preference
+      
       const success = await updateBiodata({
         complaints: therapyFormData.complaints,
-        therapist_preference: therapyFormData.therapist_preference,
+        therapist_preference: preferenceValue,
       })
       console.log('Therapy save result:', success)
       if (success) {
@@ -288,9 +331,23 @@ export default function PatientBiodataPage() {
 
   const handleTherapyCancel = () => {
     if (biodata) {
+      // Parse therapist_preference for cancellation
+      let preferences: string[] = []
+      if (biodata.therapist_preference) {
+        if (typeof biodata.therapist_preference === 'string') {
+          try {
+            preferences = JSON.parse(biodata.therapist_preference)
+          } catch {
+            preferences = biodata.therapist_preference.split(',').map(p => p.trim()).filter(p => p)
+          }
+        } else if (Array.isArray(biodata.therapist_preference)) {
+          preferences = biodata.therapist_preference
+        }
+      }
+      
       setTherapyFormData({
         complaints: biodata.complaints || '',
-        therapist_preference: biodata.therapist_preference || '',
+        therapist_preference: preferences,
       })
     }
     setIsEditingTherapy(false)
@@ -643,14 +700,24 @@ export default function PatientBiodataPage() {
                 />
               </div>
               <div className="flex flex-col space-y-2">
-                <Label htmlFor="therapistPreference">Therapist Preference</Label>
-                <Textarea
-                  id="therapistPreference"
-                  value={therapyFormData.therapist_preference}
-                  onChange={(e) => handleTherapyInputChange('therapist_preference', e.target.value)}
-                  placeholder="Any preferences for therapist gender, age, specialization, etc..."
-                  rows={3}
-                />
+                <Label>Therapist Specialization Preferences (Optional)</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                  {therapySpecializations.map((specialization) => (
+                    <div key={specialization} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={specialization}
+                        checked={therapyFormData.therapist_preference?.includes(specialization)}
+                        onCheckedChange={() => handleTherapyPreferenceToggle(specialization)}
+                      />
+                      <Label
+                        htmlFor={specialization}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {specialization}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           ) : (
@@ -660,8 +727,34 @@ export default function PatientBiodataPage() {
                 <p className="text-base font-semibold">{biodata?.complaints || "Not provided"}</p>
               </div>
               <div className="flex flex-col">
-                <p className="font-medium text-sm text-muted-foreground">Therapist Preference</p>
-                <p className="text-base font-semibold">{biodata?.therapist_preference || "Not provided"}</p>
+                <p className="font-medium text-sm text-muted-foreground mb-2">Therapist Specialization Preferences</p>
+                {(() => {
+                  // Parse therapist_preference for display
+                  let preferences: string[] = []
+                  if (biodata?.therapist_preference) {
+                    if (typeof biodata.therapist_preference === 'string') {
+                      try {
+                        preferences = JSON.parse(biodata.therapist_preference)
+                      } catch {
+                        preferences = biodata.therapist_preference.split(',').map(p => p.trim()).filter(p => p)
+                      }
+                    } else if (Array.isArray(biodata.therapist_preference)) {
+                      preferences = biodata.therapist_preference
+                    }
+                  }
+                  
+                  return preferences.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {preferences.map((pref) => (
+                        <span key={pref} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {pref}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-base font-semibold">No preferences selected</p>
+                  )
+                })()}
               </div>
             </>
           )}

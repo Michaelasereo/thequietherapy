@@ -20,9 +20,11 @@ import {
   getPatientDrugHistory,
   addPatientMedicalHistory,
   addPatientDrugHistory,
+  updatePatientMedicalHistory,
+  updatePatientDrugHistory,
   getCurrentUserId,
   getPatientBiodataById
-} from "@/lib/patient-data"
+} from "@/lib/client-data"
 import { checkTherapistClientAccess } from "@/lib/therapist-data"
 import { toast } from "@/components/ui/use-toast"
 
@@ -40,6 +42,8 @@ export default function PatientMedicalHistoryPage() {
   // Form states
   const [isAddingMedical, setIsAddingMedical] = useState(false)
   const [isAddingDrug, setIsAddingDrug] = useState(false)
+  const [editingMedicalId, setEditingMedicalId] = useState<string | null>(null)
+  const [editingDrugId, setEditingDrugId] = useState<string | null>(null)
   const [medicalForm, setMedicalForm] = useState({
     condition: '',
     diagnosis_date: '',
@@ -199,6 +203,113 @@ export default function PatientMedicalHistoryPage() {
     }
   }
 
+  const handleEditMedicalHistory = (item: PatientMedicalHistory) => {
+    setEditingMedicalId(item.id!)
+    setMedicalForm({
+      condition: item.condition,
+      diagnosis_date: item.diagnosis_date,
+      notes: item.notes || ''
+    })
+  }
+
+  const handleUpdateMedicalHistory = async () => {
+    if (!editingMedicalId || !medicalForm.condition || !medicalForm.diagnosis_date) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const updated = await updatePatientMedicalHistory(editingMedicalId, {
+        condition: medicalForm.condition,
+        diagnosis_date: medicalForm.diagnosis_date,
+        notes: medicalForm.notes
+      })
+
+      if (updated) {
+        setMedicalHistory(prev => prev.map(item => 
+          item.id === editingMedicalId ? updated : item
+        ))
+        setEditingMedicalId(null)
+        setMedicalForm({ condition: '', diagnosis_date: '', notes: '' })
+        toast({
+          title: "Success",
+          description: "Medical history updated successfully.",
+        })
+      }
+    } catch (error) {
+      console.error('Error updating medical history:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update medical history.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEditDrugHistory = (item: PatientDrugHistory) => {
+    setEditingDrugId(item.id!)
+    setDrugForm({
+      medication_name: item.medication_name,
+      dosage: item.dosage,
+      start_date: item.start_date,
+      prescribing_doctor: item.prescribing_doctor || '',
+      notes: item.notes || '',
+      duration_of_usage: item.duration_of_usage || ''
+    })
+  }
+
+  const handleUpdateDrugHistory = async () => {
+    if (!editingDrugId || !drugForm.medication_name || !drugForm.dosage || !drugForm.start_date) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const updated = await updatePatientDrugHistory(editingDrugId, {
+        medication_name: drugForm.medication_name,
+        dosage: drugForm.dosage,
+        start_date: drugForm.start_date,
+        prescribing_doctor: drugForm.prescribing_doctor,
+        notes: drugForm.notes,
+        duration_of_usage: drugForm.duration_of_usage
+      })
+
+      if (updated) {
+        setDrugHistory(prev => prev.map(item => 
+          item.id === editingDrugId ? updated : item
+        ))
+        setEditingDrugId(null)
+        setDrugForm({
+          medication_name: '',
+          dosage: '',
+          start_date: '',
+          prescribing_doctor: '',
+          notes: '',
+          duration_of_usage: ''
+        })
+        toast({
+          title: "Success",
+          description: "Drug history updated successfully.",
+        })
+      }
+    } catch (error) {
+      console.error('Error updating drug history:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update drug history.",
+        variant: "destructive",
+      })
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -320,7 +431,11 @@ export default function PatientMedicalHistoryPage() {
                     <TableCell>{formatDate(item.diagnosis_date)}</TableCell>
                     <TableCell className="text-muted-foreground">{item.notes || "No notes"}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditMedicalHistory(item)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -337,6 +452,61 @@ export default function PatientMedicalHistoryPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Medical History Dialog */}
+      <Dialog open={editingMedicalId !== null} onOpenChange={(open) => {
+        if (!open) {
+          setEditingMedicalId(null)
+          setMedicalForm({ condition: '', diagnosis_date: '', notes: '' })
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Medical Diagnosis</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit_condition">Condition *</Label>
+              <Input
+                id="edit_condition"
+                value={medicalForm.condition}
+                onChange={(e) => setMedicalForm(prev => ({ ...prev, condition: e.target.value }))}
+                placeholder="e.g., Generalized Anxiety Disorder"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit_diagnosis_date">Diagnosis Date *</Label>
+              <Input
+                id="edit_diagnosis_date"
+                type="date"
+                value={medicalForm.diagnosis_date}
+                onChange={(e) => setMedicalForm(prev => ({ ...prev, diagnosis_date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit_medical_notes">Notes</Label>
+              <Textarea
+                id="edit_medical_notes"
+                value={medicalForm.notes}
+                onChange={(e) => setMedicalForm(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Additional notes about the diagnosis..."
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleUpdateMedicalHistory} className="flex-1">
+                Update Diagnosis
+              </Button>
+              <Button variant="outline" onClick={() => {
+                setEditingMedicalId(null)
+                setMedicalForm({ condition: '', diagnosis_date: '', notes: '' })
+              }}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Drug History Section */}
       <Card className="shadow-sm">
@@ -452,7 +622,11 @@ export default function PatientMedicalHistoryPage() {
                     <TableCell>{item.prescribing_doctor || "Not specified"}</TableCell>
                     <TableCell className="text-muted-foreground">{item.notes || "No notes"}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditDrugHistory(item)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -469,6 +643,106 @@ export default function PatientMedicalHistoryPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Drug History Dialog */}
+      <Dialog open={editingDrugId !== null} onOpenChange={(open) => {
+        if (!open) {
+          setEditingDrugId(null)
+          setDrugForm({
+            medication_name: '',
+            dosage: '',
+            start_date: '',
+            prescribing_doctor: '',
+            notes: '',
+            duration_of_usage: ''
+          })
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Medication</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit_medication_name">Medication Name *</Label>
+                <Input
+                  id="edit_medication_name"
+                  value={drugForm.medication_name}
+                  onChange={(e) => setDrugForm(prev => ({ ...prev, medication_name: e.target.value }))}
+                  placeholder="e.g., Sertraline (Zoloft)"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_dosage">Dosage *</Label>
+                <Input
+                  id="edit_dosage"
+                  value={drugForm.dosage}
+                  onChange={(e) => setDrugForm(prev => ({ ...prev, dosage: e.target.value }))}
+                  placeholder="e.g., 50mg daily"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit_start_date">Start Date *</Label>
+                <Input
+                  id="edit_start_date"
+                  type="date"
+                  value={drugForm.start_date}
+                  onChange={(e) => setDrugForm(prev => ({ ...prev, start_date: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_prescribing_doctor">Prescribing Doctor</Label>
+                <Input
+                  id="edit_prescribing_doctor"
+                  value={drugForm.prescribing_doctor}
+                  onChange={(e) => setDrugForm(prev => ({ ...prev, prescribing_doctor: e.target.value }))}
+                  placeholder="e.g., Dr. Smith (PCP)"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="edit_duration_of_usage">Duration of Usage</Label>
+              <Input
+                id="edit_duration_of_usage"
+                value={drugForm.duration_of_usage}
+                onChange={(e) => setDrugForm(prev => ({ ...prev, duration_of_usage: e.target.value }))}
+                placeholder="e.g., 2 years, Ongoing"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit_drug_notes">Notes</Label>
+              <Textarea
+                id="edit_drug_notes"
+                value={drugForm.notes}
+                onChange={(e) => setDrugForm(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Additional notes about the medication..."
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleUpdateDrugHistory} className="flex-1">
+                Update Medication
+              </Button>
+              <Button variant="outline" onClick={() => {
+                setEditingDrugId(null)
+                setDrugForm({
+                  medication_name: '',
+                  dosage: '',
+                  start_date: '',
+                  prescribing_doctor: '',
+                  notes: '',
+                  duration_of_usage: ''
+                })
+              }}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -248,14 +248,29 @@ function DashboardContent() {
   // Check for payment status in URL params
   useEffect(() => {
     const paymentStatus = searchParams.get('payment')
+    const paymentType = searchParams.get('type')
     
     if (paymentStatus === 'success') {
       toast({
         title: "Payment Successful! 🎉",
-        description: "Your payment has been processed successfully. Your session has been booked!",
+        description: paymentType === 'credits' 
+          ? "Your payment has been processed successfully. Your credits have been added!"
+          : "Your payment has been processed successfully. Your session has been booked!",
       })
+      
+      // Refresh credits when payment succeeds (for credit purchases)
+      if (paymentType === 'credits' || !paymentType) {
+        console.log('🔄 Dashboard: Payment successful for credits, refreshing...')
+        refreshCredits()
+        // Dispatch event for other components
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('paymentCompleted'))
+        }
+      }
+      
       // Refresh sessions to show the new booking
       fetchSessions()
+      refreshStats() // Refresh stats to update credits count
     } else if (paymentStatus === 'failed') {
       toast({
         title: "Payment Failed",
@@ -269,7 +284,7 @@ function DashboardContent() {
         variant: "destructive",
       })
     }
-  }, [searchParams, toast])
+  }, [searchParams, toast, refreshCredits, refreshStats, fetchSessions])
 
   // Load biodata and check if user needs to complete profile
   useEffect(() => {
@@ -599,44 +614,6 @@ function DashboardContent() {
         </CardContent>
       </Card>
 
-      {/* Notifications / Important Updates section */}
-      <Card className="shadow-sm bg-amber-50 border-amber-200">
-        <CardHeader>
-          <CardTitle className="text-slate-800 flex items-center">
-            <div className="w-5 h-5 rounded-full bg-slate-800 text-amber-50 flex items-center justify-center text-xs font-bold mr-3">i</div>
-            Notifications & Important Updates
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-slate-700">
-            {state.upcomingSessions.length > 0 ? (
-              <p className="flex items-start">
-                <span className="text-amber-600 mr-2">•</span>
-                <span>Reminder: Your next session is scheduled for {format(new Date(state.upcomingSessions[0].date), "PPP")}.</span>
-              </p>
-            ) : (
-              <p className="flex items-start">
-                <span className="text-amber-600 mr-2">•</span>
-                <span>No upcoming sessions scheduled. Book your first session to get started!</span>
-              </p>
-            )}
-            <p className="flex items-start">
-              <span className="text-amber-600 mr-2">•</span>
-              <span>New feature: Enhanced session notes are now available.</span>
-            </p>
-            <p className="flex items-start">
-              <span className="text-amber-600 mr-2">•</span>
-              <span>Platform update: Scheduled maintenance on October 5th, 2 AM - 4 AM UTC.</span>
-            </p>
-            {state.stats.totalCredits < 2 && (
-              <p className="flex items-start">
-                <span className="text-amber-600 mr-2">•</span>
-                <span>Low credits alert: You have {state.stats.totalCredits} credits remaining. Consider purchasing more credits.</span>
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
         </>
       ) : (
         // Booking View

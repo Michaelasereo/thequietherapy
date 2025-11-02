@@ -52,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isValidatingRef = useRef(false)
   const lastValidationRef = useRef<number>(0)
   const failedValidationCountRef = useRef<number>(0)
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Validate session using SessionManager
   const validateSession = async (retryCount = 0, forceRefresh = false): Promise<boolean> => {
@@ -208,15 +209,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initAuth = async () => {
       setLoading(true)
       
+      // Set a timeout to prevent infinite loading (10 seconds max)
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.warn('⚠️ AuthContext: Loading timeout reached (10s), forcing loading to false')
+        setLoading(false)
+      }, 10000)
+      
       try {
-        await validateSession()
+        console.log('🔍 AuthContext: Initializing authentication...')
+        
+        // Check if this is a magic link redirect by looking at URL params or localStorage
+        const urlParams = new URLSearchParams(window.location.search)
+        const isMagicLinkRedirect = urlParams.has('token') || 
+                                   urlParams.has('auth_type') ||
+                                   localStorage.getItem('magic_link_redirect') === 'true'
+        
+        if (isMagicLinkRedirect) {
+          console.log('🔗 Magic link redirect detected - waiting for cookie to be set')
+          localStorage.removeItem('magic_link_redirect')
+          // Wait longer after magic link redirect to ensure cookie is available
+          await new Promise(resolve => setTimeout(resolve, 1500))
+        } else {
+          // Normal page load - shorter delay
+          await new Promise(resolve => setTimeout(resolve, 300))
+        }
+        
+        // Try to validate session with retries (in case cookie wasn't immediately available)
+        let isValid = false
+        let attempts = 0
+        const maxAttempts = isMagicLinkRedirect ? 5 : 3 // More retries for magic link redirects
+        
+        while (!isValid && attempts < maxAttempts) {
+          attempts++
+          console.log(`🔍 AuthContext: Attempt ${attempts}/${maxAttempts} to validate session`)
+          
+          isValid = await validateSession()
+          
+          if (!isValid && attempts < maxAttempts) {
+            // Wait progressively longer before retrying
+            const waitTime = isMagicLinkRedirect ? 800 * attempts : 500 * attempts
+            console.log(`   Waiting ${waitTime}ms before retry...`)
+            await new Promise(resolve => setTimeout(resolve, waitTime))
+          }
+        }
+        
+        console.log('🔍 AuthContext: Validation result:', isValid, `(after ${attempts} attempts)`)
+        
+        if (!isValid) {
+          console.log('⚠️ AuthContext: No valid session found after all attempts')
+          console.log('   This might be due to:')
+          console.log('   - Cookie not set properly during redirect')
+          console.log('   - Cookie not readable due to domain/path mismatch')
+          console.log('   - Session expired or invalid')
+          console.log('   - Browser blocking third-party cookies')
+          
+          // Check if cookie exists at all
+          if (typeof document !== 'undefined') {
+            const hasCookie = document.cookie.includes('quiet_session')
+            console.log(`   Cookie present in document.cookie: ${hasCookie}`)
+          }
+        }
       } catch (error) {
-        console.error('Auth initialization error:', error)
+        console.error('❌ AuthContext: Initialization error:', error)
         setUser(null)
         setUserType(null)
+      } finally {
+        console.log('✅ AuthContext: Initialization complete')
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current)
+          loadingTimeoutRef.current = null
+        }
+        setLoading(false)
       }
-      
-      setLoading(false)
     }
 
     initAuth()
@@ -231,6 +295,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 30 * 60 * 1000) // 30 minutes
     
     return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
       clearInterval(refreshInterval)
     }
   }, [])

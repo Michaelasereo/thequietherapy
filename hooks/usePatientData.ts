@@ -16,7 +16,7 @@ import {
   getPatientDrugHistory,
   getCompletePatientProfile,
   getCurrentUserId
-} from '@/lib/patient-data'
+} from '@/lib/client-data'
 import { toast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase'
 

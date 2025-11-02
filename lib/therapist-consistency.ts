@@ -74,6 +74,18 @@ export class TherapistConsistencyManager {
     try {
       console.log(`🔄 TherapistConsistencyManager: Approving ${email}`)
 
+      // Get enrollment data first to get therapist details
+      const { data: enrollmentData } = await supabase
+        .from('therapist_enrollments')
+        .select('*')
+        .eq('email', email)
+        .single()
+
+      if (!enrollmentData) {
+        console.error('❌ Enrollment not found for:', email)
+        return { success: false, error: 'Therapist enrollment not found' }
+      }
+
       // Get user_id first for therapist_profiles update
       const { data: userData } = await supabase
         .from('users')
@@ -82,20 +94,50 @@ export class TherapistConsistencyManager {
         .eq('user_type', 'therapist')
         .single()
 
-      // Update users table
-      const { error: userError } = await supabase
-        .from('users')
-        .update({ 
-          is_verified: true,
-          is_active: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('email', email)
-        .eq('user_type', 'therapist')
+      let userId = userData?.id
 
-      if (userError) {
-        console.error('❌ Failed to update users table:', userError)
-        return { success: false, error: `Users table update failed: ${userError.message}` }
+      // If user doesn't exist, create one
+      if (!userId) {
+        console.log('🔄 User not found, creating new user account...')
+        const { data: newUser, error: createUserError } = await supabase
+          .from('users')
+          .insert({
+            email: enrollmentData.email,
+            full_name: enrollmentData.full_name,
+            user_type: 'therapist',
+            is_verified: true,
+            is_active: true,
+            credits: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select('id')
+          .single()
+
+        if (createUserError) {
+          console.error('❌ Failed to create user account:', createUserError)
+          return { success: false, error: `Failed to create user account: ${createUserError.message}` }
+        }
+
+        userId = newUser.id
+        console.log('✅ Created new user account with ID:', userId)
+      } else {
+        // Update existing user
+        const { error: userError } = await supabase
+          .from('users')
+          .update({ 
+            is_verified: true,
+            is_active: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', email)
+          .eq('user_type', 'therapist')
+
+        if (userError) {
+          console.error('❌ Failed to update users table:', userError)
+          return { success: false, error: `Users table update failed: ${userError.message}` }
+        }
+        console.log('✅ Updated existing user account')
       }
 
       // Update therapist_enrollments table
@@ -112,20 +154,28 @@ export class TherapistConsistencyManager {
       if (enrollmentError) {
         console.error('❌ Failed to update enrollments table:', enrollmentError)
         // Rollback users table update
-        await supabase
-          .from('users')
-          .update({ 
-            is_verified: false,
-            is_active: false,
-            updated_at: new Date().toISOString()
-          })
-          .eq('email', email)
+        if (userId && !userData?.id) {
+          // Only delete if we created the user
+          await supabase
+            .from('users')
+            .delete()
+            .eq('id', userId)
+        } else {
+          await supabase
+            .from('users')
+            .update({ 
+              is_verified: false,
+              is_active: false,
+              updated_at: new Date().toISOString()
+            })
+            .eq('email', email)
+        }
         
         return { success: false, error: `Enrollments table update failed: ${enrollmentError.message}` }
       }
 
       // Update therapist_profiles table (CRITICAL for booking API)
-      if (userData?.id) {
+      if (userId) {
         const { error: profileError } = await supabase
           .from('therapist_profiles')
           .update({ 
@@ -133,7 +183,7 @@ export class TherapistConsistencyManager {
             is_verified: true,
             updated_at: new Date().toISOString()
           })
-          .eq('user_id', userData.id)
+          .eq('user_id', userId)
 
         if (profileError) {
           console.error('❌ Failed to update therapist_profiles table:', profileError)
@@ -142,7 +192,7 @@ export class TherapistConsistencyManager {
           const { error: createError } = await supabase
             .from('therapist_profiles')
             .insert({
-              user_id: userData.id,
+              user_id: userId,
               verification_status: 'approved',
               is_verified: true,
               created_at: new Date().toISOString(),

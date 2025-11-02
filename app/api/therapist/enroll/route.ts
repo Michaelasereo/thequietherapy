@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create enrollment record with ALL fields
+    // Use both specialization (for compatibility) and specializations (preferred)
     const { error: enrollmentError } = await supabase
       .from('therapist_enrollments')
       .insert({
@@ -63,8 +64,10 @@ export async function POST(request: NextRequest) {
         email: email.toLowerCase(),
         phone,
         licensed_qualification: licensedQualification,
-        specialization: specialization || [],
-        languages: languages || [],
+        specialization: Array.isArray(specialization) ? specialization.join(', ') : specialization || null, // Legacy TEXT column
+        specializations: Array.isArray(specialization) ? specialization : (specialization ? [specialization] : []), // Preferred TEXT[] column
+        languages: Array.isArray(languages) ? languages.join(', ') : languages || null, // Legacy TEXT column
+        languages_array: Array.isArray(languages) ? languages : (languages ? [languages] : []), // Preferred TEXT[] column
         gender,
         age: parseInt(age),
         marital_status: maritalStatus,

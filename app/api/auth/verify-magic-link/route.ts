@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyMagicLinkForAuthType } from '@/lib/auth'
 import { ServerSessionManager } from '@/lib/server-session-manager'
+import { authConfig } from '@/lib/auth-config'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -10,9 +11,18 @@ export async function GET(request: NextRequest) {
   try {
     console.log(`🔐 Verifying magic link for auth type: ${authType}`)
     
+    // Get base URL - use request origin in development, config in production
+    const requestUrl = new URL(request.url)
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? authConfig.appUrl 
+      : `${requestUrl.protocol}//${requestUrl.host}`
+    
+    console.log(`📍 Using base URL: ${baseUrl}`)
+    console.log(`📍 Request URL: ${request.url}`)
+    
     if (!token || !authType) {
       return NextResponse.redirect(
-        new URL('/auth/error?error=' + encodeURIComponent('Invalid verification link'), request.url)
+        new URL('/auth/error?error=' + encodeURIComponent('Invalid verification link'), baseUrl)
       )
     }
 
@@ -20,7 +30,7 @@ export async function GET(request: NextRequest) {
     const validAuthTypes = ['individual', 'therapist', 'partner', 'admin'] as const
     if (!validAuthTypes.includes(authType as any)) {
       return NextResponse.redirect(
-        new URL('/auth/error?error=' + encodeURIComponent('Invalid authentication type'), request.url)
+        new URL('/auth/error?error=' + encodeURIComponent('Invalid authentication type'), baseUrl)
       )
     }
 
@@ -32,32 +42,24 @@ export async function GET(request: NextRequest) {
       
       // If there's a redirect URL in the result, use it
       if (result.redirectTo) {
-        return NextResponse.redirect(new URL(result.redirectTo, request.url))
+        return NextResponse.redirect(new URL(result.redirectTo, baseUrl))
       }
       
       // Otherwise, show error page
       const errorMessage = encodeURIComponent(result.error || 'Verification failed')
       return NextResponse.redirect(
-        new URL(`/auth/error?error=${errorMessage}`, request.url)
+        new URL(`/auth/error?error=${errorMessage}`, baseUrl)
       )
     }
     
     if (!result.user) {
       console.error('❌ No user returned from magic link verification')
       return NextResponse.redirect(
-        new URL('/auth/error?error=' + encodeURIComponent('No user data returned'), request.url)
+        new URL('/auth/error?error=' + encodeURIComponent('No user data returned'), baseUrl)
       )
     }
 
     console.log('✅ Magic link verified successfully for user:', result.user.email)
-
-    // Create the redirect response FIRST
-    let redirectUrl = '/dashboard'
-    if (authType === 'therapist') redirectUrl = '/therapist/dashboard'
-    if (authType === 'partner') redirectUrl = '/partner/dashboard'
-    if (authType === 'admin') redirectUrl = '/admin/dashboard'
-
-    const response = NextResponse.redirect(new URL(redirectUrl, request.url))
 
     // Create session data with proper typing
     const sessionData = {
@@ -69,19 +71,49 @@ export async function GET(request: NextRequest) {
       is_active: result.user.is_active ?? true,
     }
 
+    // Create the redirect URL
+    let redirectUrl = '/dashboard'
+    if (authType === 'therapist') redirectUrl = '/therapist/dashboard'
+    if (authType === 'partner') redirectUrl = '/partner/dashboard'
+    if (authType === 'admin') redirectUrl = '/admin/dashboard'
+
+    // Use absolute URL with baseUrl to ensure correct redirect
+    const redirectAbsoluteUrl = new URL(redirectUrl, baseUrl).toString()
+    console.log('🔗 Redirect URL:', redirectAbsoluteUrl)
+    
+    // Create redirect response
+    const response = NextResponse.redirect(redirectAbsoluteUrl)
+
     // Create JWT session token using SessionManager and pass response object
+    // IMPORTANT: Set cookie BEFORE redirect to ensure it's included in response
     const sessionToken = await ServerSessionManager.createSession(sessionData, response)
 
     console.log('🍪 Session created and cookie set for:', result.user.email)
     console.log('🔑 Auth type:', authType)
-    console.log('📍 Redirecting to:', redirectUrl)
+    console.log('📍 Redirecting to:', redirectAbsoluteUrl)
+    console.log('🍪 Cookie name: quiet_session')
+    console.log('🍪 Cookie value length:', sessionToken.length)
+    
+    // Verify cookie was set in response
+    const cookieValue = response.cookies.get('quiet_session')
+    if (cookieValue) {
+      console.log('✅ Cookie confirmed in response headers')
+      console.log('   Cookie will be sent with redirect response')
+    } else {
+      console.error('❌ WARNING: Cookie not found in response headers!')
+      // This shouldn't happen, but if it does, log it for debugging
+    }
+
+    // Add a special header to indicate this is a magic link redirect
+    // This helps the client-side know to wait a bit for the cookie
+    response.headers.set('X-Magic-Link-Redirect', 'true')
 
     return response
 
   } catch (error) {
     console.error('❌ Magic link verification error:', error)
     return NextResponse.redirect(
-      new URL('/auth/error?error=' + encodeURIComponent('Internal server error'), request.url)
+      new URL('/auth/error?error=' + encodeURIComponent('Internal server error'), authConfig.appUrl)
     )
   }
 }

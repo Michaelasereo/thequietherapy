@@ -2,13 +2,24 @@ import nodemailer from 'nodemailer';
 
 // Create Brevo SMTP transporter
 export function createTransporter() {
-  if (!process.env.BREVO_SMTP_USER || !process.env.BREVO_SMTP_PASS) {
-    console.warn('Brevo SMTP credentials not configured - email sending will be disabled');
+  const hasUser = !!process.env.BREVO_SMTP_USER
+  const hasPass = !!process.env.BREVO_SMTP_PASS
+  
+  if (!hasUser || !hasPass) {
+    console.warn('⚠️ Brevo SMTP credentials not configured - email sending will be disabled');
+    console.warn(`   BREVO_SMTP_USER: ${hasUser ? '✅ Set' : '❌ Missing'}`);
+    console.warn(`   BREVO_SMTP_PASS: ${hasPass ? '✅ Set' : '❌ Missing'}`);
     return null;
   }
   
   // Use a proper sender email address
   const senderEmail = process.env.SENDER_EMAIL || 'noreply@thequietherapy.live';
+  
+  console.log('📧 Creating SMTP transporter with Brevo...');
+  console.log(`   Host: smtp-relay.brevo.com`);
+  console.log(`   Port: 587`);
+  console.log(`   User: ${process.env.BREVO_SMTP_USER?.substring(0, 10)}...`);
+  console.log(`   Sender: ${senderEmail}`);
   
   return nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
@@ -201,24 +212,75 @@ export async function sendMagicLinkEmail(email: string, verificationUrl: string,
   };
 
   try {
-    // Add timeout to prevent hanging
+    // Add timeout to prevent hanging - shorter in development
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const timeoutDuration = isDevelopment ? 5000 : 15000; // 5 seconds in dev, 15 in prod
+    
+    console.log('📤 Attempting to send email...');
+    console.log(`   To: ${email}`);
+    console.log(`   Subject: ${subject}`);
+    console.log(`   Timeout: ${timeoutDuration}ms`);
+    
     const sendPromise = transporter.sendMail(mailOptions);
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Email send timeout')), 15000) // 15 second timeout
+      setTimeout(() => reject(new Error('Email send timeout')), timeoutDuration)
     );
     
     const info = await Promise.race([sendPromise, timeoutPromise]) as any;
-    console.log('Magic link email sent successfully:', info.messageId);
+    console.log('✅ Magic link email sent successfully!');
+    console.log(`   Message ID: ${info.messageId}`);
+    console.log(`   Response: ${info.response || 'N/A'}`);
     return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error('Failed to send magic link email:', error);
-    // Always log the magic link when email fails so users can still access it
-    console.log('🔗 MAGIC LINK (Email failed - use this link directly):');
-    console.log('Email:', email);
-    console.log('URL:', verificationUrl);
-    console.log('Type:', type);
-    console.log('Metadata:', metadata);
-    console.log('🔗 END MAGIC LINK');
-    return { success: false, error: 'Failed to send email' };
+  } catch (error: any) {
+    console.error('❌ Failed to send magic link email');
+    
+    // Log detailed error information
+    if (error.code) {
+      console.error(`   Error Code: ${error.code}`);
+    }
+    if (error.command) {
+      console.error(`   Command: ${error.command}`);
+    }
+    if (error.response) {
+      console.error(`   SMTP Response: ${error.response}`);
+    }
+    if (error.responseCode) {
+      console.error(`   Response Code: ${error.responseCode}`);
+    }
+    if (error.message) {
+      console.error(`   Error Message: ${error.message}`);
+    }
+    if (error.stack) {
+      console.error(`   Stack: ${error.stack}`);
+    }
+    
+    // In development, always log the magic link prominently
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    if (isDevelopment) {
+      console.log('\n');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('🔗 MAGIC LINK FOR DEVELOPMENT (Click to access):');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('Email:', email);
+      console.log('Link:', verificationUrl);
+      console.log('Type:', type);
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('\n');
+    } else {
+      // Always log the magic link when email fails so users can still access it
+      console.log('🔗 MAGIC LINK (Email failed - use this link directly):');
+      console.log('Email:', email);
+      console.log('URL:', verificationUrl);
+      console.log('Type:', type);
+      console.log('Metadata:', metadata);
+      console.log('🔗 END MAGIC LINK');
+    }
+    
+    // Return the magic link in development mode so frontend can display it
+    return { 
+      success: isDevelopment, // In dev, treat as success if we logged the link
+      error: isDevelopment ? `Email timeout/error: ${error.message || 'Connection failed'}` : 'Failed to send email',
+      magicLink: isDevelopment ? verificationUrl : undefined
+    };
   }
 }

@@ -191,8 +191,24 @@ export async function GET(request: NextRequest) {
     const upcomingSessions = sessions.filter(s => s.status === 'scheduled').length
     const uniqueClients = new Set(sessions.map(s => s.user_id)).size
 
-    // Calculate earnings (₦5,000 per session)
-    const earningsThisMonth = completedSessions * 5000
+    // Calculate earnings properly - filter by current month and use actual session dates
+    const now = new Date()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
+    
+    const completedSessionsThisMonth = sessions.filter(s => {
+      if (s.status !== 'completed') return false
+      const sessionDate = new Date(s.start_time || s.created_at)
+      return sessionDate.getMonth() === currentMonth && sessionDate.getFullYear() === currentYear
+    })
+    
+    // Calculate earnings: use actual session rate if available, otherwise default to ₦5,000
+    const sessionRate = 5000 // Default rate, could be fetched from therapist profile
+    const earningsThisMonth = completedSessionsThisMonth.length * sessionRate
+    
+    // Get all completed sessions for total earnings calculation
+    const allCompletedSessions = sessions.filter(s => s.status === 'completed')
+    const totalEarnings = allCompletedSessions.length * sessionRate
 
     const response = successResponse({
       therapist: {
@@ -208,7 +224,9 @@ export async function GET(request: NextRequest) {
         totalSessions,
         completedSessions,
         upcomingSessions,
-        earningsThisMonth
+        earningsThisMonth,
+        totalEarnings,
+        completedSessionsThisMonth: completedSessionsThisMonth.length
       },
       sessions: sessions,
       clients: uniqueClients

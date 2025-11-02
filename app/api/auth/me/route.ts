@@ -9,8 +9,16 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   try {
+    // Log incoming request for debugging
+    const cookieHeader = request.cookies.get('quiet_session')
+    console.log('🔍 /api/auth/me called')
+    console.log('   Cookie present:', !!cookieHeader)
+    console.log('   Cookie value length:', cookieHeader?.value?.length || 0)
+    
     // Try unified session first
     const unifiedSession = await ServerSessionManager.getSession()
+    
+    console.log('   Session found:', !!unifiedSession)
     
     if (unifiedSession) {
       

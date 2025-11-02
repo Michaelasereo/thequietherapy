@@ -90,12 +90,27 @@ export default function ContinueJourneyPage() {
       })
 
       const data = await response.json()
+      console.log('📦 Payment API response:', { status: response.status, ok: response.ok, data })
 
-      if (response.ok && data.payment_url) {
-        // Redirect to Paystack
-        window.location.href = data.payment_url
-      } else {
+      if (!response.ok) {
+        const errorMsg = data.error || data.message || 'Payment initiation failed'
+        console.error('❌ Payment initiation failed:', errorMsg, data)
+        throw new Error(errorMsg)
+      }
+
+      if (!data.success) {
+        console.error('❌ API returned success: false', data)
         throw new Error(data.error || 'Payment initiation failed')
+      }
+
+      // Redirect to Paystack - check multiple possible locations for payment URL
+      const paymentUrl = data.data?.payment_url || data.data?.authorization_url || data.payment_url
+      if (paymentUrl) {
+        console.log('✅ Payment URL received, redirecting to:', paymentUrl)
+        window.location.href = paymentUrl
+      } else {
+        console.error('❌ Payment URL missing from response:', data)
+        throw new Error('Payment URL not received from server. Please try again.')
       }
 
     } catch (error) {

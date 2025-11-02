@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { useAuth } from './auth-context'
 import { therapistEvents, THERAPIST_EVENTS, AvatarUpdatedData, ProfileUpdatedData } from '@/lib/events'
 
@@ -49,6 +49,12 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
   const { user, loading: authLoading, logout: authLogout, refreshUser } = useAuth()
   const [therapist, setTherapist] = useState<TherapistProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const userRef = useRef(user)
+  
+  // Keep ref in sync
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
 
   // Direct update method - updates local state and emits event
   const updateTherapist = useCallback((updates: Partial<TherapistProfile>) => {
@@ -89,14 +95,15 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
     }
   }, [])
 
-  // Refresh therapist data
+  // Refresh therapist data - memoized with user ID only to prevent infinite loops
   const refreshTherapist = useCallback(async () => {
-    console.log('🔍 TherapistContext: refreshTherapist called with user:', user);
-    console.log('🔍 TherapistContext: user object:', JSON.stringify(user, null, 2));
-    console.log('🔍 TherapistContext: user.user_type:', user?.user_type);
+    const currentUser = userRef.current
+    console.log('🔍 TherapistContext: refreshTherapist called with user:', currentUser);
+    console.log('🔍 TherapistContext: user object:', JSON.stringify(currentUser, null, 2));
+    console.log('🔍 TherapistContext: user.user_type:', currentUser?.user_type);
     
-    if (!user || user.user_type !== 'therapist') {
-      console.log('❌ TherapistContext: Not a therapist user, skipping fetch. User type is:', user?.user_type);
+    if (!currentUser || currentUser.user_type !== 'therapist') {
+      console.log('❌ TherapistContext: Not a therapist user, skipping fetch. User type is:', currentUser?.user_type);
       setTherapist(null)
       setLoading(false)
       return
@@ -134,53 +141,54 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
           // Fallback to basic user data
           console.warn('⚠️ TherapistContext: Using fallback data (API response not successful)')
           setTherapist({
-            id: user.id,
-            email: user.email,
-            full_name: user.full_name,
+            id: currentUser.id,
+            email: currentUser.email,
+            full_name: currentUser.full_name,
             user_type: 'therapist',
-            is_verified: user.is_verified,
-            is_active: user.is_active,
-            created_at: user.created_at,
-            updated_at: user.updated_at,
-            profile_image_url: user.avatar_url, // Map from old user field if exists
-            session_token: user.session_token
+            is_verified: currentUser.is_verified,
+            is_active: currentUser.is_active,
+            created_at: currentUser.created_at,
+            updated_at: currentUser.updated_at,
+            profile_image_url: currentUser.avatar_url, // Map from old user field if exists
+            session_token: currentUser.session_token
           })
         }
       } else {
         // Fallback to basic user data
         console.warn('⚠️ TherapistContext: Using fallback data (API response not OK, status:', response.status, ')')
         setTherapist({
-          id: user.id,
-          email: user.email,
-          full_name: user.full_name,
+          id: currentUser.id,
+          email: currentUser.email,
+          full_name: currentUser.full_name,
           user_type: 'therapist',
-          is_verified: user.is_verified,
-          is_active: user.is_active,
-          created_at: user.created_at,
-          updated_at: user.updated_at,
-          profile_image_url: user.avatar_url, // Map from old user field if exists
-          session_token: user.session_token
+          is_verified: currentUser.is_verified,
+          is_active: currentUser.is_active,
+          created_at: currentUser.created_at,
+          updated_at: currentUser.updated_at,
+          profile_image_url: currentUser.avatar_url, // Map from old user field if exists
+          session_token: currentUser.session_token
         })
       }
     } catch (error) {
       console.error('Error fetching therapist data:', error)
       // Fallback to basic user data
       setTherapist({
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
+        id: currentUser.id,
+        email: currentUser.email,
+        full_name: currentUser.full_name,
         user_type: 'therapist',
-        is_verified: user.is_verified,
-        is_active: user.is_active,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-        profile_image_url: user.avatar_url, // Map from old user field if exists
-        session_token: user.session_token
+        is_verified: currentUser.is_verified,
+        is_active: currentUser.is_active,
+        created_at: currentUser.created_at,
+        updated_at: currentUser.updated_at,
+        profile_image_url: currentUser.avatar_url, // Map from old user field if exists
+        session_token: currentUser.session_token
       })
     } finally {
       setLoading(false)
     }
-  }, [user])
+  // ✅ Stable dependency to prevent infinite refresh loops  
+  }, [])
 
   // Logout function
   const logout = useCallback(async () => {
@@ -207,13 +215,15 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
     return !!(therapist && therapist.original_enrollment_data)
   }, [therapist])
 
-  // Initial load and user changes
+  // Initial load and user changes - only trigger on mount or user ID change
+  const hasFetchedRef = useRef(false)
   useEffect(() => {
     console.log('🔍 TherapistContext: useEffect triggered', { 
       authLoading, 
       hasUser: !!user, 
       userType: user?.user_type,
-      userId: user?.id 
+      userId: user?.id,
+      hasFetched: hasFetchedRef.current
     });
     
     if (authLoading) {
@@ -226,31 +236,37 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
       console.log('🔍 TherapistContext: No user, clearing therapist state')
       setTherapist(null)
       setLoading(false)
+      hasFetchedRef.current = false
       return
     }
 
     console.log('🔍 TherapistContext: Checking user type:', user.user_type, '=== "therapist"?', user.user_type === 'therapist')
     
     if (user.user_type === 'therapist') {
-      console.log('✅ TherapistContext: User is therapist, calling refreshTherapist()')
-      refreshTherapist()
+      // Only fetch if we haven't fetched for this user yet
+      if (!hasFetchedRef.current) {
+        console.log('✅ TherapistContext: User is therapist, calling refreshTherapist()')
+        refreshTherapist()
+        hasFetchedRef.current = true
+      }
     } else {
       console.log('❌ TherapistContext: User is NOT therapist (type:', user.user_type, '), clearing state')
       setTherapist(null)
       setLoading(false)
+      hasFetchedRef.current = false
     }
-  }, [user, authLoading, refreshTherapist])
+  }, [user?.id, authLoading]) // Only depend on user ID, not the whole user object
 
-  // Periodic refresh (every 5 minutes)
+  // Periodic refresh (every 10 minutes) - less frequent to avoid disruptions
   useEffect(() => {
     if (!user || user.user_type !== 'therapist') return
 
     const interval = setInterval(() => {
       refreshTherapist()
-    }, 5 * 60 * 1000) // 5 minutes
+    }, 10 * 60 * 1000) // 10 minutes
 
     return () => clearInterval(interval)
-  }, [user, refreshTherapist])
+  }, [user?.id]) // Only depend on user ID
 
   const value: TherapistUserContextType = {
     therapist,

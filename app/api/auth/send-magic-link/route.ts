@@ -99,9 +99,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const isDevelopment = process.env.NODE_ENV !== 'production'
+    
     return NextResponse.json({
       success: true,
-      message: 'Magic link sent! Please check your email.'
+      message: isDevelopment && result.magicLink 
+        ? result.message || 'Magic link created! Check your console or use the link below (development mode).'
+        : 'Magic link sent! Please check your email.',
+      // Include magic link in development mode
+      ...(isDevelopment && result.magicLink && { magicLink: result.magicLink })
     })
 
   } catch (error) {

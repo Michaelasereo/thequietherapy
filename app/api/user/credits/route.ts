@@ -29,28 +29,43 @@ export async function GET(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     console.log('✅ Supabase client initialized');
 
-    // Fetch user credits from users table
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('credits')
-      .eq('id', userId)
-      .single();
+    // Fetch user credits from user_credits table - only active, non-expired credits
+    const now = new Date().toISOString()
+    const { data: creditRecords, error: creditsError } = await supabase
+      .from('user_credits')
+      .select('credits_balance, credits_purchased, credits_used, expires_at')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .or(`expires_at.is.null,expires_at.gt.${now}`) // Only non-expired credits
+      .order('created_at', { ascending: false });
 
-    if (userError) {
-      console.error('❌ User fetch error:', userError);
+    if (creditsError && creditsError.code !== 'PGRST116') {
+      console.error('❌ User credits fetch error:', creditsError);
       return NextResponse.json(
         { error: 'Failed to fetch user credits' },
         { status: 500 }
       );
     }
 
-    console.log('✅ User credits fetched successfully');
+    // Calculate total credits from active records
+    const totalCredits = creditRecords?.reduce((sum, record) => {
+      return sum + (record.credits_balance || 0);
+    }, 0) || 0;
+
+    const totalPurchased = creditRecords?.reduce((sum, record) => {
+      return sum + (record.credits_purchased || 0);
+    }, 0) || 0;
+
+    console.log('✅ User credits fetched successfully:', { totalCredits, totalPurchased });
 
     return NextResponse.json({
       success: true,
       credits: {
-        balance: user.credits || 0,
-        totalPurchased: user.credits || 0 // Using same value since we only have one credits column
+        balance: totalCredits,
+        totalPurchased: totalPurchased,
+        total_credits: totalCredits,
+        free_credits: 0,
+        paid_credits: totalCredits
       }
     });
 

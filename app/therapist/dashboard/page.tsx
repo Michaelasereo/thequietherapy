@@ -290,37 +290,6 @@ const TherapistDashboardPage = memo(function TherapistDashboardPage() {
         </Card>
       </div>
 
-      {/* Notifications / Important Updates section */}
-      <Card className="shadow-sm bg-amber-50 border-amber-200">
-        <CardHeader>
-          <CardTitle className="text-slate-800 flex items-center">
-            <div className="w-5 h-5 rounded-full bg-slate-800 text-amber-50 flex items-center justify-center text-xs font-bold mr-3">i</div>
-            Notifications & Important Updates
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-slate-700">
-            <p className="flex items-start">
-              <span className="text-amber-600 mr-2">•</span>
-              <span>Reminder: Your profile review is due by September 30th.</span>
-            </p>
-            <p className="flex items-start">
-              <span className="text-amber-600 mr-2">•</span>
-              <span>New feature: Enhanced client notes are now available.</span>
-            </p>
-            <p className="flex items-start">
-              <span className="text-amber-600 mr-2">•</span>
-              <span>Platform update: Scheduled maintenance on October 5th, 2 AM - 4 AM UTC.</span>
-            </p>
-            {therapist?.is_pending && (
-              <p className="flex items-start">
-                <span className="text-amber-600 mr-2">•</span>
-                <span>Your therapist application is under review. You'll receive an email once approved.</span>
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 })

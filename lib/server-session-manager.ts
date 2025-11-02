@@ -62,22 +62,53 @@ export class ServerSessionManager {
       .sign(getJWTSecret())
 
     // Set cookie with explicit domain for production
+    // In development, don't set domain to allow localhost
+    const isProduction = process.env.NODE_ENV === 'production'
+    
+    // Extract domain from response or request if available
+    // For production, don't set domain unless needed (allows www and non-www to work)
+    // Setting domain explicitly can cause issues if user accesses via www.thequietherapy.live
+    let cookieDomain: string | undefined = undefined
+    
+    // Only set domain in production if we need to share across subdomains
+    // But it's safer to NOT set domain and let browser handle it
+    // This allows cookies to work on both thequietherapy.live and www.thequietherapy.live
+    
     const cookieOptions = {
       name: this.COOKIE_NAME,
       value: token,
       maxAge: this.COOKIE_MAX_AGE,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction,
+      // Use 'lax' for SameSite - works for same-site redirects (like magic link flow)
+      // 'none' would require secure=true (HTTPS) but can have issues
+      // 'lax' is the right balance for our use case
       sameSite: 'lax' as const,
       path: '/',
-      domain: process.env.NODE_ENV === 'production' ? 'thequietherapy.live' : undefined,
+      // Don't set domain - let browser use default (current domain)
+      // This ensures cookie works regardless of www vs non-www
+      ...(cookieDomain && { domain: cookieDomain }),
     }
+
+    console.log('🍪 Setting cookie:', {
+      name: cookieOptions.name,
+      hasValue: !!cookieOptions.value,
+      valueLength: cookieOptions.value.length,
+      maxAge: cookieOptions.maxAge,
+      httpOnly: cookieOptions.httpOnly,
+      secure: cookieOptions.secure,
+      sameSite: cookieOptions.sameSite,
+      path: cookieOptions.path,
+      domain: cookieOptions.domain || 'none (development)',
+    })
 
     if (response) {
       response.cookies.set(cookieOptions)
+      console.log('✅ Cookie set in response object')
     } else {
       const cookieStore = await cookies()
       cookieStore.set(cookieOptions)
+      console.log('✅ Cookie set via cookieStore')
     }
 
     return token
@@ -170,7 +201,8 @@ export class ServerSessionManager {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
       path: '/',
-      domain: process.env.NODE_ENV === 'production' ? 'thequietherapy.live' : undefined,
+      // Don't set domain - let browser use default
+      // This ensures cookie works regardless of www vs non-www
     }
 
     if (response) {

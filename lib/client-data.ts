@@ -309,6 +309,34 @@ export async function addPatientMedicalHistory(
   }
 }
 
+export async function updatePatientMedicalHistory(
+  id: string,
+  updates: Partial<Omit<PatientMedicalHistory, 'id' | 'user_id' | 'therapist_id' | 'created_at' | 'updated_at'>>
+): Promise<PatientMedicalHistory | null> {
+  try {
+    const response = await fetch('/api/client/medical-history', {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify({ id, ...updates })
+    })
+
+    if (!response.ok) {
+      console.error('Error updating patient medical history:', response.status)
+      return null
+    }
+
+    const result = await response.json()
+    return result.success ? result.data : null
+  } catch (error) {
+    console.error('Error updating patient medical history:', error)
+    return null
+  }
+}
+
 // Patient Drug History Functions (Therapist only)
 export async function getPatientDrugHistory(userId: string): Promise<PatientDrugHistory[]> {
   try {
@@ -356,6 +384,34 @@ export async function addPatientDrugHistory(
     return data
   } catch (error) {
     console.error('Error adding patient drug history:', error)
+    return null
+  }
+}
+
+export async function updatePatientDrugHistory(
+  id: string,
+  updates: Partial<Omit<PatientDrugHistory, 'id' | 'user_id' | 'therapist_id' | 'created_at' | 'updated_at'>>
+): Promise<PatientDrugHistory | null> {
+  try {
+    const response = await fetch('/api/client/drug-history', {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify({ id, ...updates })
+    })
+
+    if (!response.ok) {
+      console.error('Error updating patient drug history:', response.status)
+      return null
+    }
+
+    const result = await response.json()
+    return result.success ? result.data : null
+  } catch (error) {
+    console.error('Error updating patient drug history:', error)
     return null
   }
 }

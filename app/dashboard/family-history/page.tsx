@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Pencil, Save, X, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { usePatientData } from "@/hooks/usePatientData"
-import { PatientFamilyHistory } from "@/lib/patient-data"
+import { PatientFamilyHistory } from "@/lib/client-data"
 import { toast } from "sonner"
 import { useAuth } from "@/context/auth-context"
 

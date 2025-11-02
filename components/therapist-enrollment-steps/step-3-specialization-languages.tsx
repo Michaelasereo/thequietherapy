@@ -7,15 +7,41 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 
+const specializationsByPopulation = [
+  "Child and Adolescents Therapy",
+  "Adult Therapy",
+  "Couples or Marriage Therapy",
+  "Family Therapy",
+  "Geriatric Therapy",
+] as const
+
+const specializationsByDisorder = [
+  "Depression and Mood Disorders",
+  "Panic and Anxiety Disorders, Including Phobias",
+  "Trauma and PTSD",
+  "Stress Management",
+  "Personality Disorders",
+  "Grief and Loss Therapy",
+  "Substance Use Disorders and Alcohol Addiction",
+  "Eating Disorders",
+  "Sleep Disorders",
+] as const
+
+const specializationsByApproach = [
+  "CBT",
+  "DBT",
+  "Psychodynamic",
+  "Humanistic-Existential",
+  "REBT",
+  "Solution Focused Brief Therapy",
+  "Mindfulness Based Therapy",
+] as const
+
+// Combine all specializations for validation
 const specializations = [
-  "Cognitive Behavioral Therapy (CBT)",
-  "Trauma-Informed Therapy",
-  "Relationship Counseling",
-  "Adolescent Therapy",
-  "Anxiety & Stress Management",
-  "Depression",
-  "Grief Counseling",
-  "Substance Abuse",
+  ...specializationsByPopulation,
+  ...specializationsByDisorder,
+  ...specializationsByApproach,
 ] as const
 
 const languages = ["English", "Spanish", "French", "German", "Yoruba", "Igbo", "Hausa"] as const
@@ -60,33 +86,103 @@ export default function Step3SpecializationLanguages({
           name="specialization"
           render={() => (
             <FormItem>
-              <FormLabel className="text-base">Areas of Expertise</FormLabel>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {specializations.map((item) => (
-                  <FormField
-                    key={item}
-                    control={form.control}
-                    name="specialization"
-                    render={({ field }) => {
-                      return (
-                        <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item) || false}
-                              onCheckedChange={(checked) => {
-                                const currentValue = field.value || []
-                                return checked
-                                  ? field.onChange([...currentValue, item])
-                                  : field.onChange(currentValue.filter((value) => value !== item))
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">{item}</FormLabel>
-                        </FormItem>
-                      )
-                    }}
-                  />
-                ))}
+              <FormLabel className="text-base">Specialty by Population, Disorders, and Approach</FormLabel>
+              <div className="space-y-4">
+                {/* By Population */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">By Population</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {specializationsByPopulation.map((item) => (
+                      <FormField
+                        key={item}
+                        control={form.control}
+                        name="specialization"
+                        render={({ field }) => {
+                          return (
+                            <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item) || false}
+                                  onCheckedChange={(checked) => {
+                                    const currentValue = field.value || []
+                                    return checked
+                                      ? field.onChange([...currentValue, item])
+                                      : field.onChange(currentValue.filter((value) => value !== item))
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">{item}</FormLabel>
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* By Disorders */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">By Disorders</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {specializationsByDisorder.map((item) => (
+                      <FormField
+                        key={item}
+                        control={form.control}
+                        name="specialization"
+                        render={({ field }) => {
+                          return (
+                            <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item) || false}
+                                  onCheckedChange={(checked) => {
+                                    const currentValue = field.value || []
+                                    return checked
+                                      ? field.onChange([...currentValue, item])
+                                      : field.onChange(currentValue.filter((value) => value !== item))
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">{item}</FormLabel>
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* By Approach */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">By Approach</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {specializationsByApproach.map((item) => (
+                      <FormField
+                        key={item}
+                        control={form.control}
+                        name="specialization"
+                        render={({ field }) => {
+                          return (
+                            <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item) || false}
+                                  onCheckedChange={(checked) => {
+                                    const currentValue = field.value || []
+                                    return checked
+                                      ? field.onChange([...currentValue, item])
+                                      : field.onChange(currentValue.filter((value) => value !== item))
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">{item}</FormLabel>
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
               <FormMessage />
             </FormItem>
