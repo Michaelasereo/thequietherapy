@@ -168,11 +168,6 @@ export default function TherapistCard({ therapist, onSelect, onViewProfile, isSe
               {therapist.maritalStatus}
             </Badge>
           )}
-          {therapist.age && therapist.age !== 'Not specified' && (
-            <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
-              {therapist.age}
-            </Badge>
-          )}
           <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
             Virtual
           </Badge>

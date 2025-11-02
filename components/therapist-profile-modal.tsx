@@ -52,7 +52,8 @@ interface TherapistProfileModalProps {
   therapist: {
     id: string
     name: string
-    picture: string
+    picture?: string
+    profile_image_url?: string // Support both field names
     specialization: string
     gender: string
     age: string
@@ -79,7 +80,7 @@ export default function TherapistProfileModal({
       <DialogContent className="sm:max-w-[425px] md:max-w-[600px] p-6">
         <DialogHeader className="text-center">
           <Image
-            src={therapist.picture || "/placeholder.svg"}
+            src={therapist.picture || therapist.profile_image_url || "/placeholder.svg"}
             alt={therapist.name}
             width={120}
             height={120}

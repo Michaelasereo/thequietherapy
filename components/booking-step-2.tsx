@@ -10,12 +10,14 @@ interface BookingStep2Props {
   onNext: (therapistId: string, therapistData?: any) => void
   onBack: () => void
   initialSelectedTherapistId?: string
+  preferredGender?: string
+  preferredSpecialization?: string
 }
 
-export default function BookingStep2({ onNext, onBack, initialSelectedTherapistId }: BookingStep2Props) {
+export default function BookingStep2({ onNext, onBack, initialSelectedTherapistId, preferredGender, preferredSpecialization }: BookingStep2Props) {
   const [selectedTherapistId, setSelectedTherapistId] = useState<string | undefined>(initialSelectedTherapistId)
-  const [filterGender, setFilterGender] = useState<string>("All")
-  const [filterSpecialization, setFilterSpecialization] = useState<string>("All")
+  const [filterGender, setFilterGender] = useState<string>(preferredGender && preferredGender !== "no-preference" ? preferredGender : "All")
+  const [filterSpecialization, setFilterSpecialization] = useState<string>(preferredSpecialization && preferredSpecialization !== "no-preference" ? preferredSpecialization : "All")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalTherapist, setModalTherapist] = useState<any>(null)
   const [therapists, setTherapists] = useState<any[]>([])
@@ -93,7 +95,11 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
   const handleViewProfile = (id: string) => {
     const therapist = therapists.find((t) => t.id === id)
     if (therapist) {
-      setModalTherapist(therapist)
+      // Map therapist data to match TherapistProfileModal expected format
+      setModalTherapist({
+        ...therapist,
+        picture: therapist.profile_image_url || '/placeholder.svg' // Map profile_image_url to picture
+      })
       setIsModalOpen(true)
     }
   }

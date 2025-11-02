@@ -39,6 +39,7 @@ import {
   Eye,
   List,
   Bell,
+  ShoppingBag,
 } from "lucide-react"
 import { useSidebarState } from "@/hooks/useDashboardState"
 import { cn } from "@/lib/utils"
@@ -56,6 +57,7 @@ const dashboardSidebarGroups = [
     label: "Therapy Sessions",
     items: [
       { name: "Book a Session", href: "/dashboard/book", icon: Calendar },
+      { name: "Shop Journals", href: "/dashboard/shop-journals", icon: ShoppingBag },
       { name: "Sessions", href: "/dashboard/sessions", icon: Calendar },
       { name: "Go to Therapy", href: "/dashboard/therapy", icon: Video },
     ],
