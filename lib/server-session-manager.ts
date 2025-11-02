@@ -81,8 +81,7 @@ export class ServerSessionManager {
       httpOnly: true,
       secure: isProduction,
       // Use 'lax' for SameSite - works for same-site redirects (like magic link flow)
-      // 'none' would require secure=true (HTTPS) but can have issues
-      // 'lax' is the right balance for our use case
+      // In production, ensure cookie is set correctly for redirects
       sameSite: 'lax' as const,
       path: '/',
       // Don't set domain - let browser use default (current domain)
@@ -103,8 +102,16 @@ export class ServerSessionManager {
     })
 
     if (response) {
+      // For redirect responses, set cookie explicitly
       response.cookies.set(cookieOptions)
-      console.log('✅ Cookie set in response object')
+      
+      // Also set via Set-Cookie header to ensure it works with redirects
+      // This is important for Netlify and other platforms that might not
+      // automatically include cookies in redirect responses
+      const cookieString = `${cookieOptions.name}=${cookieOptions.value}; Path=${cookieOptions.path}; Max-Age=${cookieOptions.maxAge}; HttpOnly; ${cookieOptions.secure ? 'Secure;' : ''} SameSite=${cookieOptions.sameSite}`
+      response.headers.append('Set-Cookie', cookieString)
+      
+      console.log('✅ Cookie set in response object and header')
     } else {
       const cookieStore = await cookies()
       cookieStore.set(cookieOptions)

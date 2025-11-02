@@ -12,13 +12,21 @@ export async function GET(request: NextRequest) {
     // Log incoming request for debugging
     const cookieHeader = request.cookies.get('quiet_session')
     console.log('🔍 /api/auth/me called')
-    console.log('   Cookie present:', !!cookieHeader)
+    console.log('   Cookie present in request:', !!cookieHeader)
     console.log('   Cookie value length:', cookieHeader?.value?.length || 0)
+    const allCookies = request.cookies.getAll()
+    console.log('   All cookies:', allCookies.map(c => c.name))
     
     // Try unified session first
     const unifiedSession = await ServerSessionManager.getSession()
     
     console.log('   Session found:', !!unifiedSession)
+    if (!unifiedSession) {
+      console.log('   ❌ No session - checking cookie store directly...')
+      const cookieStore = await import('next/headers').then(m => m.cookies())
+      const directCookie = cookieStore.get('quiet_session')
+      console.log('   Direct cookie check:', !!directCookie)
+    }
     
     if (unifiedSession) {
       
