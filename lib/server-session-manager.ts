@@ -87,7 +87,7 @@ export class ServerSessionManager {
       path: '/',
       // Don't set domain - let browser use default (current domain)
       // This ensures cookie works regardless of www vs non-www
-      ...(cookieDomain && { domain: cookieDomain }),
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
     }
 
     console.log('🍪 Setting cookie:', {
