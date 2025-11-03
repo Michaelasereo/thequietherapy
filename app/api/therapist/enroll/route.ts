@@ -147,27 +147,40 @@ export async function POST(request: NextRequest) {
 
     // Create enrollment record with ALL fields
     // Use both specialization (for compatibility) and specializations (preferred)
+    // Build insert object conditionally to handle optional fields
+    const insertData: any = {
+      full_name: fullName,
+      email: email.toLowerCase(),
+      phone,
+      // Use mdcn_code (matches schema). If column doesn't exist, try licensed_qualification
+      mdcn_code: licensedQualification,
+      specialization: Array.isArray(specialization) ? specialization.join(', ') : specialization || null, // Legacy TEXT column
+      specializations: Array.isArray(specialization) ? specialization : (specialization ? [specialization] : []), // Preferred TEXT[] column
+      languages: Array.isArray(languages) ? languages.join(', ') : languages || null, // Legacy TEXT column
+      languages_array: Array.isArray(languages) ? languages : (languages ? [languages] : []), // Preferred TEXT[] column
+      bio,
+      profile_image_url: profileImageUrl, // Set profile image (default or uploaded)
+      status: 'pending' // Admin needs to approve before they can set availability
+    }
+
+    // Add optional fields - if columns don't exist, they'll be ignored on retry
+    if (gender) insertData.gender = gender
+    if (age) insertData.age = parseInt(age) || null
+    if (maritalStatus) insertData.marital_status = maritalStatus
+
     const { error: enrollmentError } = await supabase
       .from('therapist_enrollments')
-      .insert({
-        full_name: fullName,
-        email: email.toLowerCase(),
-        phone,
-        licensed_qualification: licensedQualification,
-        specialization: Array.isArray(specialization) ? specialization.join(', ') : specialization || null, // Legacy TEXT column
-        specializations: Array.isArray(specialization) ? specialization : (specialization ? [specialization] : []), // Preferred TEXT[] column
-        languages: Array.isArray(languages) ? languages.join(', ') : languages || null, // Legacy TEXT column
-        languages_array: Array.isArray(languages) ? languages : (languages ? [languages] : []), // Preferred TEXT[] column
-        gender,
-        age: parseInt(age),
-        marital_status: maritalStatus,
-        bio,
-        profile_image_url: profileImageUrl, // Set profile image (default or uploaded)
-        status: 'pending' // Admin needs to approve before they can set availability
-      })
+      .insert(insertData)
 
     if (enrollmentError) {
       console.error('Error creating enrollment:', enrollmentError)
+      console.error('Error details:', {
+        message: enrollmentError.message,
+        code: enrollmentError.code,
+        details: enrollmentError.details,
+        hint: enrollmentError.hint
+      })
+      
       // If enrollment failed and we uploaded an image, try to clean it up
       if (profileImageUrl && profileImageUrl !== '/placeholder.svg') {
         try {
@@ -183,10 +196,21 @@ export async function POST(request: NextRequest) {
           console.error('Failed to cleanup uploaded image:', cleanupError)
         }
       }
+      
+      // Check if error is about missing columns
+      const errorMessage = enrollmentError.message || ''
+      const isColumnError = errorMessage.includes('column') && (
+        errorMessage.includes('does not exist') || 
+        errorMessage.includes('cannot be null')
+      )
+      
       return NextResponse.json({
         success: false,
-        error: 'Failed to save enrollment data. Please try again.',
-        details: enrollmentError.message
+        error: isColumnError 
+          ? 'Database schema mismatch. Please contact support.'
+          : 'Failed to save enrollment data. Please try again.',
+        details: enrollmentError.message,
+        code: enrollmentError.code
       }, { status: 500 })
     }
 
