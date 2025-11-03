@@ -83,7 +83,8 @@ export async function POST(request: NextRequest) {
       // Enhanced: Check for time slot conflicts with detailed information
       const startDateTime = new Date(`${session_date}T${session_time}:00+01:00`)
       const startTimeIso = startDateTime.toISOString()
-      const endTimeIso = new Date(startDateTime.getTime() + duration_minutes * 60000).toISOString()
+      const endTime = new Date(startDateTime.getTime() + duration_minutes * 60000)
+      const endTimeIso = endTime.toISOString()
 
       // Direct database check for overlapping sessions
       // Query for sessions that overlap: session.start <= requested.end AND session.end >= requested.start
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
             start: c.start_time,
             end: c.end_time,
             status: c.status,
-            user: c.users?.full_name
+            user: Array.isArray(c.users) ? c.users[0]?.full_name : (c.users as any)?.full_name
           }))
         })
 
@@ -134,14 +135,17 @@ export async function POST(request: NextRequest) {
           error: 'Time slot is already booked',
           details: 'Booking conflict: Time slot is already booked',
           code: 'TIME_SLOT_CONFLICT',
-          conflicting_sessions: conflictingSessions.map(c => ({
-            id: c.id,
-            start_time: c.start_time,
-            end_time: c.end_time,
-            status: c.status,
-            user_name: c.users?.full_name || 'Unknown User',
-            user_email: c.users?.email
-          })),
+          conflicting_sessions: conflictingSessions.map(c => {
+            const user = Array.isArray(c.users) ? c.users[0] : (c.users as any);
+            return {
+              id: c.id,
+              start_time: c.start_time,
+              end_time: c.end_time,
+              status: c.status,
+              user_name: user?.full_name || 'Unknown User',
+              user_email: user?.email
+            };
+          }),
           suggested_actions: [
             'Choose a different time',
             'Contact the existing client to reschedule',
@@ -264,14 +268,17 @@ export async function POST(request: NextRequest) {
           error: 'Time slot is already booked',
           details: insertErr.message || 'Booking conflict: Time slot is already booked',
           code: 'TIME_SLOT_CONFLICT',
-          conflicting_sessions: activeConflicts.map(c => ({
-            id: c.id,
-            start_time: c.start_time,
-            end_time: c.end_time,
-            status: c.status,
-            user_name: c.users?.full_name || 'Unknown User',
-            user_email: c.users?.email
-          })),
+          conflicting_sessions: activeConflicts.map(c => {
+            const user = Array.isArray(c.users) ? c.users[0] : (c.users as any);
+            return {
+              id: c.id,
+              start_time: c.start_time,
+              end_time: c.end_time,
+              status: c.status,
+              user_name: user?.full_name || 'Unknown User',
+              user_email: user?.email
+            };
+          }),
           suggested_actions: [
             'Choose a different time',
             'Contact the existing client to reschedule',

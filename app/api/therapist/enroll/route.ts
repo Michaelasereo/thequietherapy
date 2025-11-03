@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     if (contentType.includes('multipart/form-data')) {
       // Handle FormData (with file upload)
-      const formData = await request.formData()
+      const formData = (await request.formData()) as any
       email = formData.get('email') as string
       fullName = formData.get('fullName') as string
       phone = formData.get('phone') as string

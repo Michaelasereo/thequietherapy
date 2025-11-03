@@ -495,7 +495,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       
       // Add timeout to prevent hanging
       const controller = new AbortController()
-      let timeoutId: NodeJS.Timeout | null = setTimeout(() => {
+      let timeoutId: ReturnType<typeof setTimeout> | null = setTimeout(() => {
         timeoutId = null
         controller.abort()
       }, 10000) // 10 second timeout

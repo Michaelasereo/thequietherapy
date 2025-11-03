@@ -44,6 +44,7 @@ interface SessionData {
   start_time: string
   end_time: string
   duration: number
+  duration_minutes?: number
   session_type: 'video' | 'audio' | 'chat' | 'in_person'
   status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show'
   notes?: string
@@ -582,7 +583,7 @@ function VideoSessionPage() {
             const notesData = await notesResponse.json()
             if (notesData.success && notesData.notes?.transcript) {
               transcript = notesData.notes.transcript
-              console.log(`✅ Found transcript on attempt ${attempt + 1}, length: ${transcript.length} characters`)
+              console.log(`✅ Found transcript on attempt ${attempt + 1}, length: ${transcript?.length ?? 0} characters`)
               break
             } else {
               console.log(`⚠️ Attempt ${attempt + 1}: No transcript yet in session_notes`)

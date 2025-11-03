@@ -70,12 +70,17 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
 
   // Listen for events from other components
   useEffect(() => {
-    const handleAvatarUpdated = (data: AvatarUpdatedData) => {
+    const handleAvatarUpdated = async (data: AvatarUpdatedData) => {
       console.log('📸 TherapistContext: Avatar updated event received:', data)
+      // Update local state immediately for responsive UI
       setTherapist(current => {
         if (!current) return current
         return { ...current, profile_image_url: data.profile_image_url }
       })
+      // Also refresh from API to ensure we have the latest data from the database
+      // This ensures persistence after page reload
+      console.log('🔄 TherapistContext: Refreshing therapist data after avatar update...')
+      await refreshTherapist()
     }
 
     const handleProfileUpdated = (data: ProfileUpdatedData) => {
@@ -93,7 +98,7 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
       therapistEvents.off(THERAPIST_EVENTS.AVATAR_UPDATED, handleAvatarUpdated)
       therapistEvents.off(THERAPIST_EVENTS.PROFILE_UPDATED, handleProfileUpdated)
     }
-  }, [])
+  }, [refreshTherapist])
 
   // Refresh therapist data - memoized with user ID only to prevent infinite loops
   const refreshTherapist = useCallback(async () => {
@@ -216,14 +221,15 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
   }, [therapist])
 
   // Initial load and user changes - only trigger on mount or user ID change
-  const hasFetchedRef = useRef(false)
+  const hasFetchedRef = useRef<string | null>(null)
   useEffect(() => {
     console.log('🔍 TherapistContext: useEffect triggered', { 
       authLoading, 
       hasUser: !!user, 
       userType: user?.user_type,
       userId: user?.id,
-      hasFetched: hasFetchedRef.current
+      hasFetched: hasFetchedRef.current,
+      currentUserId: user?.id
     });
     
     if (authLoading) {
@@ -236,26 +242,29 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
       console.log('🔍 TherapistContext: No user, clearing therapist state')
       setTherapist(null)
       setLoading(false)
-      hasFetchedRef.current = false
+      hasFetchedRef.current = null
       return
     }
 
     console.log('🔍 TherapistContext: Checking user type:', user.user_type, '=== "therapist"?', user.user_type === 'therapist')
     
     if (user.user_type === 'therapist') {
-      // Only fetch if we haven't fetched for this user yet
-      if (!hasFetchedRef.current) {
+      // Fetch if we haven't fetched for this specific user ID yet
+      // This ensures fresh data on page reload (new mount = new ref state)
+      if (hasFetchedRef.current !== user.id) {
         console.log('✅ TherapistContext: User is therapist, calling refreshTherapist()')
         refreshTherapist()
-        hasFetchedRef.current = true
+        hasFetchedRef.current = user.id
+      } else {
+        console.log('⚠️ TherapistContext: Already fetched for this user ID, skipping...')
       }
     } else {
       console.log('❌ TherapistContext: User is NOT therapist (type:', user.user_type, '), clearing state')
       setTherapist(null)
       setLoading(false)
-      hasFetchedRef.current = false
+      hasFetchedRef.current = null
     }
-  }, [user?.id, authLoading]) // Only depend on user ID, not the whole user object
+  }, [user?.id, authLoading, refreshTherapist]) // Include refreshTherapist to ensure it's available
 
   // Periodic refresh (every 10 minutes) - less frequent to avoid disruptions
   useEffect(() => {

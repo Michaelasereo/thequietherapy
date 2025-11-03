@@ -127,8 +127,8 @@ export default function BookingPage() {
               age: patientData.age,
               gender: patientData.gender,
               maritalStatus: patientData.maritalStatus,
-              therapistGenderPreference: "no-preference",
-              therapistSpecializationPreference: patientData.therapistPreference || "no-preference"
+              // Note: therapistGenderPreference and therapistSpecializationPreference 
+              // are passed separately to BookingStep2 component
             }}
           />
         )

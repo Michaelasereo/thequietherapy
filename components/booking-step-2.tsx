@@ -93,7 +93,7 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
     const therapistSpecializations = Array.isArray(therapist.specialization) 
       ? therapist.specialization 
       : therapist.specialization 
-        ? therapist.specialization.split(',').map(s => s.trim())
+        ? therapist.specialization.split(',').map((s: string) => s.trim())
         : []
     const specializationMatch = filterSpecialization === "All" || 
       therapistSpecializations.some((spec: string) => spec.toLowerCase().includes(filterSpecialization.toLowerCase()))

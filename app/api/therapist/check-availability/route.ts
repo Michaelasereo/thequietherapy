@@ -102,13 +102,16 @@ export async function POST(request: NextRequest) {
     console.log('📊 Availability check results:', {
       totalConflicts: conflictingSessions?.length || 0,
       activeConflicts: activeConflicts.length,
-      conflicts: activeConflicts.map(c => ({
-        id: c.id,
-        start: c.start_time,
-        end: c.end_time,
-        status: c.status,
-        user: c.users?.full_name
-      }))
+      conflicts: activeConflicts.map(c => {
+        const user = Array.isArray(c.users) ? c.users[0] : (c.users as any);
+        return {
+          id: c.id,
+          start: c.start_time,
+          end: c.end_time,
+          status: c.status,
+          user: user?.full_name || 'Unknown User'
+        };
+      })
     });
 
     const suggestions = activeConflicts.length > 0 
@@ -117,14 +120,17 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       available: activeConflicts.length === 0,
-      conflicting_sessions: activeConflicts.map(c => ({
-        id: c.id,
-        start_time: c.start_time,
-        end_time: c.end_time,
-        status: c.status,
-        user_name: c.users?.full_name || 'Unknown User',
-        user_email: c.users?.email
-      })),
+      conflicting_sessions: activeConflicts.map(c => {
+        const user = Array.isArray(c.users) ? c.users[0] : (c.users as any);
+        return {
+          id: c.id,
+          start_time: c.start_time,
+          end_time: c.end_time,
+          status: c.status,
+          user_name: user?.full_name || 'Unknown User',
+          user_email: user?.email
+        };
+      }),
       suggested_times: suggestions
     });
 

@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
 
     console.log('📊 Raw credit records found:', {
       count: creditRecords?.length || 0,
-      records: creditRecords?.map(r => ({
+      records: creditRecords?.map((r: any) => ({
         balance: r.credits_balance,
         purchased: r.credits_purchased,
         used: r.credits_used,
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
 
     // Filter active and non-expired records
     const now = new Date();
-    const activeRecords = (creditRecords || []).filter(record => {
+    const activeRecords = (creditRecords || []).filter((record: any) => {
       // Filter by status if column exists and is set (but be lenient in dev)
       if (record && 'status' in record && record.status && record.status !== 'active') {
         // In development, be less strict
@@ -208,8 +208,8 @@ export async function GET(request: NextRequest) {
           balance: r.credits_balance,
           purchased: r.credits_purchased,
           used: r.credits_used,
-          expires_at: r.expires_at,
-          status: r.status || 'N/A'
+          expires_at: (r as any).expires_at,
+          status: (r as any).status || 'N/A'
         })) || []
       } : undefined
     });
