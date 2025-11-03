@@ -68,38 +68,6 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
     therapistEvents.emit(THERAPIST_EVENTS.PROFILE_UPDATED, updates)
   }, [])
 
-  // Listen for events from other components
-  useEffect(() => {
-    const handleAvatarUpdated = async (data: AvatarUpdatedData) => {
-      console.log('📸 TherapistContext: Avatar updated event received:', data)
-      // Update local state immediately for responsive UI
-      setTherapist(current => {
-        if (!current) return current
-        return { ...current, profile_image_url: data.profile_image_url }
-      })
-      // Also refresh from API to ensure we have the latest data from the database
-      // This ensures persistence after page reload
-      console.log('🔄 TherapistContext: Refreshing therapist data after avatar update...')
-      await refreshTherapist()
-    }
-
-    const handleProfileUpdated = (data: ProfileUpdatedData) => {
-      console.log('✏️ TherapistContext: Profile updated event received:', data)
-      setTherapist(current => {
-        if (!current) return current
-        return { ...current, ...data }
-      })
-    }
-
-    therapistEvents.on(THERAPIST_EVENTS.AVATAR_UPDATED, handleAvatarUpdated)
-    therapistEvents.on(THERAPIST_EVENTS.PROFILE_UPDATED, handleProfileUpdated)
-
-    return () => {
-      therapistEvents.off(THERAPIST_EVENTS.AVATAR_UPDATED, handleAvatarUpdated)
-      therapistEvents.off(THERAPIST_EVENTS.PROFILE_UPDATED, handleProfileUpdated)
-    }
-  }, [refreshTherapist])
-
   // Refresh therapist data - memoized with user ID only to prevent infinite loops
   const refreshTherapist = useCallback(async () => {
     const currentUser = userRef.current
@@ -194,6 +162,38 @@ export function TherapistUserProvider({ children }: { children: React.ReactNode 
     }
   // ✅ Stable dependency to prevent infinite refresh loops  
   }, [])
+
+  // Listen for events from other components
+  useEffect(() => {
+    const handleAvatarUpdated = async (data: AvatarUpdatedData) => {
+      console.log('📸 TherapistContext: Avatar updated event received:', data)
+      // Update local state immediately for responsive UI
+      setTherapist(current => {
+        if (!current) return current
+        return { ...current, profile_image_url: data.profile_image_url }
+      })
+      // Also refresh from API to ensure we have the latest data from the database
+      // This ensures persistence after page reload
+      console.log('🔄 TherapistContext: Refreshing therapist data after avatar update...')
+      await refreshTherapist()
+    }
+
+    const handleProfileUpdated = (data: ProfileUpdatedData) => {
+      console.log('✏️ TherapistContext: Profile updated event received:', data)
+      setTherapist(current => {
+        if (!current) return current
+        return { ...current, ...data }
+      })
+    }
+
+    therapistEvents.on(THERAPIST_EVENTS.AVATAR_UPDATED, handleAvatarUpdated)
+    therapistEvents.on(THERAPIST_EVENTS.PROFILE_UPDATED, handleProfileUpdated)
+
+    return () => {
+      therapistEvents.off(THERAPIST_EVENTS.AVATAR_UPDATED, handleAvatarUpdated)
+      therapistEvents.off(THERAPIST_EVENTS.PROFILE_UPDATED, handleProfileUpdated)
+    }
+  }, [refreshTherapist])
 
   // Logout function
   const logout = useCallback(async () => {
