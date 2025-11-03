@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
     console.log('📋 Getting user data for cookie...')
     const { data: userData, error: userDataError } = await supabase
       .from('users')
-      .select('id, email, full_name')
+      .select('id, email, full_name, user_type')
       .eq('id', userId)
       .single()
 
@@ -202,8 +202,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Step 8: Redirect to dashboard with session cookie
-    const response = NextResponse.redirect(new URL('/dashboard', request.url))
+    // Step 8: Determine correct dashboard based on user type
+    const userType = verification.metadata?.user_type || userData.user_type || 'individual'
+    const getDashboardUrl = (type: string): string => {
+      switch (type) {
+        case 'therapist': return '/therapist/dashboard'
+        case 'partner': return '/partner/dashboard'
+        case 'admin': return '/admin/dashboard'
+        case 'individual':
+        default: return '/dashboard'
+      }
+    }
+    const dashboardUrl = getDashboardUrl(userType)
+    
+    // Redirect to appropriate dashboard with session cookie
+    const response = NextResponse.redirect(new URL(dashboardUrl, request.url))
     
     response.cookies.set("quiet_user", JSON.stringify({
       id: userData.id,

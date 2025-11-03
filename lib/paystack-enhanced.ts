@@ -7,9 +7,21 @@ let paystack: any = null;
 if (typeof window === 'undefined') {
   try {
     const Paystack = require('paystack');
-    paystack = Paystack(process.env.PAYSTACK_SECRET_KEY || '');
+    const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+    
+    if (!PAYSTACK_SECRET_KEY) {
+      console.error('❌ PAYSTACK_SECRET_KEY environment variable is not set');
+      throw new Error('PAYSTACK_SECRET_KEY environment variable is required');
+    }
+    
+    paystack = Paystack(PAYSTACK_SECRET_KEY);
+    console.log('✅ Paystack library initialized successfully');
   } catch (error) {
-    console.warn('Paystack library not available on server-side');
+    console.error('❌ Failed to initialize Paystack library:', error);
+    if (error instanceof Error && error.message.includes('PAYSTACK_SECRET_KEY')) {
+      throw error; // Re-throw configuration errors
+    }
+    console.warn('⚠️ Paystack library not available on server-side');
   }
 }
 
@@ -113,7 +125,7 @@ export async function initializePayment(data: PaymentData): Promise<PaymentVerif
     const amountInKobo = Math.round(data.amount * 100);
 
     // Log payment initialization
-    console.log(`Initializing payment: ${data.reference} for ${data.email}, Amount: ${data.amount} NGN`);
+    console.log(`🔐 Initializing payment: ${data.reference} for ${data.email}, Amount: ${data.amount} NGN (${amountInKobo} kobo)`);
 
     const response = await paystack.transaction.initialize({
       amount: amountInKobo,
@@ -127,15 +139,49 @@ export async function initializePayment(data: PaymentData): Promise<PaymentVerif
       }
     });
 
-    // Store payment transaction in database
-    await storePaymentTransaction({
-      user_id: data.metadata?.user_id,
-      user_type: data.metadata?.user_type || 'user',
-      paystack_reference: data.reference,
-      amount: data.amount,
-      status: 'pending',
-      metadata: data.metadata
+    // Validate Paystack response
+    if (!response || !response.status) {
+      console.error('❌ Paystack returned invalid response:', response);
+      return {
+        success: false,
+        error: response?.message || 'Paystack returned an invalid response',
+        shouldRetry: false
+      };
+    }
+
+    // Check if authorization URL exists
+    if (!response.data || !response.data.authorization_url) {
+      console.error('❌ Paystack response missing authorization_url:', {
+        status: response.status,
+        message: response.message,
+        data: response.data
+      });
+      return {
+        success: false,
+        error: response.message || 'Failed to get payment authorization URL from Paystack',
+        shouldRetry: false
+      };
+    }
+
+    console.log('✅ Paystack payment initialized successfully:', {
+      reference: data.reference,
+      authorization_url: response.data.authorization_url.substring(0, 50) + '...'
     });
+
+    // Store payment transaction in database (non-blocking)
+    try {
+      await storePaymentTransaction({
+        user_id: data.metadata?.user_id,
+        user_type: data.metadata?.user_type || 'user',
+        paystack_reference: data.reference,
+        amount: data.amount,
+        status: 'pending',
+        metadata: data.metadata
+      });
+    } catch (dbError) {
+      console.error('⚠️ Failed to store payment transaction (non-critical):', dbError);
+      // Continue anyway - payment can be synced via webhook
+    }
 
     return {
       success: true,

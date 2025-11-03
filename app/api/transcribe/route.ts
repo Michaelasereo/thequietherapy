@@ -3,6 +3,7 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
+import { AuditLogger } from '@/lib/audit-logger';
 
 // Use OpenAI for transcription (Whisper model)
 import OpenAI from 'openai';
@@ -85,6 +86,24 @@ export async function POST(request: NextRequest) {
           });
 
         console.log('Transcription stored in database');
+        
+        // HIPAA Compliance: Log transcript access for audit trail
+        try {
+          await AuditLogger.log(
+            null, // User ID not available in this context
+            'transcript_generated',
+            'session_notes',
+            sessionId,
+            { 
+              transcript_length: transcriptionText.length,
+              ai_generated: true,
+              source: 'transcription_api'
+            }
+          );
+        } catch (auditError) {
+          console.warn('Failed to log audit event:', auditError);
+          // Don't fail the request if audit logging fails
+        }
       } catch (dbError) {
         console.error('Error storing transcription in database:', dbError);
         // Don't fail the request if database storage fails

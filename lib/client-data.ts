@@ -86,7 +86,7 @@ export async function getPatientBiodata(userId: string): Promise<PatientBiodata 
   console.log('🔄 getPatientBiodata called with userId:', userId)
   
   try {
-    const response = await fetch('/api/patient/biodata', {
+    const response = await fetch('/api/client/biodata', {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -123,7 +123,7 @@ export async function upsertPatientBiodata(userId: string, biodata: Partial<Pati
   try {
     console.log('📤 Sending data to API:', biodata)
     
-    const response = await fetch('/api/patient/biodata', {
+    const response = await fetch('/api/client/biodata', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -159,7 +159,7 @@ export async function upsertPatientBiodata(userId: string, biodata: Partial<Pati
 // Patient Family History Functions
 export async function getPatientFamilyHistory(userId: string): Promise<PatientFamilyHistory | null> {
   try {
-    const response = await fetch('/api/patient/family-history', {
+    const response = await fetch('/api/client/family-history', {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -183,7 +183,7 @@ export async function getPatientFamilyHistory(userId: string): Promise<PatientFa
 
 export async function upsertPatientFamilyHistory(userId: string, familyHistory: Partial<PatientFamilyHistory>): Promise<PatientFamilyHistory | null> {
   try {
-    const response = await fetch('/api/patient/family-history', {
+    const response = await fetch('/api/client/family-history', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -210,7 +210,7 @@ export async function upsertPatientFamilyHistory(userId: string, familyHistory: 
 // Patient Social History Functions
 export async function getPatientSocialHistory(userId: string): Promise<PatientSocialHistory | null> {
   try {
-    const response = await fetch('/api/patient/social-history', {
+    const response = await fetch('/api/client/social-history', {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -234,7 +234,7 @@ export async function getPatientSocialHistory(userId: string): Promise<PatientSo
 
 export async function upsertPatientSocialHistory(userId: string, socialHistory: Partial<PatientSocialHistory>): Promise<PatientSocialHistory | null> {
   try {
-    const response = await fetch('/api/patient/social-history', {
+    const response = await fetch('/api/client/social-history', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -260,8 +260,15 @@ export async function upsertPatientSocialHistory(userId: string, socialHistory: 
 
 // Patient Medical History Functions (Therapist only)
 export async function getPatientMedicalHistory(userId: string): Promise<PatientMedicalHistory[]> {
+  if (!userId || userId.trim() === '') {
+    console.error('getPatientMedicalHistory: userId is required but was empty or undefined')
+    return []
+  }
+  
   try {
-    const response = await fetch(`/api/patient/medical-history?userId=${userId}`, {
+    const url = `/api/client/medical-history?userId=${encodeURIComponent(userId)}`
+    console.log('🔍 Fetching medical history for userId:', userId)
+    const response = await fetch(url, {
       credentials: 'include',
       headers: {
         'Cache-Control': 'no-cache'
@@ -269,7 +276,19 @@ export async function getPatientMedicalHistory(userId: string): Promise<PatientM
     })
 
     if (!response.ok) {
-      console.error('Error fetching patient medical history:', response.status)
+      let errorMessage = `Status ${response.status}: ${response.statusText}`
+      try {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.error || errorText
+        } catch {
+          errorMessage = errorText || errorMessage
+        }
+      } catch {
+        // Keep default errorMessage
+      }
+      console.error('❌ Error fetching patient medical history:', response.status, errorMessage, 'for userId:', userId)
       return []
     }
 
@@ -286,23 +305,50 @@ export async function addPatientMedicalHistory(
   therapistId: string, 
   medicalHistory: Omit<PatientMedicalHistory, 'id' | 'user_id' | 'therapist_id' | 'created_at' | 'updated_at'>
 ): Promise<PatientMedicalHistory | null> {
+  if (!userId || userId.trim() === '') {
+    console.error('addPatientMedicalHistory: userId is required but was empty or undefined')
+    return null
+  }
+  
+  if (!therapistId || therapistId.trim() === '') {
+    console.error('addPatientMedicalHistory: therapistId is required but was empty or undefined')
+    return null
+  }
+
   try {
-    const { data, error } = await supabase
-      .from('patient_medical_history')
-      .insert({
+    console.log('➕ Adding medical history for userId:', userId, 'therapistId:', therapistId)
+    const response = await fetch('/api/client/medical-history', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify({
         user_id: userId,
-        therapist_id: therapistId,
         ...medicalHistory
       })
-      .select()
-      .single()
+    })
 
-    if (error) {
-      console.error('Error adding patient medical history:', error)
+    if (!response.ok) {
+      let errorMessage = `Status ${response.status}: ${response.statusText}`
+      try {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.error || errorText
+        } catch {
+          errorMessage = errorText || errorMessage
+        }
+      } catch {
+        // Keep default errorMessage
+      }
+      console.error('❌ Error adding patient medical history:', response.status, errorMessage)
       return null
     }
 
-    return data
+    const result = await response.json()
+    return result.success ? result.data : null
   } catch (error) {
     console.error('Error adding patient medical history:', error)
     return null
@@ -339,8 +385,15 @@ export async function updatePatientMedicalHistory(
 
 // Patient Drug History Functions (Therapist only)
 export async function getPatientDrugHistory(userId: string): Promise<PatientDrugHistory[]> {
+  if (!userId || userId.trim() === '') {
+    console.error('getPatientDrugHistory: userId is required but was empty or undefined')
+    return []
+  }
+  
   try {
-    const response = await fetch(`/api/patient/drug-history?userId=${userId}`, {
+    const url = `/api/client/drug-history?userId=${encodeURIComponent(userId)}`
+    console.log('🔍 Fetching drug history for userId:', userId)
+    const response = await fetch(url, {
       credentials: 'include',
       headers: {
         'Cache-Control': 'no-cache'
@@ -348,7 +401,19 @@ export async function getPatientDrugHistory(userId: string): Promise<PatientDrug
     })
 
     if (!response.ok) {
-      console.error('Error fetching patient drug history:', response.status)
+      let errorMessage = `Status ${response.status}: ${response.statusText}`
+      try {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.error || errorText
+        } catch {
+          errorMessage = errorText || errorMessage
+        }
+      } catch {
+        // Keep default errorMessage
+      }
+      console.error('❌ Error fetching patient drug history:', response.status, errorMessage, 'for userId:', userId)
       return []
     }
 
@@ -365,23 +430,50 @@ export async function addPatientDrugHistory(
   therapistId: string, 
   drugHistory: Omit<PatientDrugHistory, 'id' | 'user_id' | 'therapist_id' | 'created_at' | 'updated_at'>
 ): Promise<PatientDrugHistory | null> {
+  if (!userId || userId.trim() === '') {
+    console.error('addPatientDrugHistory: userId is required but was empty or undefined')
+    return null
+  }
+  
+  if (!therapistId || therapistId.trim() === '') {
+    console.error('addPatientDrugHistory: therapistId is required but was empty or undefined')
+    return null
+  }
+
   try {
-    const { data, error } = await supabase
-      .from('patient_drug_history')
-      .insert({
+    console.log('➕ Adding drug history for userId:', userId, 'therapistId:', therapistId)
+    const response = await fetch('/api/client/drug-history', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify({
         user_id: userId,
-        therapist_id: therapistId,
         ...drugHistory
       })
-      .select()
-      .single()
+    })
 
-    if (error) {
-      console.error('Error adding patient drug history:', error)
+    if (!response.ok) {
+      let errorMessage = `Status ${response.status}: ${response.statusText}`
+      try {
+        const errorText = await response.text()
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.error || errorText
+        } catch {
+          errorMessage = errorText || errorMessage
+        }
+      } catch {
+        // Keep default errorMessage
+      }
+      console.error('❌ Error adding patient drug history:', response.status, errorMessage)
       return null
     }
 
-    return data
+    const result = await response.json()
+    return result.success ? result.data : null
   } catch (error) {
     console.error('Error adding patient drug history:', error)
     return null

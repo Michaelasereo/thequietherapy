@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -12,6 +13,7 @@ import { TimeSlot } from "@/lib/services/availabilityService"
 import { toast } from "sonner"
 import { isPastDate, isValidBookingDate, formatDate, formatTime } from "@/lib/utils/dateValidation"
 import BookingErrorModal from "./BookingErrorModal"
+import { useAuth } from "@/context/auth-context"
 
 interface BookingConfirmationProps {
   therapistId: string
@@ -38,6 +40,9 @@ export default function BookingConfirmation({
   onBookingComplete, 
   onBack 
 }: BookingConfirmationProps) {
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [sessionNotes, setSessionNotes] = useState("")
   const [emergencyContact, setEmergencyContact] = useState("")
@@ -139,7 +144,63 @@ export default function BookingConfirmation({
     checkUserCredits()
   }, [])
 
-  // Check for pending booking after payment return
+  // Handle payment success from URL params (after returning from Paystack)
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment')
+    const credits = searchParams.get('credits')
+    const reference = searchParams.get('reference')
+    
+    if (paymentStatus === 'success') {
+      console.log('✅ Payment success detected in URL params')
+      console.log('   Credits added:', credits)
+      console.log('   Reference:', reference)
+      
+      // Show success message
+      toast.success(`Payment successful! ${credits ? `${credits} credits have been added to your account.` : 'Credits have been added to your account.'}`)
+      
+      // Refresh credits immediately
+      const refreshCredits = async () => {
+        try {
+          const creditsResponse = await fetch('/api/credits/user')
+          if (creditsResponse.ok) {
+            const creditsData = await creditsResponse.json()
+            if (creditsData.success) {
+              const newCredits = creditsData.data.total_credits || 0
+              console.log('💰 Updated credits:', newCredits)
+              setUserCredits(newCredits)
+            }
+          }
+        } catch (error) {
+          console.error('Error refreshing credits:', error)
+        }
+      }
+      
+      refreshCredits()
+      
+      // Clean up URL params
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.delete('payment')
+        url.searchParams.delete('credits')
+        url.searchParams.delete('reference')
+        window.history.replaceState({}, '', url.toString())
+      }
+    } else if (paymentStatus === 'failed') {
+      const error = searchParams.get('error')
+      toast.error(error || "Payment was not completed. Please try again.")
+      
+      // Clean up URL params
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.delete('payment')
+        url.searchParams.delete('error')
+        url.searchParams.delete('reference')
+        window.history.replaceState({}, '', url.toString())
+      }
+    }
+  }, [searchParams])
+
+  // Check for pending booking after payment return (legacy - kept for compatibility)
   useEffect(() => {
     const pendingBooking = sessionStorage.getItem('pendingBooking')
     if (pendingBooking) {
@@ -148,23 +209,18 @@ export default function BookingConfirmation({
         // Clear the pending booking
         sessionStorage.removeItem('pendingBooking')
         
-        // Show success message and complete the booking
-        toast.success("Payment successful! Completing your booking...")
+        console.log('📋 Found pending booking data:', bookingData)
         
-        // Auto-complete the booking with the stored data
-        setTimeout(() => {
-          onBookingComplete({
-            success: true,
-            message: "Booking completed after successful payment",
-            bookingData
-          })
-        }, 2000)
+        // If credits are now available, show message
+        if (userCredits > 0) {
+          toast.success("Payment successful! You now have credits. You can proceed to book.")
+        }
       } catch (error) {
         console.error('Error processing pending booking:', error)
         sessionStorage.removeItem('pendingBooking')
       }
     }
-  }, [onBookingComplete])
+  }, [userCredits])
 
   const formatTime = (timeString: string) => {
     const [hours, minutes] = timeString.split(':')
@@ -189,78 +245,113 @@ export default function BookingConfirmation({
   }
 
   const handlePaymentInitiation = async () => {
+    console.log('🔘 Payment button clicked')
+    console.log('   Selected package:', selectedPackage)
+    console.log('   Packages:', packages.length)
+    console.log('   User authenticated:', isAuthenticated)
+    console.log('   User email:', user?.email)
+
     if (!selectedPackage) {
-      toast.error("Please select a package")
+      console.warn('❌ No package selected')
+      toast.error("Please select a package first")
       return
     }
 
-    if (!agreedToTerms) {
-      toast.error("Please agree to the terms and conditions")
+    const selectedPackageData = packages.find(pkg => pkg.package_type === selectedPackage)
+    if (!selectedPackageData) {
+      console.error('❌ Selected package data not found')
+      toast.error("Selected package not found. Please refresh and try again.")
       return
     }
 
-    console.log('Initiating payment for package:', selectedPackage)
+    // Check if user is authenticated
+    if (!isAuthenticated || !user?.email) {
+      console.error('❌ User not authenticated')
+      toast.error("Please log in to purchase credits. Redirecting to login...")
+      setTimeout(() => {
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+      }, 2000)
+      return
+    }
+
+    console.log('✅ Starting payment initialization...')
     try {
       setPaymentLoading(true)
       
-      // Try main endpoint first
-      let response = await fetch('/api/payments/initiate', {
+      // Use user email from auth context
+      const userEmail = user.email
+      console.log('📧 Using email:', userEmail)
+
+      // Convert kobo to Naira for the API (which expects Naira)
+      const amountInNaira = selectedPackageData.price_kobo / 100
+      const reference = `package_${selectedPackage}_${Date.now()}`
+      
+      console.log('💰 Payment details:', {
+        package: selectedPackage,
+        amountNaira: amountInNaira,
+        sessions: selectedPackageData.sessions_included,
+        reference
+      })
+      
+      // Store booking information in sessionStorage for after payment
+      const bookingData = {
+        therapistId,
+        selectedSlot,
+        sessionNotes,
+        emergencyContact,
+        therapistInfo
+      }
+      sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData))
+      console.log('💾 Stored booking data in sessionStorage')
+
+      // Use standardized Paystack initialize endpoint
+      console.log('🔗 Calling /api/paystack/initialize...')
+      const response = await fetch('/api/paystack/initialize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          package_type: selectedPackage
+          amount: amountInNaira, // Send in Naira - backend converts to kobo
+          email: userEmail,
+          reference: reference,
+          callback_url: `${window.location.origin}/dashboard/book?payment=success`,
+          metadata: {
+            type: 'package_purchase',
+            package_type: selectedPackage,
+            sessions_included: selectedPackageData.sessions_included,
+            therapistId: therapistId,
+            timeSlotId: selectedSlot.id,
+            sessionDate: selectedSlot.date,
+            sessionTime: selectedSlot.start_time,
+          },
         }),
       })
 
-      let result = await response.json()
+      console.log('📡 Payment API response status:', response.status)
+      const result = await response.json()
       console.log('🔍 Payment initiation response:', result)
 
-      // If main endpoint fails with permission error, try fallback
-      if (!response.ok && result.error?.includes('permissions')) {
-        console.log('🔄 Main endpoint failed, trying fallback...')
-        response = await fetch('/api/payments/initiate-fallback', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            package_type: selectedPackage
-          }),
-        })
-
-        result = await response.json()
-        console.log('🔍 Fallback payment initiation response:', result)
+      if (!response.ok || !result.success) {
+        const errorMsg = result.error || 'Payment initialization failed'
+        console.error('❌ Payment initialization failed:', errorMsg)
+        throw new Error(errorMsg)
       }
 
-      if (response.ok && result.success) {
-        // Store booking information in sessionStorage for after payment
-        const bookingData = {
-          therapistId,
-          selectedSlot,
-          sessionNotes,
-          emergencyContact,
-          therapistInfo
-        }
-        sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData))
-        
-        console.log('🔍 Redirecting to payment URL:', result.data?.payment_url)
-        
-        // Show note if using fallback
-        if (result.data?.note) {
-          toast.info("Please run the database setup to enable full payment functionality.")
-        }
-        
-        // Redirect to payment page
-        window.location.href = result.data?.payment_url
-      } else {
-        throw new Error(result.error || 'Payment initialization failed')
+      // Validate authorization URL
+      if (!result.data?.authorization_url) {
+        console.error('❌ Missing authorization_url in response:', result)
+        throw new Error('Payment gateway did not return a valid payment URL. Please try again.')
       }
+      
+      console.log('✅ Payment initialized successfully, redirecting to:', result.data.authorization_url)
+      
+      // Redirect to Paystack payment page
+      window.location.href = result.data.authorization_url
     } catch (error) {
-      console.error('Error initiating payment:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to initiate payment')
-    } finally {
+      console.error('❌ Error initiating payment:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initiate payment'
+      toast.error(errorMessage)
       setPaymentLoading(false)
     }
   }
@@ -541,10 +632,14 @@ export default function BookingConfirmation({
             
             <div className="flex justify-center pt-4">
               <Button 
-                onClick={() => setBookingSuccess(false)}
+                onClick={() => {
+                  setBookingSuccess(false)
+                  // Redirect to dashboard after closing the modal
+                  router.push('/dashboard')
+                }}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
-                Close
+                OK
               </Button>
             </div>
           </div>
@@ -729,8 +824,8 @@ export default function BookingConfirmation({
             {/* Payment Button */}
             <Button
               onClick={handlePaymentInitiation}
-              disabled={!selectedPackage || paymentLoading || packages.length === 0}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+              disabled={!selectedPackage || paymentLoading || packages.length === 0 || !isAuthenticated || authLoading}
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {paymentLoading ? (
                 <>

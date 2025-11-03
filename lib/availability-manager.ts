@@ -415,16 +415,45 @@ export class AvailabilityManager {
 
   /**
    * Get booked slots for a specific date
+   * Includes all statuses that indicate a slot is taken
    */
   private async getBookedSlots(therapistId: string, date: string): Promise<any[]> {
-    const { data } = await this.supabase
+    // Get all sessions for this therapist with blocking statuses
+    // Check both scheduled_date and start_time to catch all bookings
+    const { data: allSessions } = await this.supabase
       .from('sessions')
-      .select('scheduled_time, duration_minutes')
+      .select('scheduled_time, scheduled_date, start_time, end_time, duration_minutes, status, session_date, session_time')
       .eq('therapist_id', therapistId)
-      .eq('scheduled_date', date)
-      .in('status', ['scheduled', 'confirmed', 'in_progress']);
+      .in('status', [
+        'pending_approval',  // Custom sessions awaiting approval
+        'scheduled',         // Regular scheduled sessions
+        'confirmed',         // Confirmed sessions
+        'in_progress'        // Sessions currently happening
+      ]);
 
-    return data || [];
+    if (!allSessions || allSessions.length === 0) {
+      return [];
+    }
+
+    // Filter sessions that match the requested date
+    // Check multiple date fields: scheduled_date, session_date, or extract from start_time
+    const sessionsOnDate = allSessions.filter(session => {
+      // Check explicit date fields first
+      if (session.scheduled_date === date || session.session_date === date) {
+        return true;
+      }
+      
+      // If no explicit date field, check start_time
+      if (session.start_time) {
+        const sessionStart = new Date(session.start_time);
+        const sessionDate = sessionStart.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+        return sessionDate === date;
+      }
+      
+      return false;
+    });
+
+    return sessionsOnDate;
   }
 
   /**
@@ -628,17 +657,39 @@ export class AvailabilityManager {
 
   /**
    * Check booking conflicts
+   * Checks for time overlaps with existing bookings
    */
   private checkBookingConflicts(startTime: string, duration: number, bookedSlots: any[]): AvailabilityConflict | null {
     const endTime = this.addMinutesToTime(startTime, duration);
 
     for (const booked of bookedSlots) {
-      const bookedEnd = this.addMinutesToTime(booked.scheduled_time, booked.duration_minutes || 60);
+      // Try to get booked time from multiple possible fields
+      let bookedStartTime = booked.scheduled_time || booked.session_time;
       
-      if (startTime < bookedEnd && endTime > booked.scheduled_time) {
+      // If we have start_time (ISO string), extract time from it
+      if (!bookedStartTime && booked.start_time) {
+        const bookingStart = new Date(booked.start_time);
+        bookedStartTime = bookingStart.toLocaleTimeString('en-US', {
+          timeZone: 'Africa/Lagos', // GMT+1 timezone
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+      
+      if (!bookedStartTime) {
+        continue; // Skip if we can't determine the booked time
+      }
+      
+      // Calculate booked end time
+      const bookedDuration = booked.duration_minutes || 30;
+      const bookedEndTime = this.addMinutesToTime(bookedStartTime, bookedDuration);
+      
+      // Check for time overlap: booking starts before slot ends AND booking ends after slot starts
+      if (startTime < bookedEndTime && endTime > bookedStartTime) {
         return {
           type: 'double_booking',
-          message: `Time slot conflicts with existing booking (${booked.scheduled_time})`
+          message: `Time slot conflicts with existing ${booked.status || 'booking'} (${bookedStartTime})`
         };
       }
     }

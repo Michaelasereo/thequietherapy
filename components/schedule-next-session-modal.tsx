@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Dialog, 
   DialogContent, 
@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AvailabilityService, TimeSlot } from '@/lib/services/availabilityService'
 
 interface ScheduleNextSessionModalProps {
   isOpen: boolean
@@ -51,6 +52,8 @@ export default function ScheduleNextSessionModal({
   const [newSessionId, setNewSessionId] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState<'date' | 'time' | 'confirm'>('date')
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
   
   const [formData, setFormData] = useState({
     date: '',
@@ -65,12 +68,6 @@ export default function ScheduleNextSessionModal({
   ]
 
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-
-  // Time slots (hourly from 8 AM to 8 PM)
-  const timeSlots = [
-    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', 
-    '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
-  ]
 
   // Get minimum date (tomorrow)
   const getMinDate = () => {
@@ -132,6 +129,31 @@ export default function ScheduleNextSessionModal({
     setFormData({ ...formData, date: dateStr })
     setCurrentStep('time')
   }
+
+  // Fetch available time slots when a date is selected
+  useEffect(() => {
+    const fetchAvailableSlots = async () => {
+      if (!formData.date || !therapistId) {
+        setTimeSlots([])
+        return
+      }
+
+      setLoadingSlots(true)
+      try {
+        const slots = await AvailabilityService.getTimeSlots(therapistId, formData.date)
+        setTimeSlots(slots)
+        console.log('✅ Fetched available time slots:', slots.length)
+      } catch (error) {
+        console.error('Error fetching time slots:', error)
+        setTimeSlots([])
+        toast.error('Failed to load available time slots')
+      } finally {
+        setLoadingSlots(false)
+      }
+    }
+
+    fetchAvailableSlots()
+  }, [formData.date, therapistId])
 
   const renderCalendarDays = () => {
     const year = currentMonth.getFullYear()
@@ -389,28 +411,59 @@ export default function ScheduleNextSessionModal({
                     </p>
                   </div>
 
+                  {/* Loading State */}
+                  {loadingSlots && (
+                    <div className="text-center py-8">
+                      <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-gray-400" />
+                      <p className="text-sm text-muted-foreground">Loading available times...</p>
+                    </div>
+                  )}
+
                   {/* Time Slots Grid */}
-                  <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto p-2">
-                    {timeSlots.map(time => (
-                      <button
-                        key={time}
-                        onClick={() => {
-                          setFormData({ ...formData, time })
-                          setCurrentStep('confirm')
-                        }}
-                        className={`
-                          p-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium
-                          ${formData.time === time 
-                            ? 'bg-black text-white border-black' 
-                            : 'bg-white border-gray-200 hover:border-gray-400 hover:bg-gray-50'
-                          }
-                        `}
-                      >
-                        <Clock className="h-4 w-4 mx-auto mb-1" />
-                        {time}
-                      </button>
-                    ))}
-                  </div>
+                  {!loadingSlots && timeSlots.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto p-2">
+                      {timeSlots.map(slot => {
+                        const formatTime = (timeString: string) => {
+                          const [hours, minutes] = timeString.split(':')
+                          const hour = parseInt(hours)
+                          const ampm = hour >= 12 ? 'PM' : 'AM'
+                          const displayHour = hour % 12 || 12
+                          return `${displayHour}:${minutes} ${ampm}`
+                        }
+
+                        return (
+                          <button
+                            key={`${slot.start_time}-${slot.end_time}`}
+                            onClick={() => {
+                              setFormData({ ...formData, time: slot.start_time })
+                              setCurrentStep('confirm')
+                            }}
+                            className={`
+                              p-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium
+                              ${formData.time === slot.start_time 
+                                ? 'bg-black text-white border-black' 
+                                : 'bg-white border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+                              }
+                            `}
+                          >
+                            <Clock className="h-4 w-4 mx-auto mb-1" />
+                            {formatTime(slot.start_time)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* No Slots Available */}
+                  {!loadingSlots && timeSlots.length === 0 && (
+                    <div className="text-center py-8 border border-gray-200 rounded-lg bg-gray-50">
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm font-medium text-gray-900 mb-1">No Available Times</p>
+                      <p className="text-xs text-muted-foreground">
+                        No time slots are available for this date.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

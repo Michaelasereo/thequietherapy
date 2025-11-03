@@ -2,11 +2,10 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
 import { StatefulButton } from "@/components/ui/stateful-button"
 import { StatefulStatsCard } from "@/components/ui/stateful-card"
-import { CalendarIcon, Video as VideoIcon, CheckCircle, CheckCircle2, TrendingUp, Clock, ArrowLeft, AlertCircle, RefreshCw } from "lucide-react"
+import { CalendarIcon, Video as VideoIcon, CheckCircle, CheckCircle2, TrendingUp, Clock, ArrowLeft, AlertCircle, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -179,6 +178,9 @@ function DashboardContent() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   
+  // Calendar state
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  
   // Default data for new users
   const defaultStats = {
     totalSessions: 0,
@@ -244,6 +246,121 @@ function DashboardContent() {
       refreshStats()
     }
   }, [user?.id]) // Remove function dependencies to prevent infinite loops
+
+  // Calendar helper functions
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ]
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+  const isDateToday = (date: Date) => {
+    const today = new Date()
+    return date.toDateString() === today.toDateString()
+  }
+
+  const formatDateForCalendar = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  // Get scheduled dates for calendar highlighting
+  const getScheduledDates = () => {
+    const dates = new Set<string>()
+    state.upcomingSessions.forEach((session: any) => {
+      if (session.date) {
+        const date = new Date(session.date)
+        const dateStr = formatDateForCalendar(date)
+        dates.add(dateStr)
+      } else if (session.start_time) {
+        const date = new Date(session.start_time)
+        const dateStr = formatDateForCalendar(date)
+        dates.add(dateStr)
+      }
+    })
+    return dates
+  }
+
+  const scheduledDates = getScheduledDates()
+
+  const isDateScheduled = (date: Date) => {
+    const dateStr = formatDateForCalendar(date)
+    return scheduledDates.has(dateStr)
+  }
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentMonth(prev => {
+      const newMonth = new Date(prev)
+      if (direction === 'prev') {
+        newMonth.setMonth(prev.getMonth() - 1)
+      } else {
+        newMonth.setMonth(prev.getMonth() + 1)
+      }
+      return newMonth
+    })
+  }
+
+  const renderCalendarDays = () => {
+    const year = currentMonth.getFullYear()
+    const month = currentMonth.getMonth()
+    
+    const firstDay = new Date(year, month, 1)
+    const startDate = new Date(firstDay)
+    startDate.setDate(startDate.getDate() - firstDay.getDay())
+    
+    const days = []
+    
+    for (let i = 0; i < 42; i++) {
+      const currentDate = new Date(startDate.getTime() + (i * 24 * 60 * 60 * 1000))
+      const isCurrentMonth = currentDate.getMonth() === month
+      const isToday = isDateToday(currentDate)
+      const isScheduled = isDateScheduled(currentDate)
+      const dayNumber = currentDate.getDate()
+      
+      // Get sessions for this date
+      const dateStr = formatDateForCalendar(currentDate)
+      const daySessions = state.upcomingSessions.filter((s: any) => {
+        if (s.date) {
+          const sessionDateStr = formatDateForCalendar(new Date(s.date))
+          return sessionDateStr === dateStr
+        } else if (s.start_time) {
+          const sessionDateStr = formatDateForCalendar(new Date(s.start_time))
+          return sessionDateStr === dateStr
+        }
+        return false
+      })
+      
+      days.push(
+        <button
+          key={i}
+          type="button"
+          disabled
+          className={`
+            relative h-10 w-10 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center
+            ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-900'}
+            ${isToday && isCurrentMonth ? 'ring-2 ring-brand-gold' : ''}
+            ${isScheduled && isCurrentMonth ? 'bg-brand-gold/20 border-2 border-brand-gold' : ''}
+            ${!isScheduled && isCurrentMonth ? 'hover:bg-gray-50' : ''}
+            cursor-default
+          `}
+          title={daySessions.length > 0 ? `${daySessions.length} session(s) scheduled` : ''}
+        >
+          {dayNumber}
+          {isToday && (
+            <div className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-brand-gold rounded-full"></div>
+          )}
+          {isScheduled && !isToday && (
+            <div className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-brand-gold rounded-full"></div>
+          )}
+        </button>
+      )
+    }
+    
+    return days
+  }
 
   // Check for payment status in URL params
   useEffect(() => {
@@ -552,15 +669,67 @@ function DashboardContent() {
 
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle>Session Calendar</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5" />
+              Session Calendar
+            </CardTitle>
           </CardHeader>
-          <CardContent className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={new Date()}
-              className="rounded-md border"
-              disabled={(date) => date < new Date()}
-            />
+          <CardContent>
+            <div className="space-y-4">
+              {/* Calendar Navigation */}
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateMonth('prev')}
+                  type="button"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <span className="font-semibold text-lg">
+                  {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateMonth('next')}
+                  type="button"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="space-y-2">
+                {/* Day headers */}
+                <div className="grid grid-cols-7 gap-1">
+                  {dayNames.map(day => (
+                    <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar days */}
+                <div className="grid grid-cols-7 gap-1">
+                  {renderCalendarDays()}
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="flex items-center gap-4 pt-2 border-t">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-brand-gold/20 border border-brand-gold"></div>
+                  <span className="text-xs text-muted-foreground">Scheduled</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full ring-2 ring-brand-gold"></div>
+                  <span className="text-xs text-muted-foreground">Today</span>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

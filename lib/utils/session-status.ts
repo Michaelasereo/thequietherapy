@@ -79,6 +79,7 @@ export function canJoinSession(
     start_time?: string | Date | null;
     end_time?: string | Date | null;
     status?: string | null;
+    is_instant?: boolean;
   },
   minutesBefore: number = 15
 ): boolean {
@@ -95,7 +96,18 @@ export function canJoinSession(
     return true;
   }
   
-  // Check timing
+  // For instant sessions: you can join anytime before end_time (deadline)
+  if (session.is_instant) {
+    if (session.end_time) {
+      const endTime = typeof session.end_time === 'string' 
+        ? new Date(session.end_time) 
+        : session.end_time;
+      return now <= endTime; // Can join anytime before expiration
+    }
+    return true; // If no end_time specified, allow joining
+  }
+  
+  // Check timing for scheduled sessions
   if (session.start_time) {
     const startTime = typeof session.start_time === 'string' 
       ? new Date(session.start_time) 

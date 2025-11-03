@@ -275,7 +275,7 @@ export default function BookingStep4({
         </Button>
         {selectedPackageData ? (
           <PaystackPayment
-            amount={selectedPackageData.price_kobo}
+            amount={selectedPackageData.price_kobo / 100}
             email={userEmail}
             reference={`package_${selectedPackage}_${Date.now()}`}
             metadata={{

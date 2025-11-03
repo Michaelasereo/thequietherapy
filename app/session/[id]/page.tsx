@@ -202,13 +202,14 @@ export default function SessionPage() {
   };
 
   const canJoinSession = (session: SessionData) => {
-    const now = new Date();
-    const sessionTime = new Date(session.start_time);
-    const timeDiff = sessionTime.getTime() - now.getTime();
-    const minutesDiff = timeDiff / (1000 * 60);
-    
-    // Can join 15 minutes before, during, or when session is in progress
-    return (minutesDiff >= -15 && session.status === 'scheduled') || session.status === 'in_progress';
+    // Use utility function for consistent logic
+    const { canJoinSession: checkCanJoin } = require('@/lib/utils/session-status');
+    return checkCanJoin({
+      start_time: session.start_time,
+      end_time: session.end_time,
+      status: session.status,
+      is_instant: (session as any).is_instant
+    });
   };
 
   const formatTime = (dateString: string) => {

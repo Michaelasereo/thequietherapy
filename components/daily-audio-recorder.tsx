@@ -8,12 +8,16 @@ interface DailyAudioRecorderProps {
   callObject: any;
   sessionId: string;
   onTranscriptionComplete?: (transcript: string) => void;
+  autoStart?: boolean;
+  hideUI?: boolean;
 }
 
 export default function DailyAudioRecorder({ 
   callObject, 
   sessionId, 
-  onTranscriptionComplete 
+  onTranscriptionComplete,
+  autoStart = false,
+  hideUI = false
 }: DailyAudioRecorderProps) {
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState<string | null>(null);
@@ -181,6 +185,13 @@ export default function DailyAudioRecorder({
       }
 
       console.log("Transcription completed:", result.text || 'No text detected');
+      
+      // HIPAA Compliance: Clear audio chunks and blob after successful transcription
+      audioChunks.current = [];
+      if (audioURL) {
+        URL.revokeObjectURL(audioURL);
+        setAudioURL(null);
+      }
     } catch (err) {
       console.error("Error transcribing audio:", err);
       setError(err instanceof Error ? err.message : "Transcription failed");
@@ -200,6 +211,28 @@ export default function DailyAudioRecorder({
     }
   };
 
+  // Auto-start recording if enabled
+  useEffect(() => {
+    if (autoStart && callObject && !recording && !transcribing) {
+      // Wait a bit for call to be fully connected
+      const timer = setTimeout(() => {
+        if (!recording && !transcribing) {
+          startRecording();
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart, callObject, recording, transcribing]);
+
+  // Auto-stop recording when call ends
+  useEffect(() => {
+    if (!callObject && recording && mediaRecorderRef.current) {
+      stopRecording();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callObject, recording]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -209,8 +242,17 @@ export default function DailyAudioRecorder({
       if (audioURL) {
         URL.revokeObjectURL(audioURL);
       }
+      // Stop recording on unmount
+      if (recording && mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
     };
-  }, [audioURL]);
+  }, [audioURL, recording]);
+
+  // If hideUI is true, don't render the UI
+  if (hideUI) {
+    return null;
+  }
 
   return (
     <Card className="w-full max-w-md">
@@ -271,26 +313,17 @@ export default function DailyAudioRecorder({
           </div>
         )}
 
-        {/* Audio Player */}
-        {audioURL && (
+        {/* Audio Player - Hidden if hideUI is true */}
+        {audioURL && !hideUI && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium">Recorded Audio</h4>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={downloadAudio}
-                className="flex items-center gap-1"
-              >
-                <Download className="h-3 w-3" />
-                Download
-              </Button>
             </div>
             <audio controls src={audioURL} className="w-full" />
           </div>
         )}
 
-        {/* Transcript */}
+        {/* Transcript - Only show in UI mode */}
         {transcript && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Transcription</h4>

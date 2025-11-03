@@ -12,7 +12,7 @@ const faqs = [
   {
     question: "How do I book a therapy session as a medical student?",
     answer:
-      "Medical students can book sessions by clicking 'Get Mental Health Support' on our homepage and following the process: provide your information, select a therapist who specializes in medical student counseling, and complete checkout with flexible payment options.",
+      "Medical students can book sessions by clicking 'Book a Session' on our homepage and following the process: provide your information, select a therapist who specializes in medical student counseling, and complete checkout with flexible payment options.",
   },
   {
     question: "Are therapy sessions confidential for doctors and medical professionals?",

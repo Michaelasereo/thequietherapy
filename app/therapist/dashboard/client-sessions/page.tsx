@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { CalendarIcon, Video, History, Loader2, FileText, Brain, Eye, EyeOff, Clock } from "lucide-react"
+import { CalendarIcon, Video, History, Loader2, FileText, Brain, Eye, EyeOff, Clock, Phone } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -210,6 +210,26 @@ export default function TherapistClientSessionsPage() {
       }
     } finally {
       setJoiningSession(null)
+    }
+  }
+
+  const handleEndSession = async (sessionId: string) => {
+    try {
+      const response = await fetch(`/api/therapist/sessions/${sessionId}/end`, {
+        method: 'POST'
+      })
+      
+      if (response.ok) {
+        toast.success('Session ended successfully')
+        fetchSessions()
+        // Redirect to post-session review page
+        router.push(`/sessions/${sessionId}/post-session`)
+      } else {
+        toast.error('Failed to end session')
+      }
+    } catch (error) {
+      console.error('Error ending session:', error)
+      toast.error('Failed to end session')
     }
   }
 
@@ -476,25 +496,36 @@ export default function TherapistClientSessionsPage() {
                           Client: {session.users?.full_name || 'Unknown Client'} • Session in progress
                         </p>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="ml-auto bg-transparent"
-                        onClick={() => handleJoinSession(session.id)}
-                        disabled={joiningSession === session.id}
-                      >
-                        {joiningSession === session.id ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Joining...
-                          </>
-                        ) : (
-                          <>
-                            <Video className="mr-2 h-4 w-4" />
-                            Join Video Call
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex gap-2 ml-auto">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="bg-transparent"
+                          onClick={() => handleJoinSession(session.id)}
+                          disabled={joiningSession === session.id}
+                        >
+                          {joiningSession === session.id ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Joining...
+                            </>
+                          ) : (
+                            <>
+                              <Video className="mr-2 h-4 w-4" />
+                              Join Video Call
+                            </>
+                          )}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="bg-transparent"
+                          onClick={() => handleEndSession(session.id)}
+                        >
+                          <Phone className="mr-2 h-4 w-4" />
+                          End Session
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

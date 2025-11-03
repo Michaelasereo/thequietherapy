@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -21,13 +21,20 @@ export default function TherapistHeader({ user }: TherapistHeaderProps) {
   const displayName = user.full_name || user.name || user.email?.split('@')[0] || 'Therapist'
   
   // Local state for avatar with event-driven updates
-  const [avatarUrl, setAvatarUrl] = useState(user.profile_image_url)
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user.profile_image_url)
+  
+  // Cache-busting version tracker
+  const [avatarVersion, setAvatarVersion] = useState(0)
 
   // Listen for avatar updates from any component
   useEffect(() => {
     const handleAvatarUpdate = (data: AvatarUpdatedData) => {
       console.log('📸 TherapistHeader: Avatar updated event received:', data)
-      setAvatarUrl(data.profile_image_url)
+      if (data.profile_image_url) {
+        setAvatarUrl(data.profile_image_url)
+        // Increment version to bust cache
+        setAvatarVersion(prev => prev + 1)
+      }
     }
 
     therapistEvents.on(THERAPIST_EVENTS.AVATAR_UPDATED, handleAvatarUpdate)
@@ -37,14 +44,33 @@ export default function TherapistHeader({ user }: TherapistHeaderProps) {
     }
   }, [])
 
-  // Update local state when prop changes
+  // Track previous prop value to detect changes
+  const prevProfileImageUrlRef = useRef<string | undefined>(user.profile_image_url)
+  
+  // Update local state when prop changes (handles reload scenarios)
   useEffect(() => {
-    setAvatarUrl(user.profile_image_url)
-  }, [user.profile_image_url])
+    const newProfileImageUrl = user.profile_image_url || undefined
+    const prevProfileImageUrl = prevProfileImageUrlRef.current
+    
+    // Only update if prop actually changed (handles both undefined -> defined and defined -> different)
+    if (newProfileImageUrl !== prevProfileImageUrl) {
+      console.log('🔄 TherapistHeader: Updating avatar from prop:', {
+        old: prevProfileImageUrl,
+        new: newProfileImageUrl
+      })
+      setAvatarUrl(newProfileImageUrl)
+      prevProfileImageUrlRef.current = newProfileImageUrl
+      // Increment version when prop changes to bust cache
+      if (newProfileImageUrl) {
+        setAvatarVersion(prev => prev + 1)
+      }
+    }
+  }, [user.profile_image_url]) // Only depend on prop to avoid loops
 
-  // Generate unique key for avatar to force re-render on change
-  // Use just the filename from the URL to create a stable but unique key
-  const avatarKey = avatarUrl ? avatarUrl.split('/').pop() || avatarUrl : 'no-avatar'
+  // Add cache-busting parameter to avatar URL
+  const avatarUrlWithCacheBust = avatarUrl 
+    ? `${avatarUrl}?v=${avatarVersion}`
+    : undefined
   
   console.log('🔍 TherapistHeader: Received user data:', user)
   console.log('🔍 TherapistHeader: displayName resolved to:', displayName)
@@ -74,8 +100,12 @@ export default function TherapistHeader({ user }: TherapistHeaderProps) {
             <p className="text-sm font-medium text-brand-gold">{displayName}</p>
             <p className="text-xs text-gray-500">{user.email}</p>
           </div>
-          <Avatar className="h-8 w-8" key={avatarKey}>
-            <AvatarImage src={avatarUrl} alt={displayName} />
+          <Avatar className="h-8 w-8" key={`avatar-${avatarVersion}`}>
+            <AvatarImage 
+              src={avatarUrlWithCacheBust} 
+              alt={displayName}
+              key={`avatar-img-${avatarVersion}`}
+            />
             <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </div>

@@ -52,6 +52,7 @@ interface SessionData {
   recording_url?: string
   daily_room_url?: string
   daily_room_name?: string
+  meeting_token?: string
   therapist?: {
     id: string
     full_name: string
@@ -67,7 +68,7 @@ interface SessionData {
 function VideoSessionPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userType } = useAuth()
   const sessionId = params.sessionId as string
   
   const [session, setSession] = useState<SessionData | null>(null)
@@ -76,20 +77,61 @@ function VideoSessionPage() {
   const [isConnected, setIsConnected] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [sessionTime, setSessionTime] = useState(0)
+  const [meetingToken, setMeetingToken] = useState<string | null>(null)
+  
+  // Helper function to get dashboard URL based on user type
+  const getDashboardUrl = () => {
+    switch (userType) {
+      case 'therapist':
+        return '/therapist/dashboard'
+      case 'partner':
+        return '/partner/dashboard'
+      case 'admin':
+        return '/admin/dashboard'
+      default:
+        return '/dashboard'
+    }
+  }
   
   // Initialize timer with correct value
   useEffect(() => {
     if (session && sessionTime === 0) {
       const now = new Date()
-      let sessionStartTime
-      if (session.start_time && session.end_time) {
-        sessionStartTime = new Date(`${session.start_time}T${session.end_time}`)
-      } else {
+      let sessionStartTime: Date | null = null
+      
+      // Try different date formats from session data
+      if (session.start_time) {
         sessionStartTime = new Date(session.start_time)
+      } else if ((session as any).scheduled_date && (session as any).scheduled_time) {
+        // Handle scheduled_date + scheduled_time format
+        const dateStr = `${(session as any).scheduled_date}T${(session as any).scheduled_time}`
+        sessionStartTime = new Date(dateStr)
+      } else if ((session as any).scheduled_date) {
+        sessionStartTime = new Date((session as any).scheduled_date)
+      }
+      
+      // Validate the date before using it
+      if (!sessionStartTime || isNaN(sessionStartTime.getTime())) {
+        console.error('❌ Invalid session start time:', {
+          start_time: session.start_time,
+          scheduled_date: (session as any).scheduled_date,
+          scheduled_time: (session as any).scheduled_time
+        })
+        setSessionTime(0)
+        setSessionPhase('ended')
+        return
       }
       
       const THERAPY_DURATION_MS = 30 * 60 * 1000 // 30 minutes in milliseconds
       const therapyEndTime = new Date(sessionStartTime.getTime() + THERAPY_DURATION_MS)
+      
+      // Validate end time
+      if (isNaN(therapyEndTime.getTime())) {
+        console.error('❌ Invalid therapy end time')
+        setSessionTime(0)
+        setSessionPhase('ended')
+        return
+      }
       
       console.log('🔍 Initial Timer Setup:', {
         now: now.toISOString(),
@@ -97,9 +139,9 @@ function VideoSessionPage() {
         therapyEnd: therapyEndTime.toISOString(),
         sessionData: {
           start_time: session.start_time,
-        scheduled_date: session.start_time,
-        scheduled_time: session.end_time,
-        duration_minutes: 30 // Force 30 minutes for therapy session
+          scheduled_date: (session as any).scheduled_date,
+          scheduled_time: (session as any).scheduled_time,
+          duration_minutes: 30 // Force 30 minutes for therapy session
         }
       })
       
@@ -160,6 +202,7 @@ function VideoSessionPage() {
     if (!session?.daily_room_url || !callFrameRef.current || sessionPhase !== 'therapy') return
     
     console.log('🎥 Initializing Daily.co call object for recording...')
+    console.log('🔍 Meeting token available:', !!meetingToken, 'Room URL:', session.daily_room_url)
     
     // Create Daily.co call frame
     const daily = DailyIframe.createFrame(callFrameRef.current, {
@@ -174,8 +217,16 @@ function VideoSessionPage() {
       }
     })
     
-    // Join the call
-    daily.join({ url: session.daily_room_url })
+    // Join the call with token if available
+    const joinConfig: any = { url: session.daily_room_url }
+    if (meetingToken || session.meeting_token) {
+      joinConfig.token = meetingToken || session.meeting_token
+      console.log('✅ Using meeting token for authentication')
+    } else {
+      console.warn('⚠️ No meeting token available - joining without token')
+    }
+    
+    daily.join(joinConfig)
       .then(() => {
         console.log('✅ Joined Daily.co call')
         setCallObject(daily)
@@ -184,7 +235,7 @@ function VideoSessionPage() {
       })
       .catch((error) => {
         console.error('❌ Failed to join call:', error)
-        setError('Failed to join video call')
+        setError('Failed to join video call. Please try again or contact support.')
         setIsConnecting(false)
       })
     
@@ -197,7 +248,7 @@ function VideoSessionPage() {
       }
       setCallObject(null)
     }
-  }, [session?.daily_room_url, sessionPhase])
+  }, [session?.daily_room_url, session?.meeting_token, meetingToken, sessionPhase])
 
   useEffect(() => {
     if (!session) return
@@ -205,21 +256,46 @@ function VideoSessionPage() {
     const interval = setInterval(() => {
       const now = new Date()
       
-      // Get session start time consistently
-      let sessionStartTime
-      if (session.start_time && session.end_time) {
-        sessionStartTime = new Date(`${session.start_time}T${session.end_time}`)
-      } else {
+      // Get session start time consistently with validation
+      let sessionStartTime: Date | null = null
+      
+      if (session.start_time) {
         sessionStartTime = new Date(session.start_time)
+      } else if ((session as any).scheduled_date && (session as any).scheduled_time) {
+        // Handle scheduled_date + scheduled_time format
+        const dateStr = `${(session as any).scheduled_date}T${(session as any).scheduled_time}`
+        sessionStartTime = new Date(dateStr)
+      } else if ((session as any).scheduled_date) {
+        sessionStartTime = new Date((session as any).scheduled_date)
+      }
+      
+      // Validate the date before using it
+      if (!sessionStartTime || isNaN(sessionStartTime.getTime())) {
+        console.error('❌ Invalid session start time in timer:', {
+          start_time: session.start_time,
+          scheduled_date: (session as any).scheduled_date,
+          scheduled_time: (session as any).scheduled_time
+        })
+        setSessionTime(0)
+        setSessionPhase('ended')
+        return
       }
       
       // Define durations in milliseconds (more reliable)
       const THERAPY_DURATION_MS = 30 * 60 * 1000 // 30 minutes in ms
       const BUFFER_DURATION_MS = 30 * 60 * 1000  // 30 minutes in ms
       const TOTAL_DURATION_MS = THERAPY_DURATION_MS + BUFFER_DURATION_MS
-      
+
       const therapyEndTime = new Date(sessionStartTime.getTime() + THERAPY_DURATION_MS)
       const bufferEndTime = new Date(sessionStartTime.getTime() + TOTAL_DURATION_MS)
+      
+      // Validate end times
+      if (isNaN(therapyEndTime.getTime()) || isNaN(bufferEndTime.getTime())) {
+        console.error('❌ Invalid therapy end times')
+        setSessionTime(0)
+        setSessionPhase('ended')
+        return
+      }
       
       if (now < sessionStartTime) {
         // WAITING: Countdown to session start (positive time until start)
@@ -435,11 +511,21 @@ function VideoSessionPage() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
+          // Store meeting token for Daily.co authentication
+          const token = data.data.meeting_token
+          if (token) {
+            console.log('✅ Meeting token received from API')
+            setMeetingToken(token)
+          } else {
+            console.warn('⚠️ No meeting token in API response')
+          }
+          
           // Attach room details to session so Daily can join
           setSession(prev => prev ? {
             ...prev,
             daily_room_url: data.data.room_url || prev.daily_room_url || prev.session_url,
-            daily_room_name: data.data.room_name || prev.daily_room_name || prev.room_name
+            daily_room_name: data.data.room_name || prev.daily_room_name || prev.room_name,
+            meeting_token: token || prev.meeting_token
           } : prev)
 
           setIsConnected(true)
@@ -463,18 +549,134 @@ function VideoSessionPage() {
 
   const leaveSession = async () => {
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/leave`, {
-        method: 'POST'
-      })
+      // First, leave the Daily.co call
+      if (callObject) {
+        console.log('🔴 Leaving Daily.co call...')
+        try {
+          await callObject.leave()
+          await callObject.destroy()
+          console.log('✅ Successfully left Daily.co call')
+        } catch (dailyError) {
+          console.error('Error leaving Daily.co call:', dailyError)
+          // Continue even if Daily.co leave fails
+        }
+      }
 
-      if (response.ok) {
-        setIsConnected(false)
-        toast.success('Left session')
-        router.push('/dashboard')
+      setIsConnected(false)
+      toast.success('Ending session and generating SOAP notes...')
+
+      // Wait a moment for transcription to complete (if it's in progress)
+      console.log('⏳ Waiting for transcription to complete (if in progress)...')
+      await new Promise(resolve => setTimeout(resolve, 3000)) // Wait 3 seconds
+
+      // Call the complete endpoint to mark session as completed and generate SOAP notes
+      // Try to get transcript first, if available - with retries
+      let transcript: string | null = null
+      console.log('🔍 Attempting to fetch transcript...')
+      
+      // Try fetching transcript with retries (transcription might still be processing)
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          const notesResponse = await fetch(`/api/sessions/notes?sessionId=${sessionId}`)
+          if (notesResponse.ok) {
+            const notesData = await notesResponse.json()
+            if (notesData.success && notesData.notes?.transcript) {
+              transcript = notesData.notes.transcript
+              console.log(`✅ Found transcript on attempt ${attempt + 1}, length: ${transcript.length} characters`)
+              break
+            } else {
+              console.log(`⚠️ Attempt ${attempt + 1}: No transcript yet in session_notes`)
+            }
+          }
+        } catch (notesError) {
+          console.warn(`⚠️ Attempt ${attempt + 1}: Could not fetch transcript:`, notesError)
+        }
+        
+        // Wait before retrying (except on last attempt)
+        if (attempt < 4) {
+          console.log(`⏳ Waiting 2 seconds before retry ${attempt + 2}...`)
+          await new Promise(resolve => setTimeout(resolve, 2000))
+        }
+      }
+      
+      if (!transcript) {
+        console.warn('⚠️ No transcript found after all retries - endpoint will try to fetch with its own retry logic')
+      }
+
+      // Complete session and generate SOAP notes
+      try {
+        const response = await fetch('/api/sessions/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            sessionId,
+            transcript: transcript || undefined // Pass transcript if available
+          })
+        })
+
+        let result: any = null
+        try {
+          result = await response.json()
+        } catch (jsonError) {
+          // If response is not JSON, still continue
+          console.warn('API response was not JSON:', jsonError)
+        }
+        
+        if (response.ok && result?.success) {
+          console.log('✅ Session complete API response:', {
+            success: result.success,
+            hasSoapNotes: !!result.soapNotes,
+            noTranscript: result.noTranscript,
+            soapNotesError: result.soapNotesError,
+            message: result.message
+          })
+          
+          if (result.soapNotes) {
+            console.log('✅✅ SOAP notes were generated successfully!')
+            toast.success('Session ended and SOAP notes generated successfully!')
+          } else if (result.noTranscript) {
+            console.warn('⚠️ No transcript found - SOAP notes cannot be generated')
+            toast.warning('Session ended, but no transcript found for SOAP notes')
+          } else if (result.soapNotesError) {
+            console.error('❌ SOAP notes generation error:', result.soapNotesError)
+            toast.warning(`Session ended, but SOAP notes failed: ${result.soapNotesError}`)
+          } else {
+            console.log('✅ Session completed but no SOAP notes in response')
+            toast.success('Session ended successfully')
+          }
+          
+          // Redirect to post-session review page
+          router.push(`/sessions/${sessionId}/post-session`)
+        } else {
+          // Log error details for debugging
+          console.error('❌ Session complete API failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            result: result
+          })
+          
+          if (result) {
+            console.error('Full error result:', JSON.stringify(result, null, 2))
+            toast.warning(`Session ended, but SOAP notes generation had issues: ${result.error || result.message || 'Unknown error'}`)
+          } else {
+            toast.warning(`Session ended, but API failed with status ${response.status}`)
+          }
+          
+          // Still redirect even if SOAP notes generation fails
+          router.push(`/sessions/${sessionId}/post-session`)
+        }
+      } catch (apiError) {
+        console.error('Error calling complete API:', apiError)
+        toast.warning('Session ended, but there was an error generating SOAP notes')
+        // Still redirect even if API call fails
+        router.push(`/sessions/${sessionId}/post-session`)
       }
     } catch (error) {
       console.error('Error leaving session:', error)
       toast.error('Failed to leave session')
+      // Still try to redirect
+      setIsConnected(false)
+      router.push(`/sessions/${sessionId}/post-session`)
     }
   }
 
@@ -593,7 +795,7 @@ function VideoSessionPage() {
                 Go Back
               </Button>
               <Button asChild>
-                <Link href="/dashboard">
+                <Link href={getDashboardUrl()}>
                   <Home className="h-4 w-4 mr-2" />
                   Dashboard
                 </Link>
@@ -667,7 +869,7 @@ function VideoSessionPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push(getDashboardUrl())}
             className="text-white hover:bg-gray-700"
             title="Back to Dashboard"
           >
@@ -722,8 +924,32 @@ function VideoSessionPage() {
                 <p className="text-gray-400 mb-6">
                   {session.status === 'in_progress' ? 
                     `You can rejoin this active session. The session will remain active until your therapist ends it.` :
+                    (session as any).is_instant ? 
+                      (() => {
+                        const endTime = session.end_time ? new Date(session.end_time) : null;
+                        const now = new Date();
+                        if (endTime && endTime > now) {
+                          const minutesRemaining = Math.floor((endTime.getTime() - now.getTime()) / 60000);
+                          return `⚡ Instant Session: You can join anytime now! This session will expire in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}. Once you join, the session duration is ${session.duration_minutes || 30} minutes.`;
+                        }
+                        return `⚡ Instant Session: You can join anytime! Once you join, the session duration is ${session.duration_minutes || 30} minutes.`;
+                      })() :
                     sessionPhase === 'waiting' ? 
-                      `Session starts at ${new Date(session.start_time).toLocaleTimeString()}. You can join 15 minutes before, but the countdown will only start at the exact scheduled time.` :
+                      (() => {
+                        try {
+                          const startDate = session.start_time 
+                            ? new Date(session.start_time) 
+                            : (session as any).scheduled_date 
+                              ? new Date(`${(session as any).scheduled_date}T${(session as any).scheduled_time || '00:00:00'}`)
+                              : null
+                          if (startDate && !isNaN(startDate.getTime())) {
+                            return `Session starts at ${startDate.toLocaleTimeString()}. You can join 15 minutes before, but the countdown will only start at the exact scheduled time.`
+                          }
+                          return 'Session start time not available. Please check your session details.'
+                        } catch (error) {
+                          return 'Session start time not available. Please check your session details.'
+                        }
+                      })() :
                       `Click the button below to start your therapy session with ${session.therapist?.full_name || 'your therapist'}`
                   }
                 </p>
@@ -745,7 +971,7 @@ function VideoSessionPage() {
                 </div>
                 <h2 className="text-2xl font-semibold mb-4">Therapy Session Ended</h2>
                 <p className="text-gray-400 mb-6">
-                  The 30-minute therapy session has ended at 2:30 AM. The video call is now closed.
+                  The 30-minute therapy session has ended. You're now in the buffer period.
                 </p>
                 <div className="bg-gray-700 rounded-lg p-4 mb-6">
                   <div className="text-sm text-gray-300">
@@ -761,6 +987,25 @@ function VideoSessionPage() {
                 </Button>
               </div>
             </div>
+          ) : sessionPhase === 'ended' ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center max-w-md">
+                <div className="bg-gray-800 p-6 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                  <CheckCircle className="h-10 w-10 text-green-500" />
+                </div>
+                <h2 className="text-2xl font-semibold mb-4">Session Complete</h2>
+                <p className="text-gray-400 mb-6">
+                  The therapy session and buffer period have both ended. Thank you for your session!
+                </p>
+                <Button 
+                  onClick={leaveSession} 
+                  size="lg" 
+                  className="bg-black hover:bg-gray-800"
+                >
+                  Return to Dashboard
+                </Button>
+              </div>
+            </div>
           ) : (
             <>
               {/* Video Call with Daily.co SDK */}
@@ -769,12 +1014,14 @@ function VideoSessionPage() {
                   {/* Daily.co call frame container */}
                   <div ref={callFrameRef} className="w-full h-full" />
                   
-                  {/* Recording controls overlay */}
+                  {/* Auto-recorder (hidden) - starts recording automatically */}
                   {callObject && (
-                    <div className="absolute top-4 right-4 z-10">
+                    <div style={{ display: 'none' }}>
                       <DailyAudioRecorder
                         callObject={callObject}
                         sessionId={sessionId}
+                        autoStart={true}
+                        hideUI={true}
                         onTranscriptionComplete={async (transcript) => {
                           console.log('✅ Transcription complete:', transcript.substring(0, 100) + '...')
                           toast.success('Session recorded and transcribed!')
@@ -784,7 +1031,10 @@ function VideoSessionPage() {
                             const response = await fetch('/api/sessions/complete', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ sessionId })
+                              body: JSON.stringify({ 
+                                sessionId,
+                                transcript: transcript // Pass transcript directly to avoid race condition
+                              })
                             })
                             
                             if (response.ok) {
@@ -860,11 +1110,12 @@ function VideoSessionPage() {
                   
                   <Button
                     variant="destructive"
-                    size="sm"
+                    size="default"
                     onClick={leaveSession}
-                    className="rounded-full p-3 bg-red-600 hover:bg-red-700"
+                    className="rounded-full px-4 py-2 bg-red-600 hover:bg-red-700 flex items-center gap-2 font-medium"
                   >
                     <PhoneOff className="h-5 w-5" />
+                    <span>End Video</span>
                   </Button>
                 </div>
               </div>

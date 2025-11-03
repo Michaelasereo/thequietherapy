@@ -105,11 +105,12 @@ function TherapistLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Extract only the needed fields to avoid passing the entire user object
   // Prioritize therapist data which includes enrollment profile image
+  // Fallback to user.avatar_url if therapist data isn't loaded yet
   const userInfo = { 
     name: displayName,
     full_name: therapist?.full_name || user?.full_name || '',
     email: therapist?.email || user?.email || '',
-    profile_image_url: therapist?.profile_image_url // ✅ STANDARDIZED - only from therapist data
+    profile_image_url: therapist?.profile_image_url || (user as any)?.avatar_url || undefined // ✅ STANDARDIZED - fallback to user.avatar_url
   }
   
   console.log('🔍 TherapistLayout: userInfo profile_image_url:', userInfo.profile_image_url)

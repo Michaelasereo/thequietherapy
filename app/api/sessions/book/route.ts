@@ -65,37 +65,44 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // 3. Validate therapist exists and is available
     console.log('🔍 DEBUG: Looking for therapist with ID:', therapist_id)
     
-    const { data: therapist, error: therapistError } = await supabase
+    // First, get the user
+    const { data: user, error: userError } = await supabase
       .from('users')
-      .select(`
-        id,
-        full_name,
-        email,
-        user_type,
-        is_active,
-        is_verified,
-        therapist_profiles!inner (
-          verification_status,
-          is_verified
-        )
-      `)
+      .select('id, full_name, email, user_type, is_active, is_verified')
       .eq('id', therapist_id)
       .eq('user_type', 'therapist')
       .eq('is_active', true)
       .eq('is_verified', true)
-      .eq('therapist_profiles.verification_status', 'approved')
       .single()
 
-    console.log('🔍 DEBUG: Therapist query result:', { therapist, therapistError })
-
-    if (therapistError) {
-      console.error('❌ Therapist query error:', therapistError)
+    if (userError || !user) {
+      console.error('❌ User query error:', userError)
       throw new NotFoundError('Therapist not found or not available')
     }
 
-    if (!therapist) {
-      console.error('❌ No therapist found with ID:', therapist_id)
+    console.log('✅ User found:', user.email)
+
+    // Then check therapist_enrollments for approval status (source of truth)
+    const { data: enrollment, error: enrollmentError } = await supabase
+      .from('therapist_enrollments')
+      .select('id, status, is_active')
+      .eq('email', user.email)
+      .eq('status', 'approved')
+      .eq('is_active', true)
+      .single()
+
+    if (enrollmentError || !enrollment) {
+      console.error('❌ Enrollment query error:', enrollmentError)
       throw new NotFoundError('Therapist not found or not available')
+    }
+
+    console.log('✅ Therapist enrollment verified:', enrollment.status)
+
+    // Use user data as therapist data
+    const therapist = {
+      id: user.id,
+      full_name: user.full_name,
+      email: user.email
     }
 
     console.log('✅ Therapist found:', therapist.full_name)

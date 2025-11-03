@@ -16,8 +16,9 @@ interface BookingStep2Props {
 
 export default function BookingStep2({ onNext, onBack, initialSelectedTherapistId, preferredGender, preferredSpecialization }: BookingStep2Props) {
   const [selectedTherapistId, setSelectedTherapistId] = useState<string | undefined>(initialSelectedTherapistId)
-  const [filterGender, setFilterGender] = useState<string>(preferredGender && preferredGender !== "no-preference" ? preferredGender : "All")
-  const [filterSpecialization, setFilterSpecialization] = useState<string>(preferredSpecialization && preferredSpecialization !== "no-preference" ? preferredSpecialization : "All")
+  // Default filters to "All" - user can manually filter
+  const [filterGender, setFilterGender] = useState<string>("All")
+  const [filterSpecialization, setFilterSpecialization] = useState<string>("All")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalTherapist, setModalTherapist] = useState<any>(null)
   const [therapists, setTherapists] = useState<any[]>([])
@@ -88,7 +89,14 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
 
   const filteredTherapists = therapists.filter((therapist) => {
     const genderMatch = filterGender === "All" || therapist.gender === filterGender
-    const specializationMatch = filterSpecialization === "All" || therapist.specialization === filterSpecialization
+    // Check if specialization is an array or string and match accordingly
+    const therapistSpecializations = Array.isArray(therapist.specialization) 
+      ? therapist.specialization 
+      : therapist.specialization 
+        ? therapist.specialization.split(',').map(s => s.trim())
+        : []
+    const specializationMatch = filterSpecialization === "All" || 
+      therapistSpecializations.some((spec: string) => spec.toLowerCase().includes(filterSpecialization.toLowerCase()))
     return genderMatch && specializationMatch
   })
 

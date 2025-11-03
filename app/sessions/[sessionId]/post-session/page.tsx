@@ -47,13 +47,27 @@ type PostSessionStep = 'notes' | 'feedback' | 'completed'
 export default function PostSessionPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userType: authUserType } = useAuth()
   const sessionId = params.sessionId as string
   
   const [sessionData, setSessionData] = useState<SessionData | null>(null)
   const [currentStep, setCurrentStep] = useState<PostSessionStep>('notes')
   const [loading, setLoading] = useState(true)
   const [userType, setUserType] = useState<'patient' | 'therapist'>('patient')
+  
+  // Helper function to get dashboard URL based on auth user type
+  const getDashboardUrl = () => {
+    switch (authUserType) {
+      case 'therapist':
+        return '/therapist/dashboard'
+      case 'partner':
+        return '/partner/dashboard'
+      case 'admin':
+        return '/admin/dashboard'
+      default:
+        return '/dashboard'
+    }
+  }
 
   useEffect(() => {
     if (sessionId && user?.id) {
@@ -78,26 +92,49 @@ export default function PostSessionPage() {
           setUserType('patient')
         } else {
           toast.error('You are not authorized to view this session')
-          router.push('/dashboard')
+          router.push(getDashboardUrl())
           return
         }
         
-        // Check if session is completed
+        // Check if session is completed - wait a bit if it's still in progress
+        // The session might have just been completed but the status hasn't updated yet
         if (result.session.status !== 'completed') {
-          toast.error('This session is not yet completed')
-          router.push('/dashboard')
-          return
+          console.log('⚠️ Session status is not completed:', result.session.status)
+          
+          // If session is in_progress, wait a moment and retry once
+          if (result.session.status === 'in_progress') {
+            console.log('⏳ Session still in progress, waiting 2 seconds and retrying...')
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            
+            // Retry fetching session data
+            const retryResponse = await fetch(`/api/sessions/notes?sessionId=${sessionId}`)
+            const retryResult = await retryResponse.json()
+            
+            if (retryResult.success && retryResult.session.status === 'completed') {
+              setSessionData(retryResult.session)
+              // Continue with the flow
+            } else {
+              toast.warning('Session is still in progress. Please wait a moment.')
+              // Don't redirect immediately - let user see the message
+              setTimeout(() => router.push(getDashboardUrl()), 3000)
+              return
+            }
+          } else {
+            toast.error('This session is not yet completed')
+            router.push(getDashboardUrl())
+            return
+          }
         }
         
       } else {
         console.error('Error fetching session data:', result.error)
         toast.error('Failed to load session data')
-        router.push('/dashboard')
+        router.push(getDashboardUrl())
       }
     } catch (error) {
       console.error('Error fetching session data:', error)
       toast.error('Failed to load session data')
-      router.push('/dashboard')
+      router.push(getDashboardUrl())
     } finally {
       setLoading(false)
     }
@@ -160,7 +197,7 @@ export default function PostSessionPage() {
             </Alert>
             <div className="flex justify-center mt-4">
               <Button asChild>
-                <Link href="/dashboard">
+                <Link href={getDashboardUrl()}>
                   <Home className="h-4 w-4 mr-2" />
                   Back to Dashboard
                 </Link>
@@ -179,7 +216,7 @@ export default function PostSessionPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard">
+              <Link href={getDashboardUrl()}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
               </Link>
@@ -295,17 +332,13 @@ export default function PostSessionPage() {
                 Thank you for completing the post-session review. Your feedback helps us improve our services.
               </p>
               <div className="flex gap-4 justify-center">
-                <Button asChild>
-                  <Link href="/dashboard">
-                    <Home className="h-4 w-4 mr-2" />
-                    Back to Dashboard
-                  </Link>
+                <Button onClick={() => router.push(getDashboardUrl())}>
+                  <Home className="h-4 w-4 mr-2" />
+                  Back to Dashboard
                 </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/dashboard/sessions">
-                    <FileText className="h-4 w-4 mr-2" />
-                    View All Sessions
-                  </Link>
+                <Button variant="outline" onClick={() => router.push(`${getDashboardUrl()}/sessions`)}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  View All Sessions
                 </Button>
               </div>
             </CardContent>

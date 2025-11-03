@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, AlertCircle } from "lucide-react"
@@ -30,6 +30,7 @@ interface PatientBiodata {
 
 export default function DashboardBookingPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const { user } = useAuth()
   const { biodata, loading, errors, refreshBiodata } = usePatientData()
@@ -51,6 +52,34 @@ export default function DashboardBookingPage() {
   const [showBiodataPrompt, setShowBiodataPrompt] = useState(false)
 
   const stepLabels = ["Contact Info", "Select Therapist", "Payment"]
+
+  // Handle payment success from URL params
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment')
+    if (paymentStatus === 'success') {
+      const credits = searchParams.get('credits')
+      const therapistId = searchParams.get('therapistId')
+      const timeSlotId = searchParams.get('timeSlotId')
+      
+      // If we have booking context in URL params, ensure we're on step 3
+      if (therapistId && timeSlotId && currentStep < 3) {
+        console.log('🔄 Payment successful with booking context, advancing to step 3')
+        setSelectedTherapistId(therapistId)
+        setCurrentStep(3)
+      }
+      
+      // Clean up URL params
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.delete('payment')
+        url.searchParams.delete('credits')
+        url.searchParams.delete('reference')
+        url.searchParams.delete('therapistId')
+        url.searchParams.delete('timeSlotId')
+        window.history.replaceState({}, '', url.toString())
+      }
+    }
+  }, [searchParams, currentStep])
 
   // Load biodata on mount and auto-fill if available
   useEffect(() => {

@@ -178,9 +178,45 @@ export default function SessionsPage() {
           title: "Session Completed",
           description: "Session has been marked as completed.",
         })
-        // Refresh sessions
-        const allSessions = await getUserSessions(user?.id || '')
-        setSessions(allSessions)
+        
+        // Automatically generate SOAP notes
+        try {
+          const soapResponse = await fetch('/api/sessions/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId })
+          })
+          
+          if (soapResponse.ok) {
+            const soapResult = await soapResponse.json()
+            if (soapResult.success && soapResult.soapNotes) {
+              toast({
+                title: "SOAP Notes Generated",
+                description: "AI-generated SOAP notes are ready!",
+              })
+            } else if (soapResult.success && soapResult.noTranscript) {
+              toast({
+                title: "Session Completed",
+                description: "Generate SOAP notes when transcript is available.",
+              })
+            } else {
+              toast({
+                title: "Session Completed",
+                description: "You can generate SOAP notes on the review page.",
+              })
+            }
+          }
+        } catch (soapError) {
+          console.error('Error generating SOAP notes:', soapError)
+          // Don't block redirect if SOAP generation fails
+          toast({
+            title: "Session Completed",
+            description: "You can generate SOAP notes on the review page.",
+          })
+        }
+        
+        // Redirect to post-session review page
+        router.push(`/sessions/${sessionId}/post-session`)
       } else {
         toast({
           title: "Error",
@@ -235,19 +271,14 @@ export default function SessionsPage() {
   }
 
   const canJoinSession = (session: SessionData) => {
-    const now = new Date()
-    const sessionTime = getSessionStartTime(session)
-    const sessionEndTime = new Date(sessionTime.getTime() + ((session.duration || 60) * 60 * 1000))
-    const timeDiff = sessionTime.getTime() - now.getTime()
-    const minutesDiff = timeDiff / (1000 * 60)
-    
-    // Cannot join if session has ended
-    if (sessionEndTime < now) {
-      return false
-    }
-    
-    // Can join 15 minutes before, during, or when session is in progress
-    return (minutesDiff >= -15 && session.status === 'scheduled') || session.status === 'in_progress'
+    // Use utility function for consistent logic, especially for instant sessions
+    const { canJoinSession: checkCanJoin } = require('@/lib/utils/session-status');
+    return checkCanJoin({
+      start_time: session.start_time || getSessionStartTime(session),
+      end_time: session.end_time || (session.start_time ? new Date(new Date(session.start_time).getTime() + ((session.duration || 60) * 60 * 1000)).toISOString() : null),
+      status: session.status,
+      is_instant: (session as any).is_instant
+    });
   }
 
   const handleOpenPostSession = (sessionId: string, e?: React.MouseEvent) => {
@@ -359,7 +390,47 @@ export default function SessionsPage() {
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">
-              {formatTime(session.start_time || session.scheduled_time)} - {formatTime(session.end_time)}
+              {(() => {
+                // Always use scheduled_time for display (Nigerian local time, UTC+1)
+                // This is the time the user actually selected when booking
+                let startTimeStr = session.scheduled_time || (session as any).session_time;
+                
+                // If no scheduled_time, calculate from start_time assuming it's in UTC
+                // Nigeria is UTC+1, so we need to add 1 hour to UTC time
+                if (!startTimeStr && session.start_time) {
+                  const startDate = new Date(session.start_time);
+                  // Extract UTC hours and add 1 hour for Nigerian time (UTC+1)
+                  const utcHours = startDate.getUTCHours();
+                  const nigerianHours = (utcHours + 1) % 24;
+                  const minutes = startDate.getUTCMinutes();
+                  startTimeStr = `${nigerianHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+                }
+                
+                // Calculate end time from start time + duration (always in Nigerian time)
+                let endTimeStr = null;
+                if (startTimeStr && (session.duration_minutes || session.duration)) {
+                  const duration = session.duration_minutes || session.duration || 60;
+                  const [hours, minutes] = startTimeStr.split(':');
+                  const startMinutes = parseInt(hours) * 60 + parseInt(minutes);
+                  const endMinutes = startMinutes + duration;
+                  const endHours = Math.floor(endMinutes / 60) % 24;
+                  const endMins = endMinutes % 60;
+                  endTimeStr = `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}:00`;
+                } else if (session.end_time) {
+                  // Fallback: extract from end_time (UTC) and add 1 hour for Nigerian time
+                  const endDate = new Date(session.end_time);
+                  const utcHours = endDate.getUTCHours();
+                  const nigerianHours = (utcHours + 1) % 24;
+                  const minutes = endDate.getUTCMinutes();
+                  endTimeStr = `${nigerianHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+                }
+                
+                // Format both times using the formatTime function
+                const formattedStart = startTimeStr ? formatTime(startTimeStr) : 'Time not available';
+                const formattedEnd = endTimeStr ? formatTime(endTimeStr) : 'Time not available';
+                
+                return `${formattedStart} - ${formattedEnd}`;
+              })()}
             </span>
           </div>
         </div>

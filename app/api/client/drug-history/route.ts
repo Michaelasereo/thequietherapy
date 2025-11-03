@@ -7,7 +7,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
-    if (!userId) {
+    console.log('📋 Drug history API called with userId:', userId);
+    console.log('📋 Full URL:', request.url);
+
+    if (!userId || userId.trim() === '') {
+      console.error('❌ Drug history API: userId is missing or empty');
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
@@ -88,6 +92,54 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error in drug history update API:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    // SECURE Authentication - only therapists can create
+    const session = await ServerSessionManager.getSession();
+    if (!session || session.role !== 'therapist') {
+      return NextResponse.json({ error: 'Unauthorized - Therapist access required' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { user_id, medication_name, dosage, start_date, prescribing_doctor, duration_of_usage, notes } = body;
+
+    if (!user_id || !medication_name || !dosage || !start_date) {
+      return NextResponse.json({ error: 'user_id, medication_name, dosage, and start_date are required' }, { status: 400 });
+    }
+
+    const supabase = createServerClient();
+    const therapistId = session.id;
+
+    console.log('➕ Creating drug history for user_id:', user_id, 'therapist_id:', therapistId);
+
+    // Insert the new drug history record
+    const { data, error } = await supabase
+      .from('patient_drug_history')
+      .insert({
+        user_id,
+        therapist_id: therapistId,
+        medication_name,
+        dosage,
+        start_date,
+        prescribing_doctor: prescribing_doctor || null,
+        duration_of_usage: duration_of_usage || null,
+        notes: notes || null
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding patient drug history:', error);
+      return NextResponse.json({ error: 'Failed to add drug history', details: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error('Error in drug history POST API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

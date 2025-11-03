@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     // Use therapist ID from verified session
     const therapistId = session.id
 
-    // Get therapist data
+    // Get therapist data from users table
     const { data: therapistData, error: therapistError } = await supabase
       .from('users')
       .select(`
@@ -83,27 +83,15 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Get therapist sessions using standardized start_time field
-    const { data: rawSessions, error: sessionsError } = await supabase
+    // Query sessions for this therapist - limit to most recent 100 to improve performance
+    const { data: allSessions, error: sessionsError } = await supabase
       .from('sessions')
       .select(`
-        id,
-        status,
-        user_id,
-        therapist_id,
-        start_time,
-        end_time,
-        created_at,
-        updated_at,
-        title,
-        description,
-        notes,
-        complaints,
-        duration_minutes,
+        *,
         users:user_id (
           id,
-          full_name,
-          email
+          email,
+          full_name
         )
       `)
       .eq('therapist_id', therapistId)
@@ -135,7 +123,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform sessions to match frontend expectations
-    const sessions: TherapistSession[] = (rawSessions || []).map(session => {
+    const sessions: TherapistSession[] = (allSessions || []).map((session: any) => {
       // Use start_time as primary source (with fallback for legacy data)
       let startDateTime: Date
       let endDateTime: Date
@@ -169,6 +157,8 @@ export async function GET(request: NextRequest) {
         therapist_id: session.therapist_id,
         created_at: session.created_at,
         updated_at: (session as any).updated_at || session.created_at,
+        is_instant: session.is_instant || false,
+        created_by: session.created_by || null,
         users: (session.users && Array.isArray(session.users) && session.users.length > 0) ? {
           id: session.users[0].id,
           full_name: session.users[0].full_name,
@@ -232,8 +222,8 @@ export async function GET(request: NextRequest) {
       clients: uniqueClients
     })
     
-    // Add cache headers (consider implementing smart caching in the future)
-    response.headers.set('Cache-Control', 'private, max-age=60, must-revalidate')
+    // Add cache headers to improve performance
+    response.headers.set('Cache-Control', 'private, max-age=30, must-revalidate')
     
     return response
   } catch (error) {

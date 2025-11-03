@@ -25,10 +25,10 @@ export default function HeroSection() {
             </div>
             <div className="flex flex-col gap-3 min-[400px]:flex-row">
               <Button asChild size="lg" className="bg-black text-white hover:bg-gray-800 rounded-xl px-8 py-4 text-lg">
-                <Link href="/login?user_type=individual">Get Mental Health Support</Link>
+                <Link href="/login?user_type=individual">Sign Up to Get Started</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl px-8 py-4 text-lg">
-                <Link href="/therapist/enroll">Join as Healthcare Therapist</Link>
+                <Link href="/book-session">Book a Session</Link>
               </Button>
             </div>
           </div>

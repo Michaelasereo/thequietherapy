@@ -11,7 +11,8 @@ export type SessionStatus =
   | 'in_progress' 
   | 'completed' 
   | 'cancelled' 
-  | 'no_show';
+  | 'no_show'
+  | 'pending_approval';
 
 export type SessionType = 'video' | 'audio' | 'chat' | 'in_person';
 

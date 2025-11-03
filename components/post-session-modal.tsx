@@ -317,20 +317,31 @@ export default function PostSessionModal({ sessionId, isOpen, onClose, onComplet
             </Card>
 
             {/* Main Content */}
-            {currentStep === 'notes' && (
+            {currentStep === 'notes' && sessionId && (
               <SessionNotes
-                sessionId={sessionId!}
+                sessionId={sessionId}
                 userType={userType}
                 onNotesSaved={handleNotesSaved}
               />
             )}
 
-            {currentStep === 'feedback' && (
+            {currentStep === 'feedback' && sessionId && (
               <SessionFeedback
-                sessionId={sessionId!}
+                sessionId={sessionId}
                 therapistName={sessionData.therapist?.full_name}
                 onFeedbackSubmitted={handleFeedbackSubmitted}
               />
+            )}
+            
+            {/* Show error if sessionId is missing */}
+            {currentStep === 'notes' && !sessionId && (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+                  <h3 className="text-lg font-semibold mb-2">Session ID Missing</h3>
+                  <p className="text-muted-foreground">Unable to load session notes. Please refresh the page.</p>
+                </CardContent>
+              </Card>
             )}
 
             {currentStep === 'completed' && (

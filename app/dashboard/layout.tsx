@@ -15,6 +15,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(undefined);
 
   // Handle client-side mounting
   useEffect(() => {
@@ -49,8 +51,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Show loading state while checking authentication
   // Add timeout to prevent infinite loading
-  const [loadingTimeout, setLoadingTimeout] = useState(false)
-  
   useEffect(() => {
     if (loading) {
       const timeout = setTimeout(() => {
@@ -63,6 +63,44 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       setLoadingTimeout(false)
     }
   }, [loading])
+
+  // Update profile image URL when user is available
+  useEffect(() => {
+    if (user?.avatar_url) {
+      setProfileImageUrl(user.avatar_url);
+    }
+  }, [user?.avatar_url]);
+
+  // Fetch user profile image on mount (only if user is authenticated)
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+    
+    const fetchUserProfileImage = async () => {
+      try {
+        // Try to fetch from API auth/me which might have updated profile image
+        const response = await fetch('/api/auth/me', {
+          headers: { 'Cache-Control': 'no-cache' }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          // Check various possible field names for profile image
+          const imageUrl = data.user?.profile_image_url || 
+                          data.user?.avatar_url || 
+                          data.profile_image_url ||
+                          data.avatar_url
+          
+          if (imageUrl) {
+            setProfileImageUrl(imageUrl)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user profile image:', error)
+      }
+    }
+
+    fetchUserProfileImage()
+  }, [isAuthenticated, user?.id])
 
   if (!mounted || loading) {
     return (
@@ -95,7 +133,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const userInfo = { 
     name: user.full_name || user.email?.split('@')[0] || 'User',
     full_name: user.full_name || '',
-    email: user.email || '' 
+    email: user.email || '',
+    profile_image_url: profileImageUrl || user.avatar_url || undefined // Use fetched profile image or fallback to avatar_url
   }
 
   return (

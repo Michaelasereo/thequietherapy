@@ -26,6 +26,8 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
+import { AvailabilityService, TimeSlot } from '@/lib/services/availabilityService';
+import { ConflictResolutionModal } from '@/components/conflict-resolution-modal';
 
 export default function CreateSessionPage() {
   const { user } = useAuth();
@@ -35,6 +37,12 @@ export default function CreateSessionPage() {
   const [currentStep, setCurrentStep] = useState<'patient' | 'date' | 'time' | 'confirm'>('patient');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [success, setSuccess] = useState(false);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflicts, setConflicts] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [requestedTime, setRequestedTime] = useState<string>('');
   
   const [formData, setFormData] = useState({
     user_id: '',
@@ -54,12 +62,6 @@ export default function CreateSessionPage() {
   ];
 
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  // Time slots (hourly from 8 AM to 8 PM)
-  const timeSlots = [
-    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', 
-    '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
-  ];
 
   // Fetch all patients who have ANY session with this therapist (past, present, or future)
   useEffect(() => {
@@ -98,6 +100,35 @@ export default function CreateSessionPage() {
 
     fetchPatients();
   }, [user?.id]);
+
+  // Fetch available time slots when a date is selected
+  useEffect(() => {
+    const fetchAvailableSlots = async () => {
+      if (!formData.session_date || !user?.id) {
+        setTimeSlots([]);
+        return;
+      }
+
+      setLoadingSlots(true);
+      try {
+        const slots = await AvailabilityService.getTimeSlots(user.id, formData.session_date);
+        setTimeSlots(slots);
+        console.log('✅ Fetched available time slots:', slots.length);
+      } catch (error) {
+        console.error('Error fetching time slots:', error);
+        setTimeSlots([]);
+        toast({
+          title: "Error Loading Slots",
+          description: "Failed to load available time slots. Using default times.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+
+    fetchAvailableSlots();
+  }, [formData.session_date, user?.id]);
 
   const formatDateForAPI = (date: Date) => {
     const year = date.getFullYear();
@@ -206,7 +237,7 @@ export default function CreateSessionPage() {
     if (!formData.user_id) {
       toast({
         title: "Missing Information",
-        description: "Please select a patient.",
+        description: "Please select a client.",
         variant: "destructive",
       });
       return;
@@ -227,6 +258,40 @@ export default function CreateSessionPage() {
     try {
       // Use custom session API for custom/instant sessions
       if (formData.is_custom || formData.is_instant) {
+        // STEP 1: Pre-validate availability (only for scheduled sessions)
+        if (!formData.is_instant && formData.session_date && formData.start_time) {
+          console.log('🔍 Checking time slot availability before creating session...');
+          
+          const requestedDateTime = new Date(`${formData.session_date}T${formData.start_time}:00+01:00`);
+          setRequestedTime(requestedDateTime.toISOString());
+          
+          const availabilityResponse = await fetch('/api/therapist/check-availability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              start_time: requestedDateTime.toISOString(),
+              duration_minutes: parseInt(formData.duration)
+            })
+          });
+
+          const availabilityResult = await availabilityResponse.json();
+          
+          if (!availabilityResult.available) {
+            console.log('🚨 Time slot not available:', availabilityResult);
+            
+            // Show conflict resolution modal
+            setConflicts(availabilityResult.conflicting_sessions || []);
+            setSuggestions(availabilityResult.suggested_times || []);
+            setShowConflictModal(true);
+            setLoading(false);
+            return;
+          }
+
+          console.log('✅ Time slot available, proceeding with session creation...');
+        }
+
+        // STEP 2: Create the session
         const response = await fetch('/api/therapist/create-custom-session', {
           method: 'POST',
           headers: {
@@ -279,6 +344,56 @@ export default function CreateSessionPage() {
             statusText: response.statusText,
             result: result
           });
+          
+          // Handle conflict errors (409) - database trigger or our conflict detection
+          if (response.status === 409) {
+            const requestedDateTime = new Date(`${formData.session_date}T${formData.start_time}:00+01:00`);
+            setRequestedTime(requestedDateTime.toISOString());
+            
+            // If we have conflicting_sessions, use them. Otherwise, fetch them
+            if (result.conflicting_sessions && result.conflicting_sessions.length > 0) {
+              setConflicts(result.conflicting_sessions);
+              setSuggestions(result.suggested_times || result.suggested_actions || []);
+              setShowConflictModal(true);
+              setLoading(false);
+              return;
+            }
+            
+            // If it's a conflict but no details, fetch them using check-availability API
+            if (result.code === 'P0001' || result.code === 'TIME_SLOT_CONFLICT' || result.error?.includes('booked')) {
+              console.log('🔍 Conflict detected but no details, fetching conflict information...');
+              
+              try {
+                const availabilityResponse = await fetch('/api/therapist/check-availability', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    start_time: requestedDateTime.toISOString(),
+                    duration_minutes: parseInt(formData.duration)
+                  })
+                });
+
+                const availabilityResult = await availabilityResponse.json();
+                
+                if (!availabilityResult.available && availabilityResult.conflicting_sessions) {
+                  setConflicts(availabilityResult.conflicting_sessions);
+                  setSuggestions(availabilityResult.suggested_times || []);
+                  setShowConflictModal(true);
+                  setLoading(false);
+                  return;
+                }
+              } catch (fetchError) {
+                console.error('❌ Error fetching conflict details:', fetchError);
+                // Fall through to show error
+              }
+            }
+            
+            // Fallback: Show error message if we can't get conflict details
+            const conflictMsg = result.details || result.error || 'This time slot is already booked. Please select a different time.';
+            throw new Error(conflictMsg);
+          }
+          
           const errorMsg = result.error || result.details || result.message || `Failed to create session (Status: ${response.status})`;
           throw new Error(errorMsg);
         }
@@ -349,7 +464,7 @@ export default function CreateSessionPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Create Session</h1>
-          <p className="text-muted-foreground">Schedule a new therapy session with a patient</p>
+          <p className="text-muted-foreground">Schedule a new therapy session with a client</p>
         </div>
       </div>
 
@@ -361,7 +476,7 @@ export default function CreateSessionPage() {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'patient' ? 'bg-black text-white' : 'bg-gray-200'}`}>
                 1
               </div>
-              <span className="text-sm">Patient</span>
+              <span className="text-sm">Client</span>
             </div>
             <ArrowRight className="h-4 w-4 text-gray-400" />
             <div className={`flex items-center gap-2 ${currentStep === 'date' ? 'text-gray-900 font-semibold' : 'text-gray-400'}`}>
@@ -386,20 +501,20 @@ export default function CreateSessionPage() {
             </div>
           </div>
 
-          {/* Step 1: Select Patient */}
+          {/* Step 1: Select Client */}
           {currentStep === 'patient' && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
-                  Select Patient
+                  Select Client
           </CardTitle>
         </CardHeader>
               <CardContent className="space-y-4">
                 <Alert className="border-brand-gold bg-brand-gold/10">
                   <AlertCircle className="h-4 w-4 text-brand-gold" />
                   <AlertDescription className="text-gray-900 text-sm">
-                    Select a patient from your client list to schedule a session. This includes all patients who have booked sessions with you.
+                    Select a client from your client list to schedule a session. This includes all clients who have booked sessions with you.
                   </AlertDescription>
                 </Alert>
 
@@ -441,8 +556,8 @@ export default function CreateSessionPage() {
                 ) : (
                   <div className="text-center py-8">
                     <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-muted-foreground">No patients found</p>
-                    <p className="text-sm text-muted-foreground mt-1">Patients will appear here once they book a session with you</p>
+                    <p className="text-muted-foreground">No clients found</p>
+                    <p className="text-sm text-muted-foreground mt-1">Clients will appear here once they book a session with you</p>
                   </div>
                 )}
               </CardContent>
@@ -463,15 +578,15 @@ export default function CreateSessionPage() {
                     size="sm"
                     onClick={() => setCurrentStep('patient')}
                   >
-                    Change Patient
+                    Change Client
                   </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Selected Patient Info */}
+                {/* Selected Client Info */}
                 <div className="p-3 bg-gray-50 border border-gray-300 rounded-lg">
                   <p className="text-sm text-gray-900">
-                    <strong>Patient:</strong> {formData.user_name}
+                    <strong>Client:</strong> {formData.user_name}
                   </p>
                 </div>
 
@@ -564,7 +679,7 @@ export default function CreateSessionPage() {
                 {/* Selected Date Info */}
                 <div className="p-3 bg-gray-50 border border-gray-300 rounded-lg space-y-1">
                   <p className="text-sm text-gray-900">
-                    <strong>Patient:</strong> {formData.user_name}
+                    <strong>Client:</strong> {formData.user_name}
                   </p>
                   <p className="text-sm text-gray-900">
                     <strong>Date:</strong> {new Date(formData.session_date).toLocaleDateString('en-US', { 
@@ -576,29 +691,60 @@ export default function CreateSessionPage() {
                   </p>
               </div>
 
+                {/* Loading State */}
+                {loadingSlots && (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-gray-400" />
+                    <p className="text-sm text-muted-foreground">Loading available times...</p>
+                  </div>
+                )}
+
                 {/* Time Slots Grid */}
-                <div className="grid grid-cols-3 gap-2 max-h-[350px] overflow-y-auto p-2">
-                  {timeSlots.map(time => (
-                    <button
-                      key={time}
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, start_time: time });
-                        setCurrentStep('confirm');
-                      }}
-                      className={`
-                        p-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium
-                        ${formData.start_time === time 
-                          ? 'bg-black text-white border-black' 
-                          : 'bg-white border-gray-200 hover:border-gray-400 hover:bg-gray-50'
-                        }
-                      `}
-                    >
-                      <Clock className="h-4 w-4 mx-auto mb-1" />
-                      {time}
-                    </button>
-                  ))}
-                </div>
+                {!loadingSlots && timeSlots.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 max-h-[350px] overflow-y-auto p-2">
+                    {timeSlots.map(slot => {
+                      const formatTime = (timeString: string) => {
+                        const [hours, minutes] = timeString.split(':');
+                        const hour = parseInt(hours);
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        const displayHour = hour % 12 || 12;
+                        return `${displayHour}:${minutes} ${ampm}`;
+                      };
+
+                      return (
+                        <button
+                          key={`${slot.start_time}-${slot.end_time}`}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, start_time: slot.start_time });
+                            setCurrentStep('confirm');
+                          }}
+                          className={`
+                            p-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium
+                            ${formData.start_time === slot.start_time 
+                              ? 'bg-black text-white border-black' 
+                              : 'bg-white border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+                            }
+                          `}
+                        >
+                          <Clock className="h-4 w-4 mx-auto mb-1" />
+                          {formatTime(slot.start_time)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* No Slots Available */}
+                {!loadingSlots && timeSlots.length === 0 && (
+                  <div className="text-center py-8 border border-gray-200 rounded-lg bg-gray-50">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm font-medium text-gray-900 mb-1">No Available Times</p>
+                    <p className="text-xs text-muted-foreground">
+                      No time slots are available for this date.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -629,7 +775,7 @@ export default function CreateSessionPage() {
                     <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                       <User className="h-5 w-5 text-gray-900" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Patient</p>
+                        <p className="text-xs text-muted-foreground">Client</p>
                         <p className="font-medium">{formData.user_name}</p>
                       </div>
                     </div>
@@ -666,7 +812,7 @@ export default function CreateSessionPage() {
                         <Zap className="h-5 w-5 text-yellow-600" />
                         <div>
                           <p className="text-xs text-yellow-600 font-medium">Instant Session</p>
-                          <p className="font-medium text-yellow-700">Patient can join immediately after approval</p>
+                          <p className="font-medium text-yellow-700">Client can join immediately after approval</p>
                         </div>
                       </div>
                     )}
@@ -723,9 +869,9 @@ export default function CreateSessionPage() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {formData.is_instant 
-                        ? '⚡ Patient approves and joins immediately'
+                        ? '⚡ Client approves and joins immediately'
                         : formData.is_custom 
-                          ? '📅 Custom session - patient must approve before joining'
+                          ? '📅 Custom session - client must approve before joining'
                           : '📅 Regular session - no approval needed'}
                     </p>
                   </div>
@@ -773,7 +919,7 @@ export default function CreateSessionPage() {
                   <Alert className="border-brand-gold bg-brand-gold/10">
                     <AlertCircle className="h-4 w-4 text-brand-gold" />
                     <AlertDescription className="text-gray-900 text-sm">
-                      <strong>Credit Requirement:</strong> The patient will need 1 available credit to join this session. 
+                      <strong>Credit Requirement:</strong> The client will need 1 available credit to join this session. 
                       Make sure they have credits before scheduling.
                     </AlertDescription>
                   </Alert>
@@ -847,6 +993,43 @@ export default function CreateSessionPage() {
         </CardContent>
       </Card>
       )}
+
+      {/* Conflict Resolution Modal */}
+      <ConflictResolutionModal
+        isOpen={showConflictModal}
+        onClose={() => {
+          setShowConflictModal(false);
+          setConflicts([]);
+          setSuggestions([]);
+          setRequestedTime('');
+        }}
+        conflicts={conflicts}
+        suggestions={suggestions}
+        requestedTime={requestedTime}
+        onResolve={(suggestion) => {
+          // Update form data with the suggested time
+          const suggestedDate = new Date(suggestion.time);
+          const dateStr = suggestedDate.toISOString().split('T')[0];
+          const timeStr = suggestedDate.toTimeString().split(' ')[0].slice(0, 5); // HH:mm format
+          
+          setFormData({
+            ...formData,
+            session_date: dateStr,
+            start_time: timeStr
+          });
+          
+          setShowConflictModal(false);
+          setConflicts([]);
+          setSuggestions([]);
+          setRequestedTime('');
+          
+          // Optionally auto-submit or just let user review and submit
+          toast({
+            title: "Time Updated",
+            description: `Session time updated to ${suggestion.label}. Review and confirm to proceed.`,
+          });
+        }}
+      />
     </div>
   );
 }

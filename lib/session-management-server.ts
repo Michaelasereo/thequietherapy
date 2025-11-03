@@ -179,6 +179,7 @@ export async function joinSession(sessionId: string, userId: string): Promise<{ 
     }
 
     const session = sessionData
+    const now = new Date()
 
     // Allow joining if session is in_progress (instant sessions, or user rejoining)
     if (session.status === 'in_progress') {
@@ -187,11 +188,19 @@ export async function joinSession(sessionId: string, userId: string): Promise<{ 
         return { success: false, error: 'This session has ended and cannot be rejoined.' }
       }
       // Continue to room creation/joining below
+    } else if (session.is_instant) {
+      // For instant sessions: you can join anytime before end_time (deadline)
+      if (session.end_time) {
+        const endTime = new Date(session.end_time)
+        if (now > endTime) {
+          return { success: false, error: 'This instant session has expired. The join window has ended.' }
+        }
+      }
+      // Allow joining anytime before expiration - continue to room creation
     } else {
       // For scheduled sessions, check if session is ready to join (within 1 hour of start time)
       if (session.scheduled_date && session.scheduled_time) {
         const sessionDateTime = new Date(`${session.scheduled_date}T${session.scheduled_time}`)
-        const now = new Date()
         const timeDiff = sessionDateTime.getTime() - now.getTime()
         const thirtyMinutes = 30 * 60 * 1000 // 30 minutes for therapy session
 

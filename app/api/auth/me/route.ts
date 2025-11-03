@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       // Fetch fresh user data from the database
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, email, full_name, user_type, is_verified, is_active')
+        .select('id, email, full_name, user_type, is_verified, is_active, avatar_url')
         .eq('id', unifiedSession.id)
         .single()
       
@@ -48,6 +48,8 @@ export async function GET(request: NextRequest) {
             user_type: unifiedSession.role,
             is_verified: unifiedSession.is_verified,
             is_active: unifiedSession.is_active,
+            avatar_url: (unifiedSession as any).avatar_url,
+            profile_image_url: (unifiedSession as any).avatar_url, // Also include standardized field name
             is_authenticated: true
           }
         })
@@ -64,6 +66,8 @@ export async function GET(request: NextRequest) {
           role: userData.user_type,
           is_verified: userData.is_verified,
           is_active: userData.is_active,
+          avatar_url: userData.avatar_url,
+          profile_image_url: userData.avatar_url, // Also include standardized field name
           is_authenticated: true
         }
       })

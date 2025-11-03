@@ -24,6 +24,7 @@ import {
   Brain
 } from "lucide-react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 interface TherapistSession {
   id: string
@@ -38,6 +39,7 @@ interface TherapistSession {
 }
 
 export default function TherapistVideoCallPage() {
+  const router = useRouter()
   const [todaysSessions, setTodaysSessions] = useState<TherapistSession[]>([])
   const [upcomingSession, setUpcomingSession] = useState<TherapistSession | null>(null)
   const [loading, setLoading] = useState(true)
@@ -131,7 +133,7 @@ export default function TherapistVideoCallPage() {
     }
     
     // Navigate to dedicated video session page
-    window.location.href = `/video-session/${session.id}`
+    router.push(`/video-session/${session.id}`)
     toast.success('Opening therapy session...')
   }
 
@@ -155,6 +157,7 @@ export default function TherapistVideoCallPage() {
 
   const endSession = async (sessionId: string) => {
     try {
+      // First, end the session
       const response = await fetch(`/api/therapist/sessions/${sessionId}/end`, {
         method: 'POST'
       })
@@ -162,6 +165,33 @@ export default function TherapistVideoCallPage() {
       if (response.ok) {
         toast.success('Session ended successfully')
         fetchSessionData() // Refresh data
+        
+        // Automatically generate SOAP notes
+        try {
+          const soapResponse = await fetch('/api/sessions/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId })
+          })
+          
+          if (soapResponse.ok) {
+            const soapResult = await soapResponse.json()
+            if (soapResult.success && soapResult.soapNotes) {
+              toast.success('SOAP notes generated automatically!')
+            } else if (soapResult.success && soapResult.noTranscript) {
+              toast.info('Session ended. Generate SOAP notes when transcript is available.')
+            } else {
+              toast.info('Session ended. You can generate SOAP notes on the review page.')
+            }
+          }
+        } catch (soapError) {
+          console.error('Error generating SOAP notes:', soapError)
+          // Don't block redirect if SOAP generation fails
+          toast.info('Session ended. You can generate SOAP notes on the review page.')
+        }
+        
+        // Redirect to post-session review page
+        router.push(`/sessions/${sessionId}/post-session`)
       } else {
         toast.error('Failed to end session')
       }

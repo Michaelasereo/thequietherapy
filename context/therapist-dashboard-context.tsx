@@ -576,29 +576,44 @@ export function TherapistDashboardProvider({ children }: { children: React.React
       }
     } catch (error) {
       console.error('Failed to fetch clients:', error)
+      // Silently fail - don't spam errors if server is down
     }
   }, [dispatch, state.therapist?.id])
 
-  // Fetch sessions
+  // Fetch sessions - use dashboard-data endpoint which includes sessions
   const fetchSessions = useCallback(async () => {
+    if (!state.therapist?.id) {
+      console.log('🔍 No therapist ID available for fetching sessions')
+      return
+    }
+
     try {
-      const response = await fetch('/api/therapist/sessions')
+      const response = await fetch(`/api/therapist/dashboard-data?therapistId=${state.therapist.id}`)
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.sessions) {
-          const upcoming = data.sessions.filter((s: TherapistSession) => s.status === 'scheduled')
-          const past = data.sessions.filter((s: TherapistSession) => s.status === 'completed')
+        if (data.success && data.data?.sessions) {
+          const sessions = data.data.sessions || []
+          const upcoming = sessions.filter((s: any) => 
+            s.status === 'scheduled' || 
+            s.status === 'in_progress' || 
+            s.status === 'confirmed' || 
+            s.status === 'pending_approval'
+          )
+          const past = sessions.filter((s: any) => s.status === 'completed')
           
           dispatch({ 
             type: 'SET_SESSIONS', 
             payload: { upcoming, past } 
           })
         }
+      } else {
+        console.error('Failed to fetch sessions:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Failed to fetch sessions:', error)
+      // Silently fail - don't spam errors if server is down
     }
-  }, [dispatch])
+  }, [dispatch, state.therapist?.id])
 
   // Fetch dashboard stats
   const fetchStats = useCallback(async () => {
@@ -707,19 +722,32 @@ export function TherapistDashboardProvider({ children }: { children: React.React
     }
   }, [refetchTherapistData])
 
-  // Auto-fetch therapist data on mount
+  // Auto-fetch therapist data on mount - only once
   useEffect(() => {
-    console.log('🔍 Context: Auto-fetching therapist data on mount')
-    fetchTherapistData()
-  }, [fetchTherapistData])
-
-  useEffect(() => {
-    if (state.therapist) {
-      fetchClients()
-      fetchSessions()
-      fetchStats()
+    let mounted = true
+    if (mounted) {
+      fetchTherapistData()
     }
-  }, [state.therapist])
+    return () => {
+      mounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Fetch related data when therapist is loaded - only once
+  useEffect(() => {
+    if (state.therapist?.id) {
+      // Add small delay to prevent race conditions with main dashboard fetch
+      const timeoutId = setTimeout(() => {
+        fetchClients()
+        fetchSessions()
+        fetchStats()
+      }, 500)
+      
+      return () => clearTimeout(timeoutId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.therapist?.id])
 
   const value: TherapistDashboardContextType = {
     state,

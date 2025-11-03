@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -21,7 +21,33 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
   const displayName = user.full_name || user.name || user.email?.split('@')[0] || 'User'
   
   // Local state for avatar with event-driven updates
-  const [avatarUrl, setAvatarUrl] = useState(user.profile_image_url)
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user.profile_image_url)
+  
+  // Cache-busting version tracker
+  const [avatarVersion, setAvatarVersion] = useState(0)
+
+  // Track previous prop value to detect changes (handles reload scenarios)
+  const prevProfileImageUrlRef = useRef<string | undefined>(user.profile_image_url)
+
+  // Update local state when prop changes (handles reload scenarios)
+  useEffect(() => {
+    const newProfileImageUrl = user.profile_image_url || undefined
+    const prevProfileImageUrl = prevProfileImageUrlRef.current
+    
+    // Only update if prop actually changed (handles both undefined -> defined and defined -> different)
+    if (newProfileImageUrl !== prevProfileImageUrl) {
+      console.log('🔄 DashboardHeader: Updating avatar from prop:', {
+        old: prevProfileImageUrl,
+        new: newProfileImageUrl
+      })
+      setAvatarUrl(newProfileImageUrl)
+      prevProfileImageUrlRef.current = newProfileImageUrl
+      // Increment version when prop changes to bust cache
+      if (newProfileImageUrl) {
+        setAvatarVersion(prev => prev + 1)
+      }
+    }
+  }, [user.profile_image_url]) // Only depend on prop to avoid loops
 
   // Listen for avatar updates from any component
   useEffect(() => {
@@ -41,22 +67,14 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
       if (data.profile_image_url) {
         console.log('🔄 DashboardHeader: Updating avatar URL from', avatarUrl, 'to', data.profile_image_url)
         setAvatarUrl(data.profile_image_url)
+        // Increment version to bust cache
+        setAvatarVersion(prev => prev + 1)
       } else {
         console.warn('⚠️ DashboardHeader: Event received but no profile_image_url in data')
       }
     }
 
     therapistEvents.on(THERAPIST_EVENTS.AVATAR_UPDATED, handleAvatarUpdate)
-    
-    // Test: emit a test event on mount to verify the listener works
-    setTimeout(() => {
-      console.log('🧪 DashboardHeader: Emitting test event...')
-      therapistEvents.emit(THERAPIST_EVENTS.AVATAR_UPDATED, {
-        profile_image_url: 'test-url',
-        timestamp: Date.now(),
-        source: 'test'
-      })
-    }, 1000)
 
     return () => {
       console.log('🧹 DashboardHeader: Cleaning up event listener')
@@ -64,13 +82,10 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
     }
   }, [])
 
-  // Update local state when prop changes
-  useEffect(() => {
-    setAvatarUrl(user.profile_image_url)
-  }, [user.profile_image_url])
-
-  // Generate unique key for avatar to force re-render on change
-  const avatarKey = avatarUrl ? avatarUrl.split('/').pop() || avatarUrl : 'no-avatar'
+  // Add cache-busting parameter to avatar URL
+  const avatarUrlWithCacheBust = avatarUrl 
+    ? `${avatarUrl}?v=${avatarVersion}`
+    : undefined
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
@@ -96,8 +111,12 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
             <p className="text-sm font-medium text-brand-gold">{displayName}</p>
             <p className="text-xs text-gray-500">{user.email}</p>
           </div>
-          <Avatar className="h-8 w-8" key={avatarKey}>
-            <AvatarImage src={avatarUrl} alt={displayName} />
+          <Avatar className="h-8 w-8" key={`avatar-${avatarVersion}`}>
+            <AvatarImage 
+              src={avatarUrlWithCacheBust} 
+              alt={displayName}
+              key={`avatar-img-${avatarVersion}`}
+            />
             <AvatarFallback>{displayName.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </div>

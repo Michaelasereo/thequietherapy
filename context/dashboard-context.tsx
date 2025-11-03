@@ -495,7 +495,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       
       // Add timeout to prevent hanging
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      let timeoutId: NodeJS.Timeout | null = setTimeout(() => {
+        timeoutId = null
+        controller.abort()
+      }, 10000) // 10 second timeout
       
       try {
         const response = await fetch(`/api/sessions?user_id=${currentState.user.id}&order=scheduled_date.desc`, {
@@ -506,7 +509,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           }
         })
         
-        clearTimeout(timeoutId)
+        // Clear timeout on successful fetch
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
         
         if (response.ok) {
           const data = await response.json()
@@ -611,8 +618,19 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           })
         }
       } catch (fetchError) {
-        clearTimeout(timeoutId)
-        console.error('🔍 DashboardContext: Sessions API fetch failed:', fetchError)
+        // Clear timeout if still active
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        
+        // Check if error is due to abort
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          console.warn('🔍 DashboardContext: Sessions fetch aborted (likely timeout)')
+        } else {
+          console.error('🔍 DashboardContext: Sessions API fetch failed:', fetchError)
+        }
+        
         // Set empty arrays on network error - NOT mock data
         dispatch({ 
           type: 'SET_SESSIONS', 

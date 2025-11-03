@@ -15,10 +15,14 @@ import {
   Clock, 
   CheckCircle, 
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Stethoscope,
+  Pill
 } from "lucide-react"
 import { toast } from "sonner"
 import SOAPNotesDisplay from '@/components/soap-notes-display'
+import PatientMedicalHistoryEditor from '@/components/patient-medical-history-editor'
+import PatientDrugHistoryEditor from '@/components/patient-drug-history-editor'
 
 interface SOAPNotes {
   subjective: string
@@ -56,14 +60,31 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
   const [soapNotes, setSoapNotes] = useState<SOAPNotes | null>(null)
 
   useEffect(() => {
-    fetchSessionNotes()
+    if (sessionId) {
+      fetchSessionNotes()
+    } else {
+      console.warn('⚠️ SessionNotes: sessionId is null, skipping fetch')
+      setLoading(false)
+    }
   }, [sessionId])
 
   const fetchSessionNotes = async () => {
+    if (!sessionId) {
+      console.error('❌ SessionNotes: Cannot fetch notes without sessionId')
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       
       const response = await fetch(`/api/sessions/notes?sessionId=${sessionId}`)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+      
       const result = await response.json()
       
       if (result.success) {
@@ -72,8 +93,15 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
         
         // Populate form fields
         if (result.notes) {
-          setPatientNotes(result.notes.patient_notes || '')
-          setTherapistNotes(result.notes.therapist_notes || '')
+          // Get notes from the 'notes' column (since therapist_notes/patient_notes columns don't exist)
+          // The 'notes' column contains therapist notes
+          // Try to get separate columns first if they exist, otherwise use 'notes' column
+          const therapistNotesValue = result.notes.therapist_notes || result.notes.notes || ''
+          const patientNotesValue = result.notes.patient_notes || ''
+          
+          setTherapistNotes(therapistNotesValue)
+          setPatientNotes(patientNotesValue)
+          
           if (result.notes.soap_notes) {
             setSoapNotes(result.notes.soap_notes)
           }
@@ -99,7 +127,21 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
       if (userType === 'patient') {
         notesToSave.patientNotes = patientNotes
       } else {
-        notesToSave.therapistNotes = therapistNotes
+        // For therapist notes, append with timestamp
+        const timestamp = new Date().toISOString()
+        const newNoteEntry = therapistNotes.trim()
+        
+        if (!newNoteEntry) {
+          toast.error('Please enter some notes before saving')
+          return
+        }
+        
+        // Get existing notes
+        const existingNotes = notesData?.notes || ''
+        // Append new note with timestamp separator
+        const separator = existingNotes ? '\n\n---\n\n' : ''
+        const timestampedNote = `${timestamp} - ${newNoteEntry}`
+        notesToSave.notes = existingNotes + separator + timestampedNote
       }
       
       const response = await fetch('/api/sessions/notes', {
@@ -113,18 +155,52 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
         })
       })
       
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        let errorMessage = 'Failed to save notes'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorData.details || errorMessage
+          console.error('❌ Error saving notes:', {
+            status: response.status,
+            error: errorData.error,
+            details: errorData.details,
+            code: errorData.code,
+            hint: errorData.hint
+          })
+        } catch {
+          const errorText = await response.text()
+          console.error('❌ Error saving notes (non-JSON response):', {
+            status: response.status,
+            text: errorText
+          })
+          errorMessage = errorText || errorMessage
+        }
+        toast.error(errorMessage)
+        return
+      }
+      
       const result = await response.json()
       
       if (result.success) {
         toast.success('Notes saved successfully')
+        // Clear the input field after saving
+        if (userType === 'therapist') {
+          setTherapistNotes('')
+        } else {
+          setPatientNotes('')
+        }
+        // Refresh notes to show the new entry
+        await fetchSessionNotes()
         onNotesSaved?.()
       } else {
-        console.error('Error saving notes:', result.error)
-        toast.error('Failed to save notes')
+        console.error('❌ Error saving notes:', result.error, result.details)
+        toast.error(result.error || 'Failed to save notes')
       }
     } catch (error) {
-      console.error('Error saving notes:', error)
-      toast.error('Failed to save notes')
+      console.error('❌ Error saving notes:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save notes'
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }
@@ -151,11 +227,31 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
       const result = await response.json()
       
       if (result.success) {
-        setSoapNotes(result.soapNotes)
-        toast.success('SOAP notes generated successfully')
+        // Handle both object and string formats
+        if (typeof result.soapNotes === 'object' && result.soapNotes !== null) {
+          setSoapNotes(result.soapNotes)
+        } else if (typeof result.soapNotes === 'string') {
+          try {
+            const parsed = JSON.parse(result.soapNotes)
+            setSoapNotes(parsed)
+          } catch {
+            // If it's not JSON, create a simple structure
+            setSoapNotes({
+              subjective: result.soapNotes,
+              objective: '',
+              assessment: '',
+              plan: ''
+            })
+          }
+        }
+        
+        // Refresh notes data to get updated SOAP notes from server
+        await fetchSessionNotes()
+        
+        toast.success('SOAP notes generated successfully!')
       } else {
         console.error('Error generating SOAP notes:', result.error)
-        toast.error('Failed to generate SOAP notes')
+        toast.error(result.error || 'Failed to generate SOAP notes')
       }
     } catch (error) {
       console.error('Error generating SOAP notes:', error)
@@ -227,10 +323,16 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
 
       {/* Notes Tabs */}
       <Tabs defaultValue={userType === 'patient' ? 'patient' : 'therapist'} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className={userType === 'therapist' ? 'grid w-full grid-cols-5' : 'grid w-full grid-cols-3'}>
           <TabsTrigger value="patient">Patient Notes</TabsTrigger>
           <TabsTrigger value="therapist">Therapist Notes</TabsTrigger>
           <TabsTrigger value="soap">SOAP Notes</TabsTrigger>
+          {userType === 'therapist' && (
+            <>
+              <TabsTrigger value="medical">Medical History</TabsTrigger>
+              <TabsTrigger value="drug">Drug History</TabsTrigger>
+            </>
+          )}
         </TabsList>
         
         {/* Patient Notes */}
@@ -286,8 +388,50 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Display existing notes separated by timestamps */}
+              {notesData?.notes && notesData.notes.trim() && (
+                <div className="space-y-4 mb-4">
+                  <Label>Previous Therapy Notes</Label>
+                  <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
+                    {(() => {
+                      // Split notes by separator (--- or new line pattern with timestamp)
+                      const notesArray = notesData.notes.split(/---|\n\n(?=\d{4}-\d{2}-\d{2})/).filter(n => n.trim());
+                      
+                      return notesArray.map((noteBlock, index) => {
+                        // Try to extract timestamp if present (ISO format: 2024-01-01T12:00:00.000Z or 2024-01-01 12:00:00)
+                        const timestampMatch = noteBlock.match(/(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z)?)/);
+                        const timestamp = timestampMatch ? timestampMatch[1] : null;
+                        const noteText = timestamp 
+                          ? noteBlock.replace(/^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z)?[\s\n]*-?[\s\n]*/, '').trim() 
+                          : noteBlock.trim();
+                        
+                        if (!noteText) return null;
+                        
+                        return (
+                          <div key={index} className="pb-3 border-b border-gray-200 last:border-b-0 last:pb-0">
+                            {timestamp && (
+                              <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                                <Clock className="h-3 w-3" />
+                                <span>{new Date(timestamp).toLocaleString()}</span>
+                              </div>
+                            )}
+                            <p className="text-sm whitespace-pre-wrap">{noteText}</p>
+                          </div>
+                        );
+                      }).filter(Boolean);
+                    })()}
+                  </div>
+                </div>
+              )}
+              
+              {(!notesData?.notes || !notesData.notes.trim()) && (
+                <div className="text-center py-8 bg-gray-50 rounded-lg border mb-4">
+                  <p className="text-sm text-gray-500">No therapy notes yet. Add your first note below.</p>
+                </div>
+              )}
+              
               <div>
-                <Label htmlFor="therapist-notes">Clinical Notes</Label>
+                <Label htmlFor="therapist-notes">Add New Clinical Notes</Label>
                 <Textarea
                   id="therapist-notes"
                   value={therapistNotes}
@@ -297,13 +441,16 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
                   className="mt-1"
                   disabled={userType !== 'therapist'}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  New notes will be appended with a timestamp
+                </p>
               </div>
               
               {userType === 'therapist' && (
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
                   <Button 
                     onClick={handleSaveNotes} 
-                    disabled={saving}
+                    disabled={saving || !therapistNotes.trim()}
                     className="flex items-center gap-2"
                   >
                     {saving ? (
@@ -311,7 +458,7 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
                     ) : (
                       <CheckCircle className="h-4 w-4" />
                     )}
-                    Save Notes
+                    Add Notes
                   </Button>
                 </div>
               )}
@@ -368,6 +515,40 @@ export default function SessionNotes({ sessionId, userType, onNotesSaved }: Sess
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Medical History Tab - Therapist Only */}
+        {userType === 'therapist' && sessionData?.user_id && (
+          <TabsContent value="medical" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Stethoscope className="h-5 w-5" />
+                  Medical History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PatientMedicalHistoryEditor userId={sessionData.user_id} readOnly={false} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Drug History Tab - Therapist Only */}
+        {userType === 'therapist' && sessionData?.user_id && (
+          <TabsContent value="drug" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Pill className="h-5 w-5" />
+                  Drug History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PatientDrugHistoryEditor userId={sessionData.user_id} readOnly={false} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

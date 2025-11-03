@@ -54,30 +54,34 @@ export default function TherapistEnrollmentPage() {
     const finalData = { ...formData, ...data }
     console.log("Final Enrollment Data:", finalData)
 
-    // Prepare JSON payload for API route
-    const payload: any = {
-      email: finalData.email,
-      fullName: finalData.fullName,
-      phone: finalData.phone,
-      licensedQualification: finalData.licensedQualification,
-      specialization: finalData.specialization || [],
-      languages: finalData.languages || [],
-      gender: finalData.gender,
-      age: finalData.age,
-      maritalStatus: finalData.maritalStatus,
-      bio: finalData.bio
-    }
-
+    // Handle profile image upload if provided
+    const profileImageFile = finalData.profileImageFile as File | undefined
+    
     console.log("Calling API route /api/therapist/enroll...")
     setIsPending(true)
 
     try {
+      // Create FormData to handle file upload
+      const formDataToSend = new FormData()
+      formDataToSend.append('email', finalData.email)
+      formDataToSend.append('fullName', finalData.fullName)
+      formDataToSend.append('phone', finalData.phone)
+      formDataToSend.append('licensedQualification', finalData.licensedQualification)
+      formDataToSend.append('specialization', JSON.stringify(finalData.specialization || []))
+      formDataToSend.append('languages', JSON.stringify(finalData.languages || []))
+      formDataToSend.append('gender', finalData.gender)
+      formDataToSend.append('age', finalData.age)
+      formDataToSend.append('maritalStatus', finalData.maritalStatus)
+      formDataToSend.append('bio', finalData.bio)
+      
+      // Add profile image file if provided
+      if (profileImageFile) {
+        formDataToSend.append('profileImage', profileImageFile)
+      }
+
       const response = await fetch('/api/therapist/enroll', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
+        body: formDataToSend // Send as FormData to handle file upload
       })
 
       const result = await response.json()

@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, CheckCircle, ArrowRight } from "lucide-react"
+import { AlertCircle, CheckCircle, ArrowRight, Upload, X } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 // EMAIL POLICY UPDATE: Any valid email domain is allowed for therapist enrollment
 
@@ -26,7 +27,9 @@ const formSchema = z.object({
   bio: z.string().min(50, { message: "Bio must be at least 50 characters." }),
 })
 
-type BasicDetailsFormValues = z.infer<typeof formSchema>
+type BasicDetailsFormValues = z.infer<typeof formSchema> & {
+  profileImageFile?: File
+}
 
 interface Step1BasicDetailsProps {
   onNext: (data: BasicDetailsFormValues) => void
@@ -39,6 +42,8 @@ export default function Step1BasicDetails({ onNext, initialData, onEmailStatusCh
   const [emailMessage, setEmailMessage] = useState('')
   const [canEnroll, setCanEnroll] = useState(true)
   const [redirectTo, setRedirectTo] = useState('')
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null)
 
   const form = useForm<BasicDetailsFormValues>({
     resolver: zodResolver(formSchema),
@@ -114,11 +119,60 @@ export default function Step1BasicDetails({ onNext, initialData, onEmailStatusCh
     return () => clearTimeout(timeoutId)
   }, [email, onEmailStatusChange])
 
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (profileImagePreview) {
+        URL.revokeObjectURL(profileImagePreview)
+      }
+    }
+  }, [profileImagePreview])
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      form.setError('root', {
+        message: 'Invalid file type. Please upload a JPEG, PNG, or WebP image.'
+      })
+      return
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      form.setError('root', {
+        message: 'File too large. Please upload an image smaller than 5MB.'
+      })
+      return
+    }
+
+    // Store the file and create preview
+    setProfileImageFile(file)
+    const previewUrl = URL.createObjectURL(file)
+    setProfileImagePreview(previewUrl)
+  }
+
+  const handleImageRemove = () => {
+    if (profileImagePreview) {
+      URL.revokeObjectURL(profileImagePreview)
+    }
+    setProfileImageFile(null)
+    setProfileImagePreview(null)
+  }
+
   function onSubmit(data: BasicDetailsFormValues) {
     if (!canEnroll) {
       return
     }
-    onNext(data)
+    // Pass data with optional profile image file
+    onNext({
+      ...data,
+      profileImageFile: profileImageFile || undefined
+    })
   }
 
   return (
@@ -189,19 +243,70 @@ export default function Step1BasicDetails({ onNext, initialData, onEmailStatusCh
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone Number</FormLabel>
-              <FormControl>
-                <Input placeholder="+234 802 123 4567" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number</FormLabel>
+                <FormControl>
+                  <Input placeholder="+234 802 123 4567" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+        {/* Profile Picture Section */}
+        <div className="border-t pt-6 mt-6">
+          <FormItem>
+            <FormLabel>Profile Picture (Optional)</FormLabel>
+            <p className="text-sm text-muted-foreground mb-4">
+              Upload a professional profile picture. You can change this later in your dashboard.
+            </p>
+            
+            {profileImagePreview ? (
+              <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-gray-300">
+                <Image
+                  src={profileImagePreview}
+                  alt="Profile preview"
+                  fill
+                  className="object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full"
+                  onClick={handleImageRemove}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <label
+                  htmlFor="profile-image-upload"
+                  className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-gray-400 transition-colors"
+                >
+                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-500">Upload</span>
+                </label>
+                <input
+                  id="profile-image-upload"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <div className="flex-1 text-sm text-gray-500">
+                  <p>Accepted formats: JPEG, PNG, WebP</p>
+                  <p>Max file size: 5MB</p>
+                </div>
+              </div>
+            )}
+          </FormItem>
+        </div>
 
         {/* Personal Information Section */}
         <div className="border-t pt-6 mt-6">

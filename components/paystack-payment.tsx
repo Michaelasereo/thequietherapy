@@ -56,16 +56,18 @@ export default function PaystackPayment({
 
       const result = await response.json()
 
-      if (!result.success) {
+      if (!response.ok || !result.success) {
         throw new Error(result.error || 'Payment initialization failed')
       }
 
-      // Redirect to Paystack checkout page
-      if (result.data.authorization_url) {
-        window.location.href = result.data.authorization_url
-      } else {
-        throw new Error('No authorization URL received from Paystack')
+      // Validate authorization URL before redirecting
+      if (!result.data?.authorization_url) {
+        console.error('❌ Missing authorization_url in Paystack response:', result)
+        throw new Error('Payment gateway did not return a valid payment URL. Please try again.')
       }
+
+      // Redirect to Paystack checkout page
+      window.location.href = result.data.authorization_url
 
     } catch (error) {
       console.error('Payment error:', error)

@@ -3,6 +3,21 @@ import { createServerClient } from '@/lib/supabase';
 import { AvailabilityService } from '@/lib/availability-service';
 
 /**
+ * Helper function to convert date to GMT+1 timezone string
+ */
+function toGMT1(date: Date): string {
+  return date.toLocaleString('en-US', { 
+    timeZone: 'Africa/Lagos', // GMT+1 timezone
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+}
+
+/**
  * Get available time slots for a specific date
  * Supports both NEW weekly availability system and OLD template system
  */
@@ -65,25 +80,188 @@ export async function GET(request: NextRequest) {
     console.log('🎯 Using weekly availability system only - no database overrides');
 
     // Check existing bookings for this date
+    // Include all statuses that indicate a slot is taken
     const supabase = createServerClient();
     const { data: existingBookings } = await supabase
       .from('sessions')
-      .select('session_date, session_time')
+      .select('start_time, end_time, scheduled_date, scheduled_time, session_date, session_time, status, duration_minutes')
       .eq('therapist_id', therapistId)
-      .eq('session_date', date)
-      .in('status', ['scheduled', 'confirmed']);
+      .in('status', [
+        'pending_approval',  // Custom sessions awaiting approval
+        'scheduled',         // Regular scheduled sessions
+        'confirmed',         // Confirmed sessions
+        'in_progress',       // Sessions currently happening
+        'completed'          // Include completed sessions for same-day filtering
+      ]);
 
     console.log('📅 Existing Bookings:', existingBookings);
 
     // Remove already booked slots
     if (existingBookings && existingBookings.length > 0) {
+      // Filter bookings to only those on the selected date
+      const bookingsOnThisDate = existingBookings.filter(booking => {
+        // Check multiple possible date fields to catch all bookings
+        const bookingDate = booking.scheduled_date || booking.session_date;
+        const bookingTime = booking.scheduled_time || booking.session_time;
+        
+        // If we have explicit date/time fields, use those
+        if (bookingDate && bookingTime) {
+          return bookingDate === date;
+        }
+        
+        // Otherwise, extract date from start_time (convert to GMT+1)
+        if (booking.start_time) {
+          const bookingStartTime = new Date(booking.start_time);
+          const gmt1String = toGMT1(bookingStartTime);
+          const bookingDateStr = gmt1String.split(', ')[0]; // Extract date part (MM/DD/YYYY)
+          // Convert MM/DD/YYYY to YYYY-MM-DD for comparison
+          const [month, day, year] = bookingDateStr.split('/');
+          const bookingDateFormatted = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          return bookingDateFormatted === date;
+        }
+        
+        return false;
+      });
+      
+      console.log('📅 Bookings on selected date:', bookingsOnThisDate);
+      
       availableSlots = availableSlots.filter(slot => {
-        const isBooked = existingBookings.some(booking => 
-          booking.session_time === slot.start_time
-        );
+        const isBooked = bookingsOnThisDate.some(booking => {
+          // Skip cancelled sessions (they don't block slots)
+          if (booking.status === 'cancelled') {
+            return false;
+          }
+          
+          // Skip completed sessions for future dates (they don't block future slots)
+          // Only block completed sessions if they're on the same day and time hasn't passed yet
+          if (booking.status === 'completed') {
+            const now = new Date();
+            const bookingEnd = booking.start_time ? new Date(booking.start_time) : null;
+            // Only block if the session ended very recently (within last 15 minutes)
+            if (bookingEnd && (now.getTime() - bookingEnd.getTime()) > 15 * 60 * 1000) {
+              return false;
+            }
+          }
+          
+          // Calculate slot time range
+          const slotStartTime = slot.start_time; // e.g., "14:00"
+          const [slotStartHour, slotStartMin] = slotStartTime.split(':').map(Number);
+          const slotEndMin = slotStartMin + (slot.session_duration || 30);
+          const slotEndHour = slotStartHour + Math.floor(slotEndMin / 60);
+          const slotEndMinAdjusted = slotEndMin % 60;
+          const slotEndTime = `${String(slotEndHour).padStart(2, '0')}:${String(slotEndMinAdjusted).padStart(2, '0')}`;
+          
+          // Try to match against explicit time fields first
+          const bookingTime = booking.scheduled_time || booking.session_time;
+          if (bookingTime) {
+            // Exact match
+            const matches = bookingTime === slot.start_time;
+            if (matches) {
+              console.log(`🚫 Slot ${slot.start_time} is booked by session with status: ${booking.status}`);
+            }
+            return matches;
+          }
+          
+          // Otherwise, extract time from start_time ISO string
+          // start_time is in UTC but we need to convert it back to local time
+          if (booking.start_time) {
+            const bookingStartTime = new Date(booking.start_time);
+            // Use toLocaleTimeString to get local time in GMT+1
+            const bookingTimeStr = bookingStartTime.toLocaleTimeString('en-US', { 
+              timeZone: 'Africa/Lagos', // GMT+1 timezone
+              hour12: false,
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            // Check for exact time match
+            const exactMatch = bookingTimeStr === slot.start_time;
+            if (exactMatch) {
+              console.log(`🚫 Slot ${slot.start_time} (GMT+1) is booked by session (status: ${booking.status}) - exact match`);
+              return true;
+            }
+            
+            // Also check if there's any time overlap
+            const [bookingHour, bookingMin] = bookingTimeStr.split(':').map(Number);
+            const bookingStartMinutes = bookingHour * 60 + bookingMin;
+            // Use actual duration from booking, or calculate from end_time if available
+            let bookingDuration = booking.duration_minutes || 30; // Default to 30 if not specified
+            
+            // If we have end_time, calculate actual duration
+            if (booking.end_time && booking.start_time) {
+              const startTime = new Date(booking.start_time);
+              const endTime = new Date(booking.end_time);
+              const actualDuration = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+              if (actualDuration > 0) {
+                bookingDuration = actualDuration;
+              }
+            }
+            
+            const bookingEndMinutes = bookingStartMinutes + bookingDuration;
+            
+            const slotStartMinutes = slotStartHour * 60 + slotStartMin;
+            const slotEndMinutes = slotEndHour * 60 + slotEndMinAdjusted;
+            
+            // Check for overlap: booking starts before slot ends and ends after slot starts
+            const hasOverlap = bookingStartMinutes < slotEndMinutes && bookingEndMinutes > slotStartMinutes;
+            
+            if (hasOverlap) {
+              console.log(`🚫 Slot ${slot.start_time}-${slotEndTime} overlaps with booking ${bookingTimeStr} (status: ${booking.status})`);
+            }
+            
+            return hasOverlap;
+          }
+          
+          return false;
+        });
+        
+        if (isBooked) {
+          console.log(`🚫 Filtering out booked slot: ${slot.date} ${slot.start_time}`);
+        }
+        
         return !isBooked;
       });
     }
+
+    // Remove past slots (slots that have already passed)
+    // All comparisons done in GMT+1 timezone for consistency
+    const now = new Date();
+    const nowGMT1 = toGMT1(now);
+    const nowDateGMT1 = nowGMT1.split(', ')[0]; // Extract date (MM/DD/YYYY)
+    const nowTimeGMT1 = nowGMT1.split(', ')[1]; // Extract time
+    
+    // Convert nowDateGMT1 from MM/DD/YYYY to YYYY-MM-DD for comparison with slot.date
+    const [month, day, year] = nowDateGMT1.split('/');
+    const nowDateFormatted = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    
+    availableSlots = availableSlots.filter(slot => {
+      // Check if slot is on the same date as now
+      if (slot.date !== nowDateFormatted) {
+        // If it's a future date, it's definitely future
+        return true;
+      }
+      
+      // Same date, check time in GMT+1
+      const [slotHour, slotMin] = slot.start_time.split(':').map(Number);
+      const [nowHour, nowMin] = nowTimeGMT1.split(':').map(Number);
+      
+      // Add a buffer (15 minutes) to avoid edge cases
+      const bufferMinutes = 15;
+      const nowMinWithBuffer = nowMin + bufferMinutes;
+      const adjustedNowHour = nowMinWithBuffer >= 60 ? nowHour + 1 : nowHour;
+      const adjustedNowMin = nowMinWithBuffer % 60;
+      
+      const isFuture = (slotHour > adjustedNowHour) || 
+                       (slotHour === adjustedNowHour && slotMin > adjustedNowMin);
+      
+      if (!isFuture) {
+        console.log(`⏰ Filtered past slot: ${slot.date} ${slot.start_time} (now: ${nowTimeGMT1} GMT+1)`);
+      }
+      
+      return isFuture;
+    });
+    
+    console.log('📅 Filtered past slots');
 
     console.log('✅ Final Available Slots:', availableSlots.length);
 

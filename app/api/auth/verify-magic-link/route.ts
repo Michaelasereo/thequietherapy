@@ -71,11 +71,17 @@ export async function GET(request: NextRequest) {
       is_active: result.user.is_active ?? true,
     }
 
-    // Create the redirect URL
-    let redirectUrl = '/dashboard'
-    if (authType === 'therapist') redirectUrl = '/therapist/dashboard'
-    if (authType === 'partner') redirectUrl = '/partner/dashboard'
-    if (authType === 'admin') redirectUrl = '/admin/dashboard'
+    // Create the redirect URL based on auth type
+    const getDashboardUrl = (type: string): string => {
+      switch (type) {
+        case 'therapist': return '/therapist/dashboard'
+        case 'partner': return '/partner/dashboard'
+        case 'admin': return '/admin/dashboard'
+        case 'individual':
+        default: return '/dashboard'
+      }
+    }
+    const redirectUrl = getDashboardUrl(authType)
 
     // Use absolute URL with baseUrl to ensure correct redirect
     const redirectAbsoluteUrl = new URL(redirectUrl, baseUrl).toString()

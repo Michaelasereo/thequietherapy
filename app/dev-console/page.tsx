@@ -198,11 +198,14 @@ Therapist: It's good that you're recognizing these signs early. Let's talk about
 
       if (notesError) throw notesError
 
-      // Generate SOAP notes
+      // Generate SOAP notes - pass transcript directly to test our fix
       const soapResponse = await fetch('/api/sessions/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
+        body: JSON.stringify({ 
+          sessionId,
+          transcript: testTranscript // Pass transcript directly to avoid race condition
+        })
       })
 
       const soapData = await soapResponse.json()
@@ -289,7 +292,11 @@ Therapist: It's good that you're recognizing these signs early. Let's talk about
             </button>
 
             <button
-              onClick={() => window.location.href = '/therapist/dashboard'}
+              onClick={() => {
+                // Try to determine dashboard based on current user context if available
+                const href = '/therapist/dashboard' // Dev console defaults to therapist
+                window.location.href = href
+              }}
               className="bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 font-medium transition-colors"
             >
               📊 Go to Dashboard

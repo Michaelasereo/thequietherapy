@@ -138,8 +138,6 @@ export default function BookingPage() {
             onNext={handleStep2Complete}
             onBack={() => setCurrentStep(1)}
             initialSelectedTherapistId={selectedTherapistId}
-            preferredGender={patientData.therapistGenderPreference}
-            preferredSpecialization={patientData.therapistSpecializationPreference}
           />
         )
       case 3:
