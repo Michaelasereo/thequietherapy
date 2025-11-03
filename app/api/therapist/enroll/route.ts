@@ -167,7 +167,13 @@ export async function POST(request: NextRequest) {
     if (gender) insertData.gender = gender
     if (age) insertData.age = parseInt(age) || null
     if (maritalStatus) insertData.marital_status = maritalStatus
+    
+    // Also try licensed_qualification if mdcn_code doesn't exist
+    // This handles both column name variations
+    insertData.licensed_qualification = licensedQualification
 
+    console.log('📝 Attempting to insert enrollment data with fields:', Object.keys(insertData))
+    
     const { error: enrollmentError } = await supabase
       .from('therapist_enrollments')
       .insert(insertData)
@@ -204,13 +210,20 @@ export async function POST(request: NextRequest) {
         errorMessage.includes('cannot be null')
       )
       
+      // Return more detailed error for debugging
       return NextResponse.json({
         success: false,
         error: isColumnError 
           ? 'Database schema mismatch. Please contact support.'
           : 'Failed to save enrollment data. Please try again.',
         details: enrollmentError.message,
-        code: enrollmentError.code
+        code: enrollmentError.code,
+        hint: enrollmentError.hint,
+        // Include the insert data that failed (for debugging)
+        debug: process.env.NODE_ENV === 'development' ? {
+          insertData: Object.keys(insertData),
+          errorFull: enrollmentError
+        } : undefined
       }, { status: 500 })
     }
 
