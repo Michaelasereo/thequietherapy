@@ -361,6 +361,26 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
 
       finalUser = newUser
       console.log('✅ New user created with Supabase Auth sync:', finalUser.id)
+      
+      // ✅ CRITICAL FIX: Link therapist_enrollments to user account after signup
+      if (authType === 'therapist') {
+        console.log('🔗 Linking therapist enrollment to user account...')
+        const { error: linkError } = await supabase
+          .from('therapist_enrollments')
+          .update({ 
+            user_id: finalUser.id,
+            updated_at: now.toISOString()
+          })
+          .eq('email', magicLink.email)
+          .is('user_id', null) // Only update if user_id is NULL (safety check)
+        
+        if (linkError) {
+          console.error('⚠️ Warning: Failed to link therapist enrollment to user account:', linkError)
+          // Don't fail the signup if linking fails, but log it for admin review
+        } else {
+          console.log('✅ Therapist enrollment linked to user account')
+        }
+      }
     } else if (!user && magicLink.type === 'login') {
       // User doesn't exist for login - redirect to signup
       console.log('❌ User not found for login')
