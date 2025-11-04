@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     let maritalStatus: string
     let bio: string
     let profileImageFile: File | null = null
+    let idDocumentFile: File | null = null // ✅ FIX: Add ID document file variable
 
     if (contentType.includes('multipart/form-data')) {
       // Handle FormData (with file upload)
@@ -60,6 +61,15 @@ export async function POST(request: NextRequest) {
       const imageFile = formData.get('profileImage') as File | null
       if (imageFile && imageFile.size > 0) {
         profileImageFile = imageFile
+      }
+      
+      // ✅ FIX: Extract ID document file if provided
+      const idDocFile = formData.get('idDocument') as File | null
+      if (idDocFile && idDocFile.size > 0) {
+        idDocumentFile = idDocFile
+        console.log('📄 ID document extracted from form data:', idDocFile.name, idDocFile.size, 'bytes')
+      } else {
+        console.warn('⚠️ No ID document file found in form data')
       }
     } else {
       // Handle JSON (backward compatibility)
@@ -160,6 +170,73 @@ export async function POST(request: NextRequest) {
       console.log('ℹ️  Using default profile image:', profileImageUrl)
     }
 
+    // ✅ FIX: Handle ID document upload if provided
+    let idDocumentUrl: string | null = null
+    
+    if (idDocumentFile) {
+      try {
+        console.log('📄 Uploading ID document during enrollment...')
+        
+        // Validate file size (max 10MB)
+        const maxSize = 10 * 1024 * 1024 // 10MB
+        if (idDocumentFile.size > maxSize) {
+          console.error('❌ ID document too large:', idDocumentFile.size, 'bytes')
+          // Don't fail enrollment, just log warning
+          console.warn('⚠️  ID document exceeds 10MB limit, continuing without document')
+        } else {
+          // Validate file type
+          const allowedTypes = [
+            'application/pdf',
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/webp'
+          ]
+          
+          if (!allowedTypes.includes(idDocumentFile.type)) {
+            console.error('❌ Invalid ID document type:', idDocumentFile.type)
+            console.warn('⚠️  ID document type not allowed, continuing without document')
+          } else {
+            // Generate unique file name
+            const fileExtension = idDocumentFile.name.split('.').pop()?.toLowerCase() || 'pdf'
+            const tempId = `enroll-${Date.now()}-${Math.random().toString(36).substring(7)}`
+            const fileName = `id-document-${tempId}.${fileExtension}`
+            const filePath = `therapist-documents/enrollment/${fileName}`
+            
+            // Convert file to buffer
+            const arrayBuffer = await idDocumentFile.arrayBuffer()
+            const buffer = Buffer.from(arrayBuffer)
+            
+            // Upload to Supabase Storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('therapist-documents')
+              .upload(filePath, buffer, {
+                contentType: idDocumentFile.type,
+                upsert: false
+              })
+            
+            if (uploadError) {
+              console.error('❌ ID document upload error:', uploadError)
+              // Don't fail enrollment if document upload fails, just log it
+              console.warn('⚠️  Continuing enrollment without ID document due to upload error')
+            } else {
+              // Get public URL
+              const { data: urlData } = supabase.storage
+                .from('therapist-documents')
+                .getPublicUrl(filePath)
+              
+              idDocumentUrl = urlData.publicUrl
+              console.log('✅ ID document uploaded:', idDocumentUrl)
+            }
+          }
+        }
+      } catch (docError) {
+        console.error('❌ Error handling ID document:', docError)
+        // Don't fail enrollment if document processing fails
+        console.warn('⚠️  Continuing enrollment without ID document due to processing error')
+      }
+    }
+
     // Create enrollment record with ALL fields
     // Use both specialization (for compatibility) and specializations (preferred)
     // Build insert object conditionally to handle optional fields
@@ -177,7 +254,11 @@ export async function POST(request: NextRequest) {
       profile_image_url: profileImageUrl, // Set profile image (default or uploaded)
       status: 'pending', // Admin needs to approve before they can set availability
       is_active: true, // Ensure is_active is set
-      is_verified: false // Ensure is_verified is set
+      is_verified: false, // Ensure is_verified is set
+      // ✅ FIX: Include ID document data
+      id_document: idDocumentUrl || null,
+      id_uploaded_at: idDocumentUrl ? new Date().toISOString() : null,
+      id_verified: false // Document verification pending admin review
       // user_id is intentionally omitted - will be NULL until user account is created
     }
 
@@ -220,7 +301,8 @@ export async function POST(request: NextRequest) {
       console.error('❌ Attempted insert data keys:', Object.keys(insertData))
       console.error('❌ Attempted insert data:', JSON.stringify(insertData, null, 2))
       
-      // If enrollment failed and we uploaded an image, try to clean it up
+      // ✅ FIX: Cleanup uploaded files if enrollment failed
+      // Cleanup profile image
       if (profileImageUrl && profileImageUrl !== '/placeholder.svg') {
         try {
           const urlParts = profileImageUrl.split('/')
@@ -230,9 +312,27 @@ export async function POST(request: NextRequest) {
             await supabase.storage
               .from('profile-images')
               .remove([filePath])
+            console.log('🧹 Cleaned up profile image:', filePath)
           }
         } catch (cleanupError) {
           console.error('Failed to cleanup uploaded image:', cleanupError)
+        }
+      }
+      
+      // Cleanup ID document
+      if (idDocumentUrl) {
+        try {
+          const urlParts = idDocumentUrl.split('/')
+          const bucketIndex = urlParts.findIndex((part: string) => part === 'therapist-documents')
+          if (bucketIndex !== -1) {
+            const filePath = urlParts.slice(bucketIndex + 1).join('/')
+            await supabase.storage
+              .from('therapist-documents')
+              .remove([filePath])
+            console.log('🧹 Cleaned up ID document:', filePath)
+          }
+        } catch (cleanupError) {
+          console.error('Failed to cleanup uploaded ID document:', cleanupError)
         }
       }
       
@@ -304,7 +404,12 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log('✅ Enrollment saved successfully with profile image:', profileImageUrl)
+    console.log('✅ Enrollment saved successfully:', {
+      profileImageUrl,
+      idDocumentUrl,
+      hasIdDocument: !!idDocumentUrl,
+      idUploadedAt: insertData.id_uploaded_at
+    })
 
     // Send magic link to create account and access dashboard
     // They can login but can't set availability until admin approves

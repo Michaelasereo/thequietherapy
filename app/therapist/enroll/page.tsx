@@ -57,6 +57,9 @@ export default function TherapistEnrollmentPage() {
     // Handle profile image upload if provided
     const profileImageFile = finalData.profileImageFile as File | undefined
     
+    // ✅ FIX: Extract ID document file from Step 2
+    const idUploadFile = finalData.idUpload?.[0] as File | undefined
+    
     console.log("Calling API route /api/therapist/enroll...")
     setIsPending(true)
 
@@ -77,6 +80,14 @@ export default function TherapistEnrollmentPage() {
       // Add profile image file if provided
       if (profileImageFile) {
         formDataToSend.append('profileImage', profileImageFile)
+      }
+      
+      // ✅ FIX: Add ID document file if provided
+      if (idUploadFile) {
+        formDataToSend.append('idDocument', idUploadFile)
+        console.log('📄 ID document included in form submission:', idUploadFile.name, idUploadFile.size, 'bytes')
+      } else {
+        console.warn('⚠️ No ID document found in form data')
       }
 
       const response = await fetch('/api/therapist/enroll', {

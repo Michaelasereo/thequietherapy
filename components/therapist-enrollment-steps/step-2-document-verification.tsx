@@ -24,6 +24,7 @@ interface Step2DocumentVerificationProps {
 
 export default function Step2DocumentVerification({ onNext, onBack, initialData }: Step2DocumentVerificationProps) {
   const [uploadedFileName, setUploadedFileName] = useState<string>("")
+  const [fileError, setFileError] = useState<string>("")
   
   const form = useForm<DocumentVerificationFormValues>({
     resolver: zodResolver(formSchema),
@@ -40,9 +41,50 @@ export default function Step2DocumentVerification({ onNext, onBack, initialData 
     }
   }, [initialData])
 
+  // ✅ FIX: Validate file before submission
+  const validateFile = (file: File): string => {
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      return 'File size must be less than 10MB'
+    }
+    
+    // Check file type
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp'
+    ]
+    
+    if (!allowedTypes.includes(file.type)) {
+      return 'File must be PDF, JPEG, PNG, or WebP'
+    }
+    
+    return ''
+  }
+
   async function onSubmit(data: DocumentVerificationFormValues) {
-    // For now, we'll just collect the licensed qualification and verify manually later
-    // No API verification needed for shipping
+    // ✅ FIX: Validate file before proceeding
+    if (data.idUpload && data.idUpload.length > 0) {
+      const file = data.idUpload[0]
+      const error = validateFile(file)
+      
+      if (error) {
+        setFileError(error)
+        toast({
+          title: "Invalid File",
+          description: error,
+          variant: "destructive",
+        })
+        return
+      }
+      
+      console.log('✅ Valid file selected:', file.name, file.size, 'bytes')
+    }
+    
+    setFileError("")
     
     toast({
       title: "Documents Uploaded",
@@ -64,22 +106,46 @@ export default function Step2DocumentVerification({ onNext, onBack, initialData 
               <FormControl>
                 <Input
                   type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
                   onChange={(event) => {
                     const files = event.target.files
                     onChange(files)
+                    setFileError("") // Clear previous errors
+                    
                     if (files && files.length > 0) {
-                      setUploadedFileName(files[0].name)
+                      const file = files[0]
+                      setUploadedFileName(file.name)
+                      
+                      // ✅ FIX: Validate file on selection
+                      const error = validateFile(file)
+                      if (error) {
+                        setFileError(error)
+                        toast({
+                          title: "Invalid File",
+                          description: error,
+                          variant: "destructive",
+                        })
+                      } else {
+                        console.log('✅ Valid file selected:', file.name, file.size, 'bytes')
+                      }
                     }
                   }}
                   {...fieldProps}
                 />
               </FormControl>
-              {uploadedFileName && (
+              {uploadedFileName && !fileError && (
                 <p className="text-sm text-green-600 mt-1">
-                  ✓ Uploaded: {uploadedFileName}
+                  ✓ Selected: {uploadedFileName}
                 </p>
               )}
+              {fileError && (
+                <p className="text-sm text-red-600 mt-1">
+                  ⚠️ {fileError}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Accepted formats: PDF, JPG, PNG, WebP (Max 10MB)
+              </p>
               <FormMessage />
             </FormItem>
           )}
