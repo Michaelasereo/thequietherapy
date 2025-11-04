@@ -377,22 +377,41 @@ export class AvailabilityManager {
 
   /**
    * Get therapist status
+   * Checks users table and therapist_enrollments table instead of therapist_states
    */
   private async getTherapistStatus(therapistId: string): Promise<string> {
     try {
-      const { data, error } = await this.supabase
-        .from('therapist_states')
-        .select('current_status')
-        .eq('therapist_id', therapistId)
-        .order('status_changed_at', { ascending: false })
-        .limit(1)
+      // Check if therapist user exists, is active, and is verified
+      const { data: user, error: userError } = await this.supabase
+        .from('users')
+        .select('id, email, user_type, is_active, is_verified')
+        .eq('id', therapistId)
+        .eq('user_type', 'therapist')
+        .eq('is_active', true)
+        .eq('is_verified', true)
         .single();
 
-      if (error || !data) {
+      if (userError || !user) {
+        console.log('❌ Therapist user not found or inactive:', userError);
         return 'inactive';
       }
 
-      return data.current_status;
+      // Check if therapist enrollment is approved
+      const { data: enrollment, error: enrollmentError } = await this.supabase
+        .from('therapist_enrollments')
+        .select('id, status, is_active')
+        .eq('email', user.email)
+        .eq('status', 'approved')
+        .eq('is_active', true)
+        .single();
+
+      if (enrollmentError || !enrollment) {
+        console.log('❌ Therapist enrollment not approved:', enrollmentError);
+        return 'inactive';
+      }
+
+      // If both checks pass, therapist is active
+      return 'active';
     } catch (error) {
       console.error('❌ Error getting therapist status:', error);
       return 'inactive';

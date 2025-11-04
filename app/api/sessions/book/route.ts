@@ -250,6 +250,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (rpcError) {
       // Map known constraint and business errors to proper responses
       const msg = rpcError.message || ''
+      
+      // ✅ ENHANCED: Log full error details for debugging
       console.error('❌ Atomic booking error:', {
         message: rpcError.message,
         code: rpcError.code,
@@ -258,13 +260,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         fullError: JSON.stringify(rpcError, null, 2)
       })
       
-      // Log to console for debugging
+      // Log to console for debugging with full details
       console.error('🔍 Full RPC error details:', {
         message: rpcError.message,
         code: rpcError.code,
         details: rpcError.details,
-        hint: rpcError.hint
+        hint: rpcError.hint,
+        fullError: JSON.stringify(rpcError, null, 2)
       })
+      
+      // ✅ NEW: Check if it's the ambiguous column error
+      if (msg.includes('ambiguous') || msg.includes('column reference') || rpcError.code === '42702') {
+        console.error('⚠️ AMBIGUOUS COLUMN ERROR DETECTED!')
+        console.error('⚠️ This means the database function needs to be updated.')
+        console.error('⚠️ Run the SQL script: fix-booking-ambiguous-id-complete.sql in Supabase SQL Editor')
+        console.error('⚠️ Full error:', rpcError)
+      }
       
       if (msg.includes('Booking conflict') || msg.includes('sessions_no_overlap_per_therapist') || msg.includes('conflict')) {
         console.error('⚠️ Booking conflict detected:', msg)
@@ -279,13 +290,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         throw new NotFoundError('Therapist not found or not available for bookings')
       }
       
-      // Return detailed error for debugging
+      // Return detailed error for debugging - include full error in response
       const errorBody = {
         error: 'Failed to create session',
         message: msg,
         code: rpcError.code,
         details: rpcError.details,
         hint: rpcError.hint,
+        fullError: JSON.stringify(rpcError, null, 2), // ✅ Include full error for frontend console
+        isAmbiguousColumnError: msg.includes('ambiguous') || msg.includes('column reference') || rpcError.code === '42702',
         requestId
       }
       console.error('❌ Returning error response:', errorBody)

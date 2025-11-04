@@ -446,17 +446,6 @@ export default function BookingConfirmation({
 
       console.log('🔍 DEBUG: API response status:', response.status)
       
-      // Check if response is ok before trying to parse JSON
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('❌ Booking API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        })
-        throw new Error(`Booking failed: ${response.status} ${response.statusText}`)
-      }
-      
       // Check if response has content before parsing JSON
       const responseText = await response.text()
       if (!responseText) {
@@ -472,6 +461,33 @@ export default function BookingConfirmation({
         throw new Error('Invalid response format from server')
       }
       
+      // ✅ ENHANCED: Log error response even if status is not ok
+      if (!response.ok) {
+        console.error('❌ Booking API Error Response (Status:', response.status, '):', {
+          status: response.status,
+          statusText: response.statusText,
+          error: result.error,
+          message: result.message,
+          code: result.code,
+          details: result.details,
+          hint: result.hint,
+          fullError: result.fullError,
+          isAmbiguousColumnError: result.isAmbiguousColumnError,
+          requestId: result.requestId,
+          fullResponse: result
+        })
+        
+        // ✅ Check for ambiguous column error specifically
+        if (result.isAmbiguousColumnError || result.message?.includes('ambiguous') || result.code === '42702') {
+          console.error('⚠️ AMBIGUOUS COLUMN ERROR DETECTED!')
+          console.error('⚠️ This means the database function needs to be updated.')
+          console.error('⚠️ Run the SQL script: fix-booking-ambiguous-id-complete.sql in Supabase SQL Editor')
+          console.error('⚠️ Full error:', result.fullError || result.message)
+          console.error('⚠️ Error code:', result.code)
+          console.error('⚠️ Error details:', result.details)
+        }
+      }
+      
       console.log('🔍 DEBUG: API response data:', result)
       console.log('🔍 DEBUG: result.success:', result.success)
       console.log('🔍 DEBUG: result.data:', result.data)
@@ -484,6 +500,12 @@ export default function BookingConfirmation({
         // Credit deduction is now handled automatically by the booking API
         console.log('🔍 DEBUG: ✅ Booking successful with automatic credit deduction!')
         console.log('🔍 DEBUG: Setting bookingSuccess to true...')
+        
+        // ✅ FIX: Clear error modal state when booking succeeds
+        setShowErrorModal(false)
+        setError(null)
+        setErrorMessage('')
+        
         setBookingSuccess(true)
         console.log('🔍 DEBUG: Calling onBookingComplete with result:', result)
         toast.success("Booking confirmed successfully! Credit deducted automatically.")
@@ -502,6 +524,9 @@ export default function BookingConfirmation({
         // Handle API errors gracefully with specific error types
         console.log('🔍 DEBUG: Booking failed with status:', response.status)
         console.log('🔍 DEBUG: Error details:', result)
+        
+        // Error details already logged above if !response.ok
+        // This block handles the error state
         
         // Ensure success state is false when booking fails
         console.log('🔍 DEBUG: Booking failed - ensuring bookingSuccess is false')
