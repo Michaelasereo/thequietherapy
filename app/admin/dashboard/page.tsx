@@ -78,12 +78,12 @@ const AdminDashboardPage = memo(function AdminDashboardPage() {
           revenueResponse,
           healthResponse
         ] = await Promise.all([
-          fetch((process.env.NEXT_PUBLIC_APP_URL || '') + '/api/admin/summary', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } }),
-          fetch((process.env.NEXT_PUBLIC_APP_URL || '') + '/api/admin/recent-activities', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } }),
-          fetch((process.env.NEXT_PUBLIC_APP_URL || '') + '/api/admin/pending-verifications', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } }),
-          fetch((process.env.NEXT_PUBLIC_APP_URL || '') + '/api/admin/platform-stats', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } }),
-          fetch((process.env.NEXT_PUBLIC_APP_URL || '') + '/api/admin/revenue-data', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } }),
-          fetch((process.env.NEXT_PUBLIC_APP_URL || '') + '/api/admin/system-health', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } })
+          fetch('/api/admin/summary', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } }),
+          fetch('/api/admin/recent-activities', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } }),
+          fetch('/api/admin/pending-verifications', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } }),
+          fetch('/api/admin/platform-stats', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } }),
+          fetch('/api/admin/revenue-data', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } }),
+          fetch('/api/admin/system-health', { cache: 'no-store', credentials: 'include', headers: { 'Cache-Control': 'no-cache' } })
         ]);
 
         const summaryData = summaryResponse.ok ? await summaryResponse.json() : null;
