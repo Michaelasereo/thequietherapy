@@ -245,8 +245,9 @@ export async function POST(request: NextRequest) {
       full_name: fullName,
       email: email.toLowerCase(),
       phone: phone || null,
+      // ✅ FIX: Truncate mdcn_code to 50 chars (VARCHAR(50) limit)
       // Use mdcn_code (matches schema). If column doesn't exist, try licensed_qualification
-      mdcn_code: licensedQualification || null,
+      mdcn_code: licensedQualification ? licensedQualification.substring(0, 50) : null,
       // Only use new array columns to avoid type conflicts
       specializations: Array.isArray(specialization) ? specialization : (specialization ? [specialization] : []), // Preferred TEXT[] column
       languages_array: Array.isArray(languages) ? languages : [], // Preferred TEXT[] column
