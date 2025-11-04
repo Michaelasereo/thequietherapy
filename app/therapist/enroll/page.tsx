@@ -100,10 +100,20 @@ export default function TherapistEnrollmentPage() {
       console.log("Success state detected, showing modal")
       setEnrollmentEmail(formData.email)
       setShowSuccessModal(true)
-      toast({
-        title: "Enrollment Successful!",
-        description: "Please check your email to complete the process.",
-      })
+      
+      // Check if there was a magic link error (e.g., email already registered)
+      if (result.magic_link_error) {
+        toast({
+          title: "Enrollment Successful!",
+          description: result.message || "Enrollment saved but there was an issue with email verification.",
+          variant: "default",
+        })
+      } else {
+        toast({
+          title: "Enrollment Successful!",
+          description: "Please check your email to complete the process.",
+        })
+      }
       setIsPending(false)
     } catch (error) {
       console.error("Enrollment error:", error)

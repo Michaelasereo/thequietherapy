@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
       
       const specializationStr = formData.get('specialization') as string
       const languagesStr = formData.get('languages') as string
+      
       specialization = specializationStr ? JSON.parse(specializationStr) : []
       languages = languagesStr ? JSON.parse(languagesStr) : []
       
@@ -154,10 +155,9 @@ export async function POST(request: NextRequest) {
       phone,
       // Use mdcn_code (matches schema). If column doesn't exist, try licensed_qualification
       mdcn_code: licensedQualification,
-      specialization: Array.isArray(specialization) ? specialization.join(', ') : specialization || null, // Legacy TEXT column
+      // Only use new array columns to avoid type conflicts
       specializations: Array.isArray(specialization) ? specialization : (specialization ? [specialization] : []), // Preferred TEXT[] column
-      languages: Array.isArray(languages) ? languages.join(', ') : languages || null, // Legacy TEXT column
-      languages_array: Array.isArray(languages) ? languages : (languages ? [languages] : []), // Preferred TEXT[] column
+      languages_array: Array.isArray(languages) ? languages : [], // Preferred TEXT[] column
       bio,
       profile_image_url: profileImageUrl, // Set profile image (default or uploaded)
       status: 'pending' // Admin needs to approve before they can set availability
@@ -171,8 +171,6 @@ export async function POST(request: NextRequest) {
     // Also try licensed_qualification if mdcn_code doesn't exist
     // This handles both column name variations
     insertData.licensed_qualification = licensedQualification
-
-    console.log('📝 Attempting to insert enrollment data with fields:', Object.keys(insertData))
     
     const { error: enrollmentError } = await supabase
       .from('therapist_enrollments')
