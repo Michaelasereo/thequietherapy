@@ -87,10 +87,17 @@ export default function TherapistEnrollmentPage() {
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-        console.error("Enrollment error:", result.error)
+        // Log full error details for debugging
+        console.error("Enrollment error - Full response:", result)
+        console.error("Enrollment error - Error code:", result.code)
+        console.error("Enrollment error - Details:", result.details)
+        console.error("Enrollment error - Debug info:", result.debug)
+        
+        // Show user-friendly error message
+        const errorMessage = result.error || "Failed to submit enrollment. Please try again."
         toast({
           title: "Enrollment Failed",
-          description: result.error || "Failed to submit enrollment. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         })
         setIsPending(false)
