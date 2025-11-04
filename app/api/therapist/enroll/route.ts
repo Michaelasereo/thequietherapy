@@ -2,13 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createMagicLinkForAuthType } from '@/lib/auth'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Initialize Supabase client with error checking
+const getSupabaseClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ Missing Supabase environment variables:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseKey
+    })
+    throw new Error('Supabase configuration missing')
+  }
+
+  return createClient(supabaseUrl, supabaseKey)
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Supabase client
+    const supabase = getSupabaseClient()
+
     // Parse form data (supports both JSON and FormData for file uploads)
     const contentType = request.headers.get('content-type') || ''
     let email: string
@@ -177,13 +191,16 @@ export async function POST(request: NextRequest) {
       .insert(insertData)
 
     if (enrollmentError) {
-      console.error('Error creating enrollment:', enrollmentError)
-      console.error('Error details:', {
+      console.error('❌ Error creating enrollment:', enrollmentError)
+      console.error('❌ Error details:', {
         message: enrollmentError.message,
         code: enrollmentError.code,
         details: enrollmentError.details,
-        hint: enrollmentError.hint
+        hint: enrollmentError.hint,
+        fullError: JSON.stringify(enrollmentError, null, 2)
       })
+      console.error('❌ Attempted insert data keys:', Object.keys(insertData))
+      console.error('❌ Attempted insert data:', JSON.stringify(insertData, null, 2))
       
       // If enrollment failed and we uploaded an image, try to clean it up
       if (profileImageUrl && profileImageUrl !== '/placeholder.svg') {
@@ -217,11 +234,12 @@ export async function POST(request: NextRequest) {
         details: enrollmentError.message,
         code: enrollmentError.code,
         hint: enrollmentError.hint,
-        // Include the insert data that failed (for debugging)
-        debug: process.env.NODE_ENV === 'development' ? {
-          insertData: Object.keys(insertData),
-          errorFull: enrollmentError
-        } : undefined
+        // Include the insert data that failed (for debugging) - always include in production for Netlify logs
+        debug: {
+          insertDataKeys: Object.keys(insertData),
+          errorCode: enrollmentError.code,
+          errorMessage: enrollmentError.message
+        }
       }, { status: 500 })
     }
 
@@ -270,10 +288,23 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Therapist enrollment error:', error)
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('❌ Full error:', JSON.stringify(error, null, 2))
+    
+    // Check if it's a Supabase configuration error
+    if (error instanceof Error && error.message === 'Supabase configuration missing') {
+      return NextResponse.json({
+        success: false,
+        error: 'Server configuration error. Please contact support.',
+        details: 'Missing Supabase environment variables'
+      }, { status: 500 })
+    }
+    
     return NextResponse.json({
       success: false,
       error: 'An error occurred during enrollment. Please try again.',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      type: error instanceof Error ? error.constructor.name : typeof error
     }, { status: 500 })
   }
 }
