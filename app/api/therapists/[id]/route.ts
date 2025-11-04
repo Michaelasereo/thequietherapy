@@ -45,7 +45,9 @@ export async function GET(
           id,
           bio,
           profile_image_url,
+          specializations,
           specialization,
+          languages_array,
           languages,
           licensed_qualification,
           hourly_rate,
@@ -66,18 +68,26 @@ export async function GET(
         throw new Error('Enrollment not found or not approved')
       }
 
-      // Parse specialization and languages if they're JSON strings
-      const specializations = Array.isArray(enrollmentData.specialization) 
-        ? enrollmentData.specialization 
-        : (typeof enrollmentData.specialization === 'string' 
-          ? [enrollmentData.specialization] 
-          : ['General Therapy'])
+      // ✅ FIX: Parse specializations (plural) from enrollment data
+      // Use specializations array field (preferred) or fallback to specialization (singular) for backward compatibility
+      const specializations = Array.isArray(enrollmentData.specializations) && enrollmentData.specializations.length > 0
+        ? enrollmentData.specializations 
+        : (enrollmentData.specializations && typeof enrollmentData.specializations === 'string'
+          ? [enrollmentData.specializations] 
+          : (Array.isArray(enrollmentData.specialization) && enrollmentData.specialization.length > 0
+            ? enrollmentData.specialization
+            : (enrollmentData.specialization && typeof enrollmentData.specialization === 'string'
+              ? [enrollmentData.specialization]
+              : [])))
       
-      const languages = Array.isArray(enrollmentData.languages)
-        ? enrollmentData.languages
-        : (typeof enrollmentData.languages === 'string'
-          ? JSON.parse(enrollmentData.languages)
-          : ['English'])
+      // ✅ FIX: Use languages_array (preferred) or fallback to languages
+      const languages = Array.isArray(enrollmentData.languages_array)
+        ? enrollmentData.languages_array
+        : (Array.isArray(enrollmentData.languages)
+          ? enrollmentData.languages
+          : (typeof enrollmentData.languages === 'string'
+            ? JSON.parse(enrollmentData.languages)
+            : ['English']))
 
       // Transform data with real enrollment data
       therapist = {
@@ -119,9 +129,11 @@ export async function GET(
       name: therapist.full_name,
       email: therapist.email,
       picture: therapist.profile_image_url || '/placeholder.svg',
-      specialization: typeof therapist.specializations === 'string' 
-        ? therapist.specializations 
-        : therapist.specializations?.[0] || 'General Therapy',
+      specialization: Array.isArray(therapist.specializations) && therapist.specializations.length > 0
+        ? therapist.specializations.join(', ')
+        : (typeof therapist.specializations === 'string'
+          ? therapist.specializations
+          : 'General Therapy'),
       gender: therapist.gender || 'Not specified',
       age: therapist.age || 'Not specified',
       maritalStatus: therapist.maritalStatus || 'Not specified',

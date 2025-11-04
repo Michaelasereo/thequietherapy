@@ -67,7 +67,9 @@ export async function GET(request: NextRequest) {
           email,
           bio,
           profile_image_url,
+          specializations,
           specialization,
+          languages_array,
           languages,
           licensed_qualification,
           hourly_rate,
@@ -119,18 +121,26 @@ export async function GET(request: NextRequest) {
       therapists = therapistsWithUsers
         .filter(({ user }) => user && user.is_verified && user.is_active) // Only show verified and active users
         .map(({ enrollment, user }) => {
-          // Parse specialization and languages if they're JSON strings
-          const specializations = Array.isArray(enrollment.specialization) 
-            ? enrollment.specialization 
-            : (typeof enrollment.specialization === 'string' 
-              ? [enrollment.specialization] 
-              : ['General Therapy'])
+          // ✅ FIX: Parse specializations (plural) from enrollment data
+          // Use specializations array field (preferred) or fallback to specialization (singular) for backward compatibility
+          const specializations = Array.isArray(enrollment.specializations) && enrollment.specializations.length > 0
+            ? enrollment.specializations 
+            : (enrollment.specializations && typeof enrollment.specializations === 'string'
+              ? [enrollment.specializations] 
+              : (Array.isArray(enrollment.specialization) && enrollment.specialization.length > 0
+                ? enrollment.specialization
+                : (enrollment.specialization && typeof enrollment.specialization === 'string'
+                  ? [enrollment.specialization]
+                  : [])))
           
-          const languages = Array.isArray(enrollment.languages)
-            ? enrollment.languages
-            : (typeof enrollment.languages === 'string'
-              ? JSON.parse(enrollment.languages)
-              : ['English'])
+          // ✅ FIX: Use languages_array (preferred) or fallback to languages
+          const languages = Array.isArray(enrollment.languages_array)
+            ? enrollment.languages_array
+            : (Array.isArray(enrollment.languages)
+              ? enrollment.languages
+              : (typeof enrollment.languages === 'string'
+                ? JSON.parse(enrollment.languages)
+                : ['English']))
 
           return {
             id: user!.id, // Use user ID, not enrollment ID (already filtered null above)

@@ -59,9 +59,11 @@ export default function BookingStep2({ onNext, onBack, initialSelectedTherapistI
             name: therapist.full_name || 'Unknown Therapist',
             email: therapist.email,
             profile_image_url: therapist.profile_image_url || '/placeholder.svg', // ✅ STANDARDIZED
-            specialization: Array.isArray(therapist.specializations) 
-              ? therapist.specializations.join(', ') || 'General Therapy'
-              : therapist.specializations || 'General Therapy',
+            specialization: Array.isArray(therapist.specializations) && therapist.specializations.length > 0
+              ? therapist.specializations.join(', ')
+              : (typeof therapist.specializations === 'string' && therapist.specializations
+                ? therapist.specializations
+                : 'General Therapy'),
             gender: therapist.gender || '',
             age: therapist.age || '',
             maritalStatus: therapist.maritalStatus || '',
