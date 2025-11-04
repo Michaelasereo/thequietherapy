@@ -13,6 +13,19 @@
   NPM_VERSION = "9"
   NEXT_PUBLIC_APP_URL = "https://thequietherapy.live"
 
+# Force HTTPS redirects
+[[redirects]]
+  from = "http://thequietherapy.live/*"
+  to = "https://thequietherapy.live/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "http://www.thequietherapy.live/*"
+  to = "https://thequietherapy.live/:splat"
+  status = 301
+  force = true
+
 # Security headers
 [[headers]]
   for = "/*"
