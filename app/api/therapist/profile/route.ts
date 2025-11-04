@@ -6,17 +6,105 @@ import { handleApiError, successResponse } from '@/lib/api-response'
 export async function GET(request: NextRequest) {
   try {
     // SECURE Authentication Check - only therapists can access their profile
-    const session = await ServerSessionManager.getSession()
+    let session = await ServerSessionManager.getSession()
+    
+    // Enhanced debugging for production
+    console.log('🔍 Therapist profile API - Session check:', {
+      hasSession: !!session,
+      sessionRole: session?.role,
+      sessionUserType: session?.user_type,
+      sessionId: session?.id,
+      sessionEmail: session?.email,
+      cookiePresent: !!request.cookies.get('quiet_session') || !!request.cookies.get('quiet_therapist_user')
+    })
+    
+    let therapistUserId: string | null = null
+    let email: string | null = null
+    
     if (!session) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+      console.log('❌ No session found - checking alternative cookie...')
+      // Try fallback to therapist-specific cookie
+      const therapistCookie = request.cookies.get('quiet_therapist_user')?.value
+      if (therapistCookie) {
+        try {
+          const therapistData = JSON.parse(therapistCookie)
+          console.log('✅ Found therapist cookie, using that:', { email: therapistData.email })
+          
+          const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+          )
+          
+          // Verify user exists and is therapist
+          const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id, email, full_name, user_type, is_verified, is_active')
+            .eq('email', therapistData.email)
+            .eq('user_type', 'therapist')
+            .single()
+          
+          if (userError || !user) {
+            return NextResponse.json({ error: 'Therapist account not found' }, { status: 404 })
+          }
+          
+          // Set user data from cookie fallback
+          therapistUserId = user.id
+          email = user.email
+          
+          // Create a mock session object for compatibility
+          session = {
+            id: user.id,
+            email: user.email,
+            name: user.full_name || user.email.split('@')[0],
+            role: 'therapist' as const,
+            user_type: 'therapist',
+            is_verified: user.is_verified,
+            is_active: user.is_active
+          }
+        } catch (parseError) {
+          console.error('❌ Error parsing therapist cookie:', parseError)
+        }
+      }
+      
+      // If still no session after fallback attempts
+      if (!session) {
+        return NextResponse.json({ 
+          error: 'Authentication required',
+          debug: {
+            hasQuietSession: !!request.cookies.get('quiet_session'),
+            hasTherapistCookie: !!request.cookies.get('quiet_therapist_user'),
+            allCookies: Object.keys(request.cookies.getAll().reduce((acc, c) => ({ ...acc, [c.name]: true }), {}))
+          }
+        }, { status: 401 })
+      }
+    }
+    
+    // If we got here with session, use session values
+    if (!therapistUserId) {
+      therapistUserId = session.id
+    }
+    if (!email) {
+      email = session.email
     }
 
-    if (session.role !== 'therapist') {
-      return NextResponse.json({ error: 'Access denied. Therapist role required' }, { status: 403 })
+    // Check role - allow both 'therapist' role and 'therapist' user_type
+    const isTherapist = session.role === 'therapist' || session.user_type === 'therapist'
+    
+    if (!isTherapist) {
+      console.log('❌ Access denied - role check failed:', {
+        role: session.role,
+        user_type: session.user_type,
+        id: session.id,
+        email: session.email
+      })
+      return NextResponse.json({ 
+        error: 'Access denied. Therapist role required',
+        debug: {
+          role: session.role,
+          user_type: session.user_type
+        }
+      }, { status: 403 })
     }
-
-    const therapistUserId = session.id // This is now TRUSTED and verified
-    const email = session.email
 
     console.log('🔍 Therapist profile API: Session data:', { 
       id: therapistUserId, 
