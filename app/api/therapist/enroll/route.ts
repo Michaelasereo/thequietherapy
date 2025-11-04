@@ -236,27 +236,70 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      // Check if error is about missing columns
+      // Check for specific error types and provide helpful messages
       const errorMessage = enrollmentError.message || ''
+      const errorCode = enrollmentError.code || ''
+      
+      // Check if error is about missing columns
       const isColumnError = errorMessage.includes('column') && (
         errorMessage.includes('does not exist') || 
         errorMessage.includes('cannot be null')
       )
       
-      // Return more detailed error for debugging
+      // Check for constraint violations
+      const isConstraintError = errorCode === '23505' // Unique violation
+      const isForeignKeyError = errorCode === '23503' // Foreign key violation
+      const isNotNullError = errorCode === '23502' // Not null violation
+      
+      // Provide specific error messages
+      let userMessage = 'Failed to save enrollment data. Please try again.'
+      let technicalDetails = errorMessage
+      
+      if (isColumnError) {
+        userMessage = 'Database configuration issue. Please contact support with error code: DB_SCHEMA_ERROR'
+        technicalDetails = `Missing column: ${errorMessage}`
+      } else if (isConstraintError) {
+        // Check if it's email duplicate
+        if (errorMessage.includes('email') || errorMessage.includes('therapist_enrollments_email_key')) {
+          userMessage = 'An enrollment with this email already exists. Please use the login page.'
+          technicalDetails = 'Email already enrolled'
+        } else if (errorMessage.includes('user_id') || errorMessage.includes('therapist_enrollments_user_id_key')) {
+          userMessage = 'Database configuration error. Please run fix-enrollment-constraint.sql in Supabase.'
+          technicalDetails = 'UNIQUE constraint on user_id preventing enrollment'
+        } else {
+          userMessage = 'A record with this information already exists. Please contact support.'
+          technicalDetails = `Unique constraint violation: ${errorMessage}`
+        }
+      } else if (isNotNullError) {
+        userMessage = 'Required field is missing. Please fill out all required fields.'
+        technicalDetails = `NOT NULL violation: ${errorMessage}`
+      } else if (isForeignKeyError) {
+        userMessage = 'Database configuration issue. Please contact support.'
+        technicalDetails = `Foreign key violation: ${errorMessage}`
+      }
+      
+      // Return detailed error for debugging in production (Netlify logs will show this)
       return NextResponse.json({
         success: false,
-        error: isColumnError 
-          ? 'Database schema mismatch. Please contact support.'
-          : 'Failed to save enrollment data. Please try again.',
-        details: enrollmentError.message,
-        code: enrollmentError.code,
+        error: userMessage,
+        // Include technical details for debugging (visible in Netlify logs)
+        details: technicalDetails,
+        code: errorCode,
         hint: enrollmentError.hint,
-        // Include the insert data that failed (for debugging) - always include in production for Netlify logs
+        // Debug info (only in response for production debugging)
         debug: {
           insertDataKeys: Object.keys(insertData),
-          errorCode: enrollmentError.code,
-          errorMessage: enrollmentError.message
+          errorCode: errorCode,
+          errorMessage: errorMessage,
+          // Include a sample of the data (without sensitive info)
+          sampleData: {
+            email: insertData.email,
+            hasSpecializations: Array.isArray(insertData.specializations),
+            hasLanguages: Array.isArray(insertData.languages_array),
+            hasGender: !!insertData.gender,
+            hasAge: !!insertData.age,
+            hasMaritalStatus: !!insertData.marital_status
+          }
         }
       }, { status: 500 })
     }
