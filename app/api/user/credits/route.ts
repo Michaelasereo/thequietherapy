@@ -30,11 +30,12 @@ export async function GET(request: NextRequest) {
     console.log('✅ Supabase client initialized');
 
     // Fetch user credits from user_credits table
-    // Only select columns that definitely exist (avoid expires_at which may not exist)
+    // Only 'user' type has credits (individual users only)
     let { data: creditRecords, error: creditsError } = await supabase
       .from('user_credits')
       .select('id, credits_balance, credits_purchased, credits_used')
       .eq('user_id', userId)
+      .eq('user_type', 'user')  // Only 'user' type has credits
       .order('created_at', { ascending: false })
 
     // If query fails due to missing columns, try with minimal columns
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
         .from('user_credits')
         .select('id, credits_balance, credits_purchased, credits_used')
         .eq('user_id', userId)
+        .eq('user_type', 'user')  // Only 'user' type has credits
         .order('created_at', { ascending: false })
       
       if (retryResult.error) {

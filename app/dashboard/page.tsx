@@ -29,7 +29,6 @@ function AuthCheck({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      console.log('🔍 Dashboard: User not authenticated, redirecting to login')
       router.push('/login')
     }
   }, [loading, isAuthenticated, router])
@@ -115,8 +114,6 @@ function Video(props: React.SVGProps<SVGSVGElement>) {
 }
 
 function DashboardContent() {
-  console.log('🔍 DashboardContent: Component rendered')
-  
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -235,7 +232,6 @@ function DashboardContent() {
   // Refresh data when component mounts - only once
   useEffect(() => {
     if (user?.id) {
-      console.log('🔍 Dashboard: Refreshing data on mount for user:', user.id)
       // Only refresh if we don't have data yet
       if (state.stats.totalSessions === 0) {
         fetchSessions()
@@ -377,7 +373,6 @@ function DashboardContent() {
       
       // Refresh credits when payment succeeds (for credit purchases)
       if (paymentType === 'credits' || !paymentType) {
-        console.log('🔄 Dashboard: Payment successful for credits, refreshing...')
         refreshCredits()
         // Dispatch event for other components
         if (typeof window !== 'undefined') {
@@ -449,8 +444,6 @@ function DashboardContent() {
   }
 
   const handleStep3Complete = () => {
-    console.log("Booking completed:", { patientData, selectedTherapistId })
-    
     toast({
       title: "Booking Successful! 🎉",
       description: "Your therapy session has been booked successfully. You'll receive a confirmation email shortly.",
@@ -539,7 +532,6 @@ function DashboardContent() {
                       }
                       return 'User';
                     } catch (error) {
-                      console.error('Error parsing user name:', error);
                       return 'User';
                     }
                   })()}</span>
@@ -603,7 +595,6 @@ function DashboardContent() {
                 variant="outline" 
                 size="sm" 
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered')
                   fetchSessions()
                 }}
                 className="flex items-center gap-2"
@@ -614,10 +605,6 @@ function DashboardContent() {
             </div>
           </CardHeader>
           <CardContent>
-            {/* Debug info */}
-            <div className="text-xs text-gray-500 mb-2">
-              Debug: {state.upcomingSessions.length} upcoming sessions found
-            </div>
             {state.upcomingSessions.length > 0 ? (
               <div className="space-y-4">
                 {/* Info about credits */}
@@ -832,8 +819,6 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  console.log('🔍 DashboardPage: Main component rendered')
-  
   return (
     <AuthCheck>
       <Suspense fallback={

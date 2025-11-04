@@ -52,6 +52,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       notes = ''
     } = requestData
 
+    // ✅ VALIDATION: Verify therapist_id is valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(therapist_id)) {
+      throw new ValidationError('Invalid therapist ID format')
+    }
+    
+    // ✅ VALIDATION: Verify date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+    if (!dateRegex.test(session_date)) {
+      throw new ValidationError('Invalid date format. Use YYYY-MM-DD')
+    }
+    
+    // ✅ VALIDATION: Verify time format (HH:MM)
+    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/
+    if (!timeRegex.test(start_time)) {
+      throw new ValidationError('Invalid time format. Use HH:MM (24-hour format)')
+    }
+    
+    // ✅ VALIDATION: Verify duration is positive and reasonable
+    if (duration < 15 || duration > 180) {
+      throw new ValidationError('Duration must be between 15 and 180 minutes')
+    }
+
     logWithRequestId(requestId, 'info', 'Processing booking request', {
       therapist_id,
       session_date,
@@ -107,19 +130,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     console.log('✅ Therapist found:', therapist.full_name)
 
-    // 4. Check if user has available credits (check both 'individual' and 'user' types)
+    // 4. Check if user has available credits (only 'user' type has credits)
+    // Only individual users have credits, not therapists or partners
     const { data: userCredits, error: creditsError } = await supabase
       .from('user_credits')
       .select('*')
       .eq('user_id', userId)
-      .in('user_type', ['individual', 'user'])
-      .gt('credits_balance', 0)
+      .eq('user_type', 'user')  // Only 'user' type has credits
 
     console.log('🔍 DEBUG: Credit check results:', {
       userId,
       userCredits,
       creditsError,
-      creditsFound: userCredits?.length || 0
+      creditsFound: userCredits?.length || 0,
+      totalBalance: userCredits?.[0]?.credits_balance || 0
     })
 
     if (creditsError) {
@@ -127,7 +151,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       throw new Error('Error checking user credits')
     }
 
-    if (!userCredits || userCredits.length === 0) {
+    // Check if user has credits (should be only one record with user_type = 'user')
+    const totalBalance = userCredits?.[0]?.credits_balance || 0
+
+    if (!userCredits || userCredits.length === 0 || totalBalance < 1) {
       throw new ValidationError('You need to purchase a session package before booking. Please buy credits first.')
     }
 
@@ -223,19 +250,46 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (rpcError) {
       // Map known constraint and business errors to proper responses
       const msg = rpcError.message || ''
-      if (msg.includes('Booking conflict') || msg.includes('sessions_no_overlap_per_therapist')) {
+      console.error('❌ Atomic booking error:', {
+        message: rpcError.message,
+        code: rpcError.code,
+        details: rpcError.details,
+        hint: rpcError.hint,
+        fullError: JSON.stringify(rpcError, null, 2)
+      })
+      
+      // Log to console for debugging
+      console.error('🔍 Full RPC error details:', {
+        message: rpcError.message,
+        code: rpcError.code,
+        details: rpcError.details,
+        hint: rpcError.hint
+      })
+      
+      if (msg.includes('Booking conflict') || msg.includes('sessions_no_overlap_per_therapist') || msg.includes('conflict')) {
+        console.error('⚠️ Booking conflict detected:', msg)
         throw new ConflictError('This time slot is no longer available')
       }
       if (msg.includes('Insufficient credits') || msg.includes('Failed to deduct credits')) {
-        throw new ValidationError('Insufficient credits to book session')
+        console.error('⚠️ Insufficient credits detected:', msg)
+        throw new ValidationError('Insufficient credits to book session. Please purchase credits first.')
       }
-      console.error('❌ Atomic booking error:', rpcError)
-      // Return detailed error in development for faster debugging
-      const devBody = {
+      if (msg.includes('Therapist not found') || msg.includes('not available')) {
+        console.error('⚠️ Therapist not found:', msg)
+        throw new NotFoundError('Therapist not found or not available for bookings')
+      }
+      
+      // Return detailed error for debugging
+      const errorBody = {
         error: 'Failed to create session',
-        details: msg,
+        message: msg,
+        code: rpcError.code,
+        details: rpcError.details,
+        hint: rpcError.hint,
+        requestId
       }
-      return addRequestIdHeader(NextResponse.json(devBody, { status: 500 }), requestId)
+      console.error('❌ Returning error response:', errorBody)
+      return addRequestIdHeader(NextResponse.json(errorBody, { status: 500 }), requestId)
     }
 
     const sessionRecord = Array.isArray(createdSessions) ? createdSessions[0] : createdSessions

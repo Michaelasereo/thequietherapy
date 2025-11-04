@@ -21,12 +21,13 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id
     console.log('🔍 User ID:', userId)
 
-    // Get user's current credits (check both 'individual' and 'user' types)
+    // Get user's current credits (only 'user' type has credits)
+    // Only individual users have credits, not therapists or partners
     const { data: credits, error: creditsError } = await supabase
       .from('user_credits')
       .select('*')
       .eq('user_id', userId)
-      .in('user_type', ['individual', 'user'])
+      .eq('user_type', 'user')  // Only 'user' type has credits
 
     console.log('🔍 Credits query result:', { credits, creditsError })
 
@@ -35,8 +36,8 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to fetch credits')
     }
 
-    // Calculate total available credits from user_credits table
-    let totalCredits = credits?.reduce((sum, credit) => sum + credit.credits_balance, 0) || 0
+    // Calculate total available credits (should be only one record with user_type = 'user')
+    let totalCredits = credits?.[0]?.credits_balance || 0
     console.log('🔍 Total credits calculated:', totalCredits)
 
     // Get credit history
@@ -137,12 +138,12 @@ export async function POST(request: NextRequest) {
         throw new Error('Session ID is required to use credit')
       }
 
-      // Find an available credit to use (check both 'individual' and 'user' types)
+      // Find an available credit to use (only 'user' type has credits)
       const { data: availableCredits, error: creditsError } = await supabase
         .from('user_credits')
         .select('*')
         .eq('user_id', userId)
-        .in('user_type', ['individual', 'user'])
+        .eq('user_type', 'user')  // Only 'user' type has credits
         .gt('credits_balance', 0)
         .order('created_at', { ascending: true }) // Use oldest credits first
         .limit(1)
