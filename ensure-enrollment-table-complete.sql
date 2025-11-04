@@ -50,8 +50,9 @@ CREATE TABLE IF NOT EXISTS therapist_enrollments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
-    UNIQUE(user_id),
     UNIQUE(email)
+    -- Note: user_id is NULL during enrollment, so we don't use UNIQUE(user_id) constraint
+    -- user_id will be set after user account is created via magic link
 );
 
 -- 2. Add missing columns if they don't exist

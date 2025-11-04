@@ -163,28 +163,46 @@ export async function POST(request: NextRequest) {
     // Create enrollment record with ALL fields
     // Use both specialization (for compatibility) and specializations (preferred)
     // Build insert object conditionally to handle optional fields
+    // NOTE: user_id is NULL during enrollment (will be set after user account is created via magic link)
     const insertData: any = {
       full_name: fullName,
       email: email.toLowerCase(),
-      phone,
+      phone: phone || null,
       // Use mdcn_code (matches schema). If column doesn't exist, try licensed_qualification
-      mdcn_code: licensedQualification,
+      mdcn_code: licensedQualification || null,
       // Only use new array columns to avoid type conflicts
       specializations: Array.isArray(specialization) ? specialization : (specialization ? [specialization] : []), // Preferred TEXT[] column
       languages_array: Array.isArray(languages) ? languages : [], // Preferred TEXT[] column
-      bio,
+      bio: bio || null,
       profile_image_url: profileImageUrl, // Set profile image (default or uploaded)
-      status: 'pending' // Admin needs to approve before they can set availability
+      status: 'pending', // Admin needs to approve before they can set availability
+      is_active: true, // Ensure is_active is set
+      is_verified: false // Ensure is_verified is set
+      // user_id is intentionally omitted - will be NULL until user account is created
     }
 
     // Add optional fields - if columns don't exist, they'll be ignored on retry
     if (gender) insertData.gender = gender
-    if (age) insertData.age = parseInt(age) || null
+    if (age) {
+      const ageNum = parseInt(age)
+      insertData.age = isNaN(ageNum) ? null : ageNum
+    }
     if (maritalStatus) insertData.marital_status = maritalStatus
     
     // Also try licensed_qualification if mdcn_code doesn't exist
     // This handles both column name variations
-    insertData.licensed_qualification = licensedQualification
+    insertData.licensed_qualification = licensedQualification || null
+    
+    console.log('📝 Attempting to insert enrollment data:', {
+      email: insertData.email,
+      full_name: insertData.full_name,
+      hasPhone: !!insertData.phone,
+      hasBio: !!insertData.bio,
+      hasSpecializations: Array.isArray(insertData.specializations) && insertData.specializations.length > 0,
+      hasLanguages: Array.isArray(insertData.languages_array) && insertData.languages_array.length > 0,
+      profileImageUrl: insertData.profile_image_url,
+      dataKeys: Object.keys(insertData)
+    })
     
     const { error: enrollmentError } = await supabase
       .from('therapist_enrollments')
