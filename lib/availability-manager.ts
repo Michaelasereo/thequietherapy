@@ -326,7 +326,22 @@ export class AvailabilityManager {
       }
 
       // 2. Check weekly availability
-      const weeklyAvailability = await this.getTherapistAvailability(therapistId);
+      let weeklyAvailability: WeeklyAvailability | null = null;
+      try {
+        weeklyAvailability = await this.getTherapistAvailability(therapistId);
+      } catch (error) {
+        console.error('❌ Error fetching therapist availability:', {
+          therapistId,
+          error: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined
+        });
+        conflicts.push({
+          type: 'unavailable_time',
+          message: 'Failed to check therapist availability. Please try again or contact support.'
+        });
+        return { available: false, conflicts };
+      }
+      
       if (!weeklyAvailability) {
         conflicts.push({
           type: 'unavailable_time',
