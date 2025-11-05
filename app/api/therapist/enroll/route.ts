@@ -335,6 +335,21 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (enrollmentError) {
+      // Check if it's a unique constraint violation (email already exists)
+      const isDuplicateError = enrollmentError.code === '23505' && (
+        enrollmentError.message?.includes('email') || 
+        enrollmentError.message?.includes('therapist_enrollments_email_key') ||
+        enrollmentError.details?.includes('email')
+      )
+
+      if (isDuplicateError) {
+        console.warn('⚠️ Duplicate enrollment prevented by database constraint (email unique)')
+        return NextResponse.json({
+          success: false,
+          error: 'An enrollment with this email already exists. Please wait a moment and try again, or use the login page if you already enrolled.'
+        }, { status: 400 })
+      }
+
       console.error('❌ Error creating enrollment:', enrollmentError)
       console.error('❌ Error details:', {
         message: enrollmentError.message,

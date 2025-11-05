@@ -41,23 +41,27 @@ export async function GET(request: Request) {
       })
     }
 
-    // Fetch partner members (users associated with this partner)
+    // Fetch partner members from partner_members table (correct table)
     const { data: members, error: membersError } = await supabase
-      .from('users')
-      .select('*')
+      .from('partner_members')
+      .select('id, first_name, email, status, created_at, user_id')
       .eq('partner_id', partnerId)
-      .eq('is_active', true)
+      .eq('status', 'active')
 
     if (membersError) throw membersError
 
-    // Fetch sessions for partner members
-    const memberIds = members?.map(m => m.id) || []
-    const { data: sessions, error: sessionsError } = await supabase
-      .from('sessions')
-      .select('*')
-      .in('user_id', memberIds)
-
-    if (sessionsError) throw sessionsError
+    // Fetch sessions for partner members using user_id
+    const memberUserIds = members?.map(m => m.user_id).filter(Boolean) || []
+    let sessions: any[] = []
+    if (memberUserIds.length > 0) {
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('sessions')
+        .select('*')
+        .in('user_id', memberUserIds)
+      
+      if (sessionsError) throw sessionsError
+      sessions = sessionsData || []
+    }
 
     // Fetch credit transactions for this partner
     const { data: creditTransactions, error: creditError } = await supabase
@@ -76,7 +80,7 @@ export async function GET(request: Request) {
     // Get recent activity
     const recentMembers = members?.slice(0, 5).map(m => ({
       id: m.id,
-      name: m.full_name || m.email.split('@')[0],
+      name: m.first_name || m.email.split('@')[0],
       email: m.email
     })) || []
 
@@ -90,7 +94,7 @@ export async function GET(request: Request) {
     const recentUsage = sessions?.slice(0, 5).map(s => ({
       id: s.id,
       date: s.created_at,
-      member: members?.find(m => m.id === s.user_id)?.full_name || 'Unknown Member',
+      member: members?.find(m => m.user_id === s.user_id)?.first_name || 'Unknown Member',
       credits: 5 // Assuming 5 credits per session
     })) || []
 

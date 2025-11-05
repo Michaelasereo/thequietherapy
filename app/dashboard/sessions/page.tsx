@@ -472,8 +472,8 @@ export default function SessionsPage() {
 
         {showActions && (
           <div className="flex gap-2">
-            {/* Add to Calendar button for upcoming sessions */}
-            {session.status === 'scheduled' && (
+            {/* Add to Calendar button for upcoming sessions (scheduled or in_progress) */}
+            {(session.status === 'scheduled' || session.status === 'in_progress') && (
               <AddToCalendarButton
                 session={{
                   id: session.id!,
@@ -482,7 +482,7 @@ export default function SessionsPage() {
                   end_time: session.end_time || '',
                   therapist_name: session.therapist_name || session.therapist?.full_name,
                   therapist_email: session.therapist_email || session.therapist?.email,
-                  session_url: session.daily_room_url
+                  session_url: session.daily_room_url || session.session_url
                 }}
                 variant="outline"
                 size="sm"

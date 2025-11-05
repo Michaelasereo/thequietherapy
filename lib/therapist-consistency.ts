@@ -71,42 +71,77 @@ export class TherapistConsistencyManager {
    * Approve therapist in BOTH tables atomically
    */
   static async approveTherapist(email: string): Promise<{ success: boolean; error?: string }> {
+    const startTime = Date.now()
+    const approvalId = `approval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    
     try {
-      console.log(`🔄 TherapistConsistencyManager: Approving ${email}`)
+      console.log(`🔄 [${approvalId}] TherapistConsistencyManager: Starting approval for ${email}`)
+      console.log(`📊 [${approvalId}] Approval timestamp: ${new Date().toISOString()}`)
 
       // Get enrollment data first to get therapist details
       // Handle duplicates by getting the most recent one (or any approved one if exists)
+      console.log(`🔍 [${approvalId}] Step 1: Fetching enrollments for ${email}`)
       const { data: allEnrollmentsData, error: checkEnrollmentsError } = await supabase
         .from('therapist_enrollments')
         .select('*')
         .eq('email', email)
         .order('created_at', { ascending: false })
 
-      if (checkEnrollmentsError || !allEnrollmentsData || allEnrollmentsData.length === 0) {
-        console.error('❌ Enrollment not found for:', email)
-        return { success: false, error: 'Therapist enrollment not found' }
+      if (checkEnrollmentsError) {
+        console.error(`❌ [${approvalId}] Error fetching enrollments:`, {
+          error: checkEnrollmentsError,
+          code: checkEnrollmentsError.code,
+          message: checkEnrollmentsError.message,
+          details: checkEnrollmentsError.details
+        })
+        return { success: false, error: `Database error: ${checkEnrollmentsError.message}` }
       }
+
+      if (!allEnrollmentsData || allEnrollmentsData.length === 0) {
+        console.error(`❌ [${approvalId}] No enrollments found for email: ${email}`)
+        return { success: false, error: 'Therapist enrollment not found. Please ensure the therapist has completed enrollment.' }
+      }
+
+      console.log(`✅ [${approvalId}] Found ${allEnrollmentsData.length} enrollment(s) for ${email}`)
+      allEnrollmentsData.forEach((enrollment, index) => {
+        console.log(`   [${approvalId}] Enrollment ${index + 1}:`, {
+          id: enrollment.id,
+          status: enrollment.status,
+          created_at: enrollment.created_at,
+          user_id: enrollment.user_id || 'NOT LINKED'
+        })
+      })
 
       // Use the most recent enrollment, or an approved one if it exists
       const enrollmentData = allEnrollmentsData.find(e => e.status === 'approved') || allEnrollmentsData[0]
       
       if (allEnrollmentsData.length > 1) {
-        console.warn(`⚠️ Found ${allEnrollmentsData.length} enrollments for ${email}. Using most recent one for approval.`)
+        console.warn(`⚠️ [${approvalId}] Found ${allEnrollmentsData.length} enrollments for ${email}. Using most recent one for approval.`)
+        console.warn(`   [${approvalId}] Duplicate cleanup will be performed after approval.`)
       }
 
       // Get user_id first for therapist_profiles update
-      const { data: userData } = await supabase
+      console.log(`🔍 [${approvalId}] Step 2: Checking for existing user account`)
+      const { data: userData, error: userCheckError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, is_verified, is_active, created_at')
         .eq('email', email)
         .eq('user_type', 'therapist')
         .single()
+
+      if (userCheckError && userCheckError.code !== 'PGRST116') {
+        console.error(`❌ [${approvalId}] Error checking user account:`, {
+          error: userCheckError,
+          code: userCheckError.code,
+          message: userCheckError.message
+        })
+      }
 
       let userId = userData?.id
 
       // If user doesn't exist, create one
       if (!userId) {
-        console.log('🔄 User not found, creating new user account...')
+        console.log(`🔄 [${approvalId}] Step 2a: User not found, creating new user account...`)
         const { data: newUser, error: createUserError } = await supabase
           .from('users')
           .insert({
@@ -123,14 +158,26 @@ export class TherapistConsistencyManager {
           .single()
 
         if (createUserError) {
-          console.error('❌ Failed to create user account:', createUserError)
+          console.error(`❌ [${approvalId}] Failed to create user account:`, {
+            error: createUserError,
+            code: createUserError.code,
+            message: createUserError.message,
+            details: createUserError.details
+          })
           return { success: false, error: `Failed to create user account: ${createUserError.message}` }
         }
 
         userId = newUser.id
-        console.log('✅ Created new user account with ID:', userId)
+        console.log(`✅ [${approvalId}] Created new user account with ID: ${userId}`)
       } else {
         // Update existing user
+        console.log(`🔄 [${approvalId}] Step 2b: Updating existing user account (ID: ${userId})`)
+        console.log(`   [${approvalId}] Current user state:`, {
+          is_verified: userData?.is_verified,
+          is_active: userData?.is_active,
+          created_at: userData?.created_at
+        })
+        
         const { error: userError } = await supabase
           .from('users')
           .update({ 
@@ -142,10 +189,15 @@ export class TherapistConsistencyManager {
           .eq('user_type', 'therapist')
 
         if (userError) {
-          console.error('❌ Failed to update users table:', userError)
+          console.error(`❌ [${approvalId}] Failed to update users table:`, {
+            error: userError,
+            code: userError.code,
+            message: userError.message,
+            details: userError.details
+          })
           return { success: false, error: `Users table update failed: ${userError.message}` }
         }
-        console.log('✅ Updated existing user account')
+        console.log(`✅ [${approvalId}] Updated existing user account`)
       }
 
       // Update ALL therapist_enrollments records for this email (handles duplicates)
@@ -158,27 +210,47 @@ export class TherapistConsistencyManager {
       }
 
       // Update ALL enrollments for this email (handles duplicates)
-      const { error: enrollmentError } = await supabase
+      // IMPORTANT: Link user_id to enrollments so they're properly connected
+      console.log(`🔍 [${approvalId}] Step 3: Updating all enrollments for ${email}`)
+      console.log(`   [${approvalId}] Will update ${allEnrollmentsData.length} enrollment(s)`)
+      console.log(`   [${approvalId}] Linking to user_id: ${userId}`)
+      
+      const { data: updatedData, error: enrollmentError, count: updatedCount } = await supabase
         .from('therapist_enrollments')
         .update({ 
           status: 'approved',
           is_active: true,
+          user_id: userId, // Link the user_id to enrollments
           approved_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('email', email)
+        .select('id')
 
       if (enrollmentError) {
-        console.error('❌ Failed to update enrollments table:', enrollmentError)
+        console.error(`❌ [${approvalId}] Failed to update enrollments table:`, {
+          error: enrollmentError,
+          code: enrollmentError.code,
+          message: enrollmentError.message,
+          details: enrollmentError.details
+        })
+        
         // Rollback users table update
+        console.log(`🔄 [${approvalId}] Rolling back user account changes...`)
         if (userId && !userData?.id) {
           // Only delete if we created the user
-          await supabase
+          const { error: rollbackError } = await supabase
             .from('users')
             .delete()
             .eq('id', userId)
+          
+          if (rollbackError) {
+            console.error(`❌ [${approvalId}] Rollback failed:`, rollbackError)
+          } else {
+            console.log(`✅ [${approvalId}] Rolled back user account creation`)
+          }
         } else {
-          await supabase
+          const { error: rollbackError } = await supabase
             .from('users')
             .update({ 
               is_verified: false,
@@ -186,58 +258,114 @@ export class TherapistConsistencyManager {
               updated_at: new Date().toISOString()
             })
             .eq('email', email)
+          
+          if (rollbackError) {
+            console.error(`❌ [${approvalId}] Rollback failed:`, rollbackError)
+          } else {
+            console.log(`✅ [${approvalId}] Rolled back user account update`)
+          }
         }
         
         return { success: false, error: `Enrollments table update failed: ${enrollmentError.message}` }
       }
+      
+      const actualUpdatedCount = updatedData?.length || updatedCount || allEnrollmentsData.length
+      console.log(`✅ [${approvalId}] Updated ${actualUpdatedCount} enrollment(s)`)
 
       // Clean up duplicate enrollments: Keep only the most recent approved one
       // Delete older duplicate enrollments if there are multiple
       if (allEnrollments && allEnrollments.length > 1) {
-        console.log(`🧹 Cleaning up ${allEnrollments.length - 1} duplicate enrollment(s) for ${email}`)
+        console.log(`🧹 [${approvalId}] Step 4: Cleaning up ${allEnrollments.length - 1} duplicate enrollment(s)`)
         
         // Get the most recent approved enrollment ID
-        const { data: latestEnrollment } = await supabase
+        const { data: latestEnrollment, error: latestError } = await supabase
           .from('therapist_enrollments')
-          .select('id')
+          .select('id, created_at')
           .eq('email', email)
           .eq('status', 'approved')
           .order('created_at', { ascending: false })
           .limit(1)
           .single()
 
+        if (latestError) {
+          console.warn(`⚠️ [${approvalId}] Error finding latest enrollment for cleanup:`, latestError)
+        }
+
         if (latestEnrollment) {
+          console.log(`   [${approvalId}] Keeping enrollment ID: ${latestEnrollment.id} (created: ${latestEnrollment.created_at})`)
+          
           // Delete all other enrollments (keep only the latest approved one)
-          const { error: deleteError } = await supabase
+          const { data: deletedData, error: deleteError } = await supabase
             .from('therapist_enrollments')
             .delete()
             .eq('email', email)
             .neq('id', latestEnrollment.id)
+            .select('id')
+          
+          const deletedCount = deletedData?.length || 0
 
           if (deleteError) {
-            console.warn('⚠️ Failed to delete duplicate enrollments (non-critical):', deleteError)
+            console.warn(`⚠️ [${approvalId}] Failed to delete duplicate enrollments (non-critical):`, {
+              error: deleteError,
+              code: deleteError.code,
+              message: deleteError.message
+            })
             // Don't fail the approval if cleanup fails
           } else {
-            console.log(`✅ Cleaned up ${allEnrollments.length - 1} duplicate enrollment(s)`)
+            console.log(`✅ [${approvalId}] Cleaned up ${deletedCount || allEnrollments.length - 1} duplicate enrollment(s)`)
           }
         }
       }
 
-      // Update therapist_profiles table (CRITICAL for booking API)
+      // Update therapist_profiles table (CRITICAL for booking API and availability)
+      console.log(`🔍 [${approvalId}] Step 5: Updating therapist_profiles`)
       if (userId) {
-        const { error: profileError } = await supabase
+        // First, try to update existing profile
+        const { data: existingProfile, error: checkError } = await supabase
           .from('therapist_profiles')
-          .update({ 
-            verification_status: 'approved',
-            is_verified: true,
-            updated_at: new Date().toISOString()
-          })
+          .select('id, verification_status, is_verified, created_at')
           .eq('user_id', userId)
+          .single()
 
-        if (profileError) {
-          console.error('❌ Failed to update therapist_profiles table:', profileError)
-          // Try to create the profile if it doesn't exist
-          console.log('🔄 Attempting to create missing therapist_profiles entry...')
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.error(`❌ [${approvalId}] Error checking therapist_profiles:`, {
+            error: checkError,
+            code: checkError.code,
+            message: checkError.message
+          })
+        }
+
+        if (existingProfile) {
+          // Update existing profile
+          console.log(`   [${approvalId}] Updating existing profile (ID: ${existingProfile.id})`)
+          console.log(`   [${approvalId}] Current profile state:`, {
+            verification_status: existingProfile.verification_status,
+            is_verified: existingProfile.is_verified,
+            created_at: existingProfile.created_at
+          })
+          
+          const { error: profileError } = await supabase
+            .from('therapist_profiles')
+            .update({ 
+              verification_status: 'approved',
+              is_verified: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userId)
+
+          if (profileError) {
+            console.error(`❌ [${approvalId}] Failed to update therapist_profiles table:`, {
+              error: profileError,
+              code: profileError.code,
+              message: profileError.message,
+              details: profileError.details
+            })
+          } else {
+            console.log(`✅ [${approvalId}] Therapist_profiles updated successfully`)
+          }
+        } else {
+          // Create new profile if it doesn't exist
+          console.log(`🔄 [${approvalId}] Creating new therapist_profiles entry...`)
           const { error: createError } = await supabase
             .from('therapist_profiles')
             .insert({
@@ -249,24 +377,43 @@ export class TherapistConsistencyManager {
             })
           
           if (createError) {
-            console.error('❌ Failed to create therapist_profiles entry:', createError)
+            console.error(`❌ [${approvalId}] Failed to create therapist_profiles entry:`, {
+              error: createError,
+              code: createError.code,
+              message: createError.message,
+              details: createError.details
+            })
             // This is a critical data consistency issue but won't prevent the approval
           } else {
-            console.log('✅ Created missing therapist_profiles entry successfully')
+            console.log(`✅ [${approvalId}] Created therapist_profiles entry successfully`)
           }
-        } else {
-          console.log('✅ Therapist_profiles updated successfully')
         }
       } else {
-        console.error('❌ No user_id found, cannot update therapist_profiles')
+        console.error(`❌ [${approvalId}] No user_id found, cannot update therapist_profiles`)
       }
 
-      console.log(`✅ TherapistConsistencyManager: Successfully approved ${email}`)
+      const duration = Date.now() - startTime
+      console.log(`✅ [${approvalId}] TherapistConsistencyManager: Successfully approved ${email}`)
+      console.log(`📊 [${approvalId}] Approval completed in ${duration}ms`)
+      console.log(`📊 [${approvalId}] Summary:`, {
+        email,
+        userId,
+        enrollmentsUpdated: allEnrollmentsData.length,
+        duplicatesCleaned: allEnrollmentsData.length > 1 ? allEnrollmentsData.length - 1 : 0,
+        duration: `${duration}ms`
+      })
+      
       return { success: true }
 
     } catch (error) {
-      console.error('❌ TherapistConsistencyManager error:', error)
-      return { success: false, error: String(error) }
+      const duration = Date.now() - startTime
+      console.error(`❌ [${approvalId}] TherapistConsistencyManager error:`, {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        duration: `${duration}ms`
+      })
+      return { success: false, error: error instanceof Error ? error.message : String(error) }
     }
   }
 

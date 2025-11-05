@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireApiAuth } from '@/lib/server-auth'
 import { handleApiError, ValidationError, successResponse, validateRequired } from '@/lib/api-response'
 import { supabase } from '@/lib/supabase'
+import { createMagicLinkForAuthType } from '@/lib/auth'
 import { v4 as uuidv4 } from 'uuid'
 
 // Define CSV row interface
@@ -188,18 +189,23 @@ export async function POST(request: NextRequest) {
 
     // Process valid records
     for (const record of validRecords) {
+      let userId: string | undefined
+      let memberId: string | undefined
+      let userCreated = false
+      let memberCreated = false
+      
       try {
-        // Check if user already exists
+        // STEP 1: Check if user already exists
         const { data: existingUser } = await supabase
           .from('users')
           .select('id')
           .eq('email', record.email.toLowerCase())
           .single()
 
-        let userId = existingUser?.id
+        userId = existingUser?.id
 
         if (!userId) {
-          // Create new user (no credits assigned here - done via partner credits)
+          // Create new user first (required for magic link with type 'login')
           const { data: newUser, error: createError } = await supabase
             .from('users')
             .insert({
@@ -209,7 +215,13 @@ export async function POST(request: NextRequest) {
               user_type: 'individual',
               partner_id: partnerId,
               is_verified: false,
-              is_active: true
+              is_active: true,
+              onboarding_data: {
+                uploaded_by_partner: true,
+                partner_id: partnerId,
+                department: record.department,
+                position: record.position
+              }
             })
             .select('id')
             .single()
@@ -224,6 +236,7 @@ export async function POST(request: NextRequest) {
           }
 
           userId = newUser.id
+          userCreated = true
           console.log('✅ Created new user:', userId)
         } else {
           // Update existing user to be part of this partner
@@ -245,8 +258,123 @@ export async function POST(request: NextRequest) {
           console.log('✅ Updated existing user:', userId)
         }
 
-        // Allocate partner credits using the proper credit system
-        const { error: creditError } = await supabase
+        // STEP 2: Create or update partner_members record
+        const { data: existingMember } = await supabase
+          .from('partner_members')
+          .select('id, credits_assigned')
+          .eq('partner_id', partnerId)
+          .eq('user_id', userId)
+          .single()
+
+        if (!existingMember) {
+          // Create new partner_members record
+          const { data: newMember, error: memberError } = await supabase
+            .from('partner_members')
+            .insert({
+              partner_id: partnerId,
+              user_id: userId,
+              first_name: record.name,
+              email: record.email.toLowerCase(),
+              phone: record.phone || null,
+              department: record.department || null,
+              position: record.position || null,
+              credits_assigned: record.creditsToAssign,
+              status: 'active'
+            })
+            .select('id')
+            .single()
+
+          if (memberError) {
+            console.error('Error creating partner member:', memberError)
+            // Rollback: delete user if we created it
+            if (userCreated && userId) {
+              await supabase.from('users').delete().eq('id', userId)
+            }
+            errors.push({
+              row: validRecords.indexOf(record) + 2,
+              message: `Failed to create partner member: ${memberError.message}`
+            })
+            continue
+          }
+
+          memberId = newMember.id
+          memberCreated = true
+          console.log('✅ Created partner member:', memberId)
+        } else {
+          // Update existing partner member
+          const currentCreditsAssigned = existingMember?.credits_assigned || 0
+          const { error: memberUpdateError } = await supabase
+            .from('partner_members')
+            .update({
+              credits_assigned: currentCreditsAssigned + record.creditsToAssign,
+              status: 'active',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingMember.id)
+
+          if (memberUpdateError) {
+            console.error('Error updating partner member:', memberUpdateError)
+            // Don't fail - continue with magic link
+          }
+
+          memberId = existingMember.id
+          console.log('✅ Updated existing partner member:', memberId)
+        }
+
+        // STEP 3: Send magic link (user must exist for type 'login')
+        let magicLinkSent = false
+        try {
+          const magicLinkResult = await createMagicLinkForAuthType(
+            record.email.toLowerCase(),
+            'individual',
+            'login',
+            {
+              user_type: 'individual',
+              user_id: userId,
+              partner_member_id: memberId,
+              partner_id: partnerId
+            }
+          )
+
+          if (!magicLinkResult.success) {
+            console.error('❌ Magic link failed for:', record.email, magicLinkResult.error)
+            // Rollback: delete user and member if we created them
+            if (memberCreated && memberId) {
+              await supabase.from('partner_members').delete().eq('id', memberId)
+            }
+            if (userCreated && userId) {
+              await supabase.from('users').delete().eq('id', userId)
+            }
+            errors.push({
+              row: validRecords.indexOf(record) + 2,
+              message: `Failed to send magic link: ${magicLinkResult.error || 'Unknown error'}`
+            })
+            continue
+          }
+
+          magicLinkSent = true
+          console.log('✅ Magic link sent to:', record.email)
+        } catch (magicLinkError) {
+          console.error('❌ Error sending magic link:', magicLinkError)
+          // Rollback: delete user and member if we created them
+          if (memberCreated && memberId) {
+            await supabase.from('partner_members').delete().eq('id', memberId)
+          }
+          if (userCreated && userId) {
+            await supabase.from('users').delete().eq('id', userId)
+          }
+          errors.push({
+            row: validRecords.indexOf(record) + 2,
+            message: `Failed to send magic link: ${magicLinkError instanceof Error ? magicLinkError.message : 'Unknown error'}`
+          })
+          continue
+        }
+
+        // STEP 4: Allocate credits (only if magic link succeeded)
+        if (!magicLinkSent) {
+          continue
+        }
+        const { data: allocationResult, error: creditError } = await supabase
           .rpc('allocate_partner_credit', {
             p_partner_id: partnerId,
             p_employee_email: record.email.toLowerCase(),
@@ -259,7 +387,17 @@ export async function POST(request: NextRequest) {
           console.error('Error allocating partner credits:', creditError)
           errors.push({
             row: validRecords.indexOf(record) + 2,
-            message: `User created but failed to allocate credits: ${creditError.message}`
+            message: `Magic link sent but failed to allocate credits: ${creditError.message}`
+          })
+          continue
+        }
+
+        // Check if allocation was successful (returns boolean)
+        if (!allocationResult) {
+          console.error('Credit allocation returned false - insufficient credits or invalid partner')
+          errors.push({
+            row: validRecords.indexOf(record) + 2,
+            message: `Magic link sent but failed to allocate credits: Insufficient credits or invalid partner`
           })
           continue
         }
@@ -275,19 +413,37 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Update partner's used credits
+    // Note: Credit balance is updated atomically in the allocate_partner_credit function
+    // Only successful records (where magic link was sent) consume credits
+    // Failed records (where magic link failed) have credits allocated but user can't access them
+    // This is by design - credits are reserved but user needs magic link to login
     if (successfulRecords > 0) {
-      const creditsUsed = validRecords.slice(0, successfulRecords).reduce((sum, record) => sum + record.creditsToAssign, 0)
+      // Calculate credits used only for successful records
+      const successfulRecordIndices = new Set<number>()
+      for (let i = 0; i < validRecords.length; i++) {
+        // Check if this record was successful by looking at errors
+        const recordRow = i + 2
+        const hasError = errors.some(e => e.row === recordRow)
+        if (!hasError) {
+          successfulRecordIndices.add(i)
+        }
+      }
       
-      const { error: creditUpdateError } = await supabase
+      const creditsUsed = validRecords
+        .filter((_, index) => successfulRecordIndices.has(index))
+        .reduce((sum, record) => sum + record.creditsToAssign, 0)
+      
+      console.log('💳 Credits allocated via function (successful records only):', creditsUsed)
+      
+      // Verify the balance was updated correctly (optional - for logging)
+      const { data: updatedPartner } = await supabase
         .from('users')
-        .update({ credits: availableCredits - creditsUsed })
+        .select('credits')
         .eq('id', partnerId)
-
-      if (creditUpdateError) {
-        console.error('Error updating partner credits:', creditUpdateError)
-      } else {
-        console.log('💳 Updated partner credits, used:', creditsUsed)
+        .single()
+      
+      if (updatedPartner) {
+        console.log('💳 Partner balance after allocation:', updatedPartner.credits)
       }
     }
 

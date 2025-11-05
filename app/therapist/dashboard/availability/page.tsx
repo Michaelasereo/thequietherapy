@@ -18,14 +18,50 @@ export default function TherapistAvailabilityPage() {
   const [availabilityApproved, setAvailabilityApproved] = useState(false)
   const [availabilityMode, setAvailabilityMode] = useState<'weekly' | 'overrides'>('weekly')
 
+  // Force refresh on mount with cache busting
   useEffect(() => {
+    console.log('🔄 Availability page: Fetching therapist data on mount')
     fetchTherapistData()
-  }, []) // Remove fetchTherapistData from dependencies to prevent infinite loop
+    
+    // Set up periodic refresh to catch approval status changes (only if not approved)
+    // This helps detect when admin approves the therapist
+    const refreshInterval = setInterval(() => {
+      if (!availabilityApproved) {
+        console.log('🔄 Availability page: Periodic refresh check (not approved yet)')
+        fetchTherapistData()
+      } else {
+        console.log('✅ Availability page: Approved, stopping periodic refresh')
+        clearInterval(refreshInterval)
+      }
+    }, 10000) // Check every 10 seconds if not approved
+    
+    return () => clearInterval(refreshInterval)
+  }, [availabilityApproved]) // Re-run if approval status changes
 
   useEffect(() => {
     if (therapistInfo) {
+      console.log('🔍 Availability page: Therapist info updated', {
+        availability_approved: therapistInfo.availability_approved,
+        is_verified: therapistInfo.isVerified,
+        is_active: therapistInfo.isActive,
+        id: therapistInfo.id
+      })
       setIsActive(therapistInfo.isActive)
-      setAvailabilityApproved(therapistInfo.availability_approved || false)
+      const approved = therapistInfo.availability_approved || false
+      setAvailabilityApproved(approved)
+      
+      // If not approved, log debug info
+      if (!approved) {
+        console.warn('⚠️ Availability page: Therapist not approved', {
+          availability_approved: therapistInfo.availability_approved,
+          is_verified: therapistInfo.isVerified,
+          is_active: therapistInfo.isActive,
+          therapistInfo: therapistInfo
+        })
+      }
+    } else {
+      console.warn('⚠️ Availability page: No therapist info available')
+      setAvailabilityApproved(false)
     }
   }, [therapistInfo])
 
@@ -101,8 +137,31 @@ export default function TherapistAvailabilityPage() {
       {!availabilityApproved && (
         <Alert className="bg-yellow-50 border-yellow-200">
           <AlertTriangle className="h-4 w-4 text-yellow-600" />
-          <AlertDescription className="text-yellow-800">
-            Your availability settings will be accessible once your therapist application is approved by our admin team.
+          <AlertDescription className="text-yellow-800 space-y-2">
+            <div>
+              Your availability settings will be accessible once your therapist application is approved by our admin team.
+            </div>
+            {therapistInfo && (
+              <div className="text-xs text-yellow-700 mt-2">
+                <div>Current Status:</div>
+                <div>• Verified: {therapistInfo.isVerified ? 'Yes' : 'No'}</div>
+                <div>• Active: {therapistInfo.isActive ? 'Yes' : 'No'}</div>
+                <div>• Approval Status: {therapistInfo.availability_approved ? 'Approved' : 'Pending'}</div>
+              </div>
+            )}
+            <div className="mt-2">
+              <Button 
+                onClick={() => {
+                  console.log('🔄 Manual refresh triggered')
+                  fetchTherapistData()
+                }}
+                variant="outline"
+                size="sm"
+                className="mt-2"
+              >
+                Refresh Status
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       )}

@@ -485,11 +485,14 @@ export function TherapistDashboardProvider({ children }: { children: React.React
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
       
-      // Fetch therapist data from API with cache busting
-      const response = await fetch('/api/therapist/profile', {
+      // Fetch therapist data from API with cache busting using timestamp
+      const timestamp = Date.now()
+      const response = await fetch(`/api/therapist/profile?t=${timestamp}`, {
         cache: 'no-store',
         headers: {
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       })
       

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 // Removed unused imports that were causing re-renders
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
+import AddToCalendarButton from "@/components/add-to-calendar-button"
 
 // Simple debounce utility
 function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
@@ -444,6 +445,21 @@ const TherapistDashboardPage = memo(function TherapistDashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <AddToCalendarButton
+                          session={{
+                            id: session.id,
+                            title: `Therapy Session with ${session.users?.full_name || 'Client'}`,
+                            start_time: session.start_time,
+                            end_time: session.end_time || new Date(new Date(session.start_time).getTime() + 60 * 60 * 1000).toISOString(),
+                            therapist_name: session.users?.full_name || 'Client',
+                            patient_name: session.users?.full_name || 'Client',
+                            therapist_email: session.users?.email,
+                            patient_email: session.users?.email,
+                            session_url: session.daily_room_url || session.session_url
+                          }}
+                          variant="outline"
+                          size="sm"
+                        />
                         {isInProgress ? (
                           <Button 
                             variant="default" 

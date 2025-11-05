@@ -90,3 +90,4 @@ WHERE email IN ('michael@opportunedesignco.com', 'asereope@gmail.com')
 -- Success message
 SELECT '✅ Therapists removed successfully!' as status,
        'Deleted: michael@opportunedesignco.com, asereope@gmail.com' as details;
+

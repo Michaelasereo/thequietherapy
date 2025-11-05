@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         // Get user email first
         const { data: user, error: userError } = await supabase
           .from('users')
-          .select('email, full_name')
+          .select('email, full_name, is_verified, is_active')
           .eq('id', id)
           .single()
 
@@ -45,19 +45,30 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: 'Therapist not found' }, { status: 404 })
         }
 
-        // Then find enrollment by email
-        const { data: enrollmentByEmail, error: enrollmentError } = await supabase
-          .from('therapist_enrollments')
-          .select('id, email, full_name')
-          .eq('email', user.email)
-          .single()
+        // Check if therapist is already approved
+        if (action === 'approve' && user.is_verified && user.is_active) {
+          console.log('⚠️ Therapist is already approved:', user.email)
+          return NextResponse.json({ 
+            success: true,
+            message: 'Therapist is already approved',
+            alreadyApproved: true 
+          })
+        }
 
-        if (enrollmentError || !enrollmentByEmail) {
+        // Then find enrollment by email (get most recent one)
+        const { data: enrollmentsByEmail, error: enrollmentError } = await supabase
+          .from('therapist_enrollments')
+          .select('id, email, full_name, status')
+          .eq('email', user.email)
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        if (enrollmentError || !enrollmentsByEmail || enrollmentsByEmail.length === 0) {
           console.error('❌ Error getting enrollment by email:', enrollmentError)
           return NextResponse.json({ error: 'Therapist enrollment not found' }, { status: 404 })
         }
 
-        enrollment = enrollmentByEmail
+        enrollment = enrollmentsByEmail[0]
         console.log('✅ Found enrollment by user email:', enrollment.email)
       }
 

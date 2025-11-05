@@ -119,39 +119,52 @@ export async function GET(request: NextRequest) {
     )
 
     // ✅ ALWAYS fetch from therapist_enrollments first (source of truth for profile_image_url)
+    // CRITICAL: Get the APPROVED enrollment if available, otherwise most recent one
     let enrollmentData = null
     console.log('🔍 Fetching enrollment data from therapist_enrollments...')
     
-    // First try to find by user_id
-    let { data: enrollment, error: enrollmentError } = await supabase
+    // First try to find by user_id - prefer approved enrollment
+    let { data: enrollmentsByUserId, error: enrollmentError } = await supabase
       .from('therapist_enrollments')
       .select('*')
       .eq('user_id', therapistUserId)
-      .single()
+      .order('created_at', { ascending: false })
     
-    console.log('🔍 Enrollment data by user_id:', enrollment)
-    console.log('🔍 Enrollment error by user_id:', enrollmentError)
+    console.log('🔍 Enrollments by user_id:', enrollmentsByUserId?.length || 0)
     
-    // If user_id lookup fails, try by email
-    if (enrollmentError || !enrollment) {
+    // If user_id lookup fails or returns nothing, try by email
+    if (enrollmentError || !enrollmentsByUserId || enrollmentsByUserId.length === 0) {
       console.log('🔍 user_id lookup failed, trying email lookup...')
-      const { data: enrollmentByEmail, error: enrollmentByEmailError } = await supabase
+      const { data: enrollmentsByEmail, error: enrollmentByEmailError } = await supabase
         .from('therapist_enrollments')
         .select('*')
         .eq('email', email)
-        .single()
+        .order('created_at', { ascending: false })
       
-      console.log('🔍 Enrollment data by email:', enrollmentByEmail)
-      console.log('🔍 Enrollment error by email:', enrollmentByEmailError)
+      console.log('🔍 Enrollments by email:', enrollmentsByEmail?.length || 0)
       
-      if (enrollmentByEmail && !enrollmentByEmailError) {
-        enrollment = enrollmentByEmail
+      if (enrollmentsByEmail && enrollmentsByEmail.length > 0) {
+        enrollmentsByUserId = enrollmentsByEmail
         enrollmentError = enrollmentByEmailError
       }
     }
     
-    if (enrollment && !enrollmentError) {
-      enrollmentData = enrollment
+    // Select the best enrollment: approved > most recent
+    if (enrollmentsByUserId && enrollmentsByUserId.length > 0) {
+      // Prefer approved enrollment, otherwise use most recent
+      const approvedEnrollment = enrollmentsByUserId.find(e => e.status === 'approved')
+      enrollmentData = approvedEnrollment || enrollmentsByUserId[0]
+      
+      if (enrollmentsByUserId.length > 1) {
+        console.warn(`⚠️ Found ${enrollmentsByUserId.length} enrollments for ${email}. Using ${enrollmentData.status === 'approved' ? 'approved' : 'most recent'} enrollment.`)
+      }
+      
+      console.log('✅ Selected enrollment:', {
+        id: enrollmentData.id,
+        status: enrollmentData.status,
+        user_id: enrollmentData.user_id,
+        created_at: enrollmentData.created_at
+      })
     }
 
     // Get therapist profile data from therapist_profiles table (for additional fields)
@@ -164,24 +177,30 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Profile data:', profile)
     console.log('🔍 Profile error:', profileError)
 
-    // Get user account data
+    // Get user account data - CRITICAL: Always fetch fresh data for approval status
+    // Use service role key to bypass any caching
     let { data: user, error: userError } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, full_name, name, user_type, is_verified, is_active, avatar_url, created_at, updated_at')
       .eq('email', email)
-      .single()
+      .maybeSingle()
 
     console.log('🔍 User data by email:', user)
     console.log('🔍 User error by email:', userError)
+    console.log('🔍 User approval status:', user ? {
+      is_verified: user.is_verified,
+      is_active: user.is_active,
+      availability_approved: user.is_verified && user.is_active
+    } : 'No user found')
 
     // If email lookup fails, try by ID
     if (userError || !user) {
       console.log('🔍 Email lookup failed, trying ID lookup...')
       const { data: userById, error: userByIdError } = await supabase
         .from('users')
-        .select('*')
+        .select('id, email, full_name, name, user_type, is_verified, is_active, avatar_url, created_at, updated_at')
         .eq('id', therapistUserId)
-        .single()
+        .maybeSingle()
       
       console.log('🔍 User data by ID:', userById)
       console.log('🔍 User error by ID:', userByIdError)
@@ -228,7 +247,8 @@ export async function GET(request: NextRequest) {
         license_number: '',
         is_verified: user.is_verified,
         is_active: user.is_active,
-        availability_approved: user.is_verified && user.is_active, // Use user verification status
+        // CRITICAL: availability_approved is based on USER table, not enrollment status
+        availability_approved: user.is_verified === true && user.is_active === true,
         rating: 4.8,
         total_sessions: 0,
         total_clients: 0,
@@ -358,15 +378,22 @@ export async function GET(request: NextRequest) {
       license_number: dataSource?.licensed_qualification || dataSource?.mdcn_code || '',
       is_verified: user.is_verified,
       is_active: user.is_active,
-      availability_approved: user.is_verified && user.is_active, // Use user verification status for availability approval
+      // CRITICAL: availability_approved is based on USER table, not enrollment status
+      // This ensures therapists can set availability immediately after admin approval
+      // Admin approval sets user.is_verified = true and user.is_active = true
+      availability_approved: user.is_verified === true && user.is_active === true,
       
       // Debug info for availability approval
       debug_availability: {
         user_verified: user.is_verified,
         user_active: user.is_active,
-        enrollment_status: dataSource?.status,
-        enrollment_active: dataSource?.is_active,
-        calculated_approval: user.is_verified && user.is_active
+        enrollment_status: enrollmentData?.status || dataSource?.status,
+        enrollment_active: enrollmentData?.is_active || dataSource?.is_active,
+        enrollment_user_id: enrollmentData?.user_id,
+        calculated_approval: user.is_verified === true && user.is_active === true,
+        user_id: user.id,
+        enrollment_id: enrollmentData?.id || dataSource?.id,
+        timestamp: new Date().toISOString()
       },
       rating: 4.8, // Default rating
       total_sessions: 0, // Will be calculated from sessions table
@@ -400,10 +427,26 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('🔍 Returning therapist data:', therapistData)
-
-    return successResponse({
-      therapist: therapistData
+    console.log('🔍 Availability approval status:', {
+      availability_approved: therapistData.availability_approved,
+      is_verified: therapistData.is_verified,
+      is_active: therapistData.is_active,
+      debug: therapistData.debug_availability
     })
+
+    // Return with cache-busting headers to ensure fresh data
+    return NextResponse.json(
+      { success: true, data: { therapist: therapistData } },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'X-Content-Type-Options': 'nosniff'
+        }
+      }
+    )
 
   } catch (error) {
     return handleApiError(error)

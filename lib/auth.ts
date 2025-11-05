@@ -363,22 +363,54 @@ export async function verifyMagicLinkForAuthType(token: string, authType: 'indiv
       console.log('✅ New user created with Supabase Auth sync:', finalUser.id)
       
       // ✅ CRITICAL FIX: Link therapist_enrollments to user account after signup
+      // IMPORTANT: Only link ONE enrollment (the most recent pending one) to prevent duplicates
       if (authType === 'therapist') {
         console.log('🔗 Linking therapist enrollment to user account...')
-        const { error: linkError } = await supabase
-          .from('therapist_enrollments')
-          .update({ 
-            user_id: finalUser.id,
-            updated_at: now.toISOString()
-          })
-          .eq('email', magicLink.email)
-          .is('user_id', null) // Only update if user_id is NULL (safety check)
         
-        if (linkError) {
-          console.error('⚠️ Warning: Failed to link therapist enrollment to user account:', linkError)
-          // Don't fail the signup if linking fails, but log it for admin review
+        // First, check for existing enrollments
+        const { data: existingEnrollments, error: checkError } = await supabase
+          .from('therapist_enrollments')
+          .select('id, status, created_at, user_id')
+          .eq('email', magicLink.email)
+          .order('created_at', { ascending: false })
+        
+        if (checkError) {
+          console.error('⚠️ Warning: Failed to check therapist enrollments:', checkError)
+        } else if (existingEnrollments && existingEnrollments.length > 0) {
+          console.log(`🔍 Found ${existingEnrollments.length} existing enrollment(s) for ${magicLink.email}`)
+          
+          // Find the most recent pending enrollment without user_id
+          const enrollmentToLink = existingEnrollments.find(
+            e => !e.user_id && (e.status === 'pending' || !e.status)
+          ) || existingEnrollments[0] // Fallback to most recent if no pending found
+          
+          if (enrollmentToLink) {
+            console.log(`🔗 Linking enrollment ${enrollmentToLink.id} to user ${finalUser.id}`)
+            const { error: linkError, count: updatedCount } = await supabase
+              .from('therapist_enrollments')
+              .update({ 
+                user_id: finalUser.id,
+                updated_at: now.toISOString()
+              })
+              .eq('id', enrollmentToLink.id)
+              .is('user_id', null) // Only update if user_id is NULL (safety check)
+            
+            if (linkError) {
+              console.error('⚠️ Warning: Failed to link therapist enrollment to user account:', linkError)
+              // Don't fail the signup if linking fails, but log it for admin review
+            } else {
+              console.log(`✅ Therapist enrollment ${enrollmentToLink.id} linked to user account (updated ${updatedCount || 1} record(s))`)
+              
+              // If there are multiple enrollments, warn about duplicates
+              if (existingEnrollments.length > 1) {
+                console.warn(`⚠️ Found ${existingEnrollments.length} enrollments for ${magicLink.email}. Linked the most recent one. Admin should review and clean up duplicates.`)
+              }
+            }
+          } else {
+            console.warn(`⚠️ No enrollment found to link for ${magicLink.email} (all may already be linked)`)
+          }
         } else {
-          console.log('✅ Therapist enrollment linked to user account')
+          console.warn(`⚠️ No enrollment found for ${magicLink.email}. User account created but no enrollment to link.`)
         }
       }
     } else if (!user && magicLink.type === 'login') {

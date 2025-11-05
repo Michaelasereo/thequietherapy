@@ -32,27 +32,56 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Check if partner already exists
-    const { data: existingPartner, error: checkError } = await supabase
+    // Check if user already exists (any type)
+    const { data: existingUser, error: checkError } = await supabase
       .from('users')
-      .select('id, email')
+      .select('id, email, user_type')
       .eq('email', email)
-      .eq('user_type', 'partner')
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Error checking existing partner:', checkError)
+      console.error('Error checking existing user:', checkError)
       return NextResponse.json({
         success: false,
-        error: 'Database error while checking existing partner'
+        error: 'Database error while checking existing user'
       }, { status: 500 })
     }
 
-    if (existingPartner) {
-      return NextResponse.json({
-        success: false,
-        error: 'A partner account with this email already exists'
-      }, { status: 400 })
+    if (existingUser) {
+      if (existingUser.user_type === 'partner') {
+        // Partner already exists - send magic link instead
+        console.log('✅ Partner already exists, sending magic link:', existingUser.id)
+        
+        const magicLinkResult = await createMagicLinkForAuthType(
+          email,
+          'partner',
+          'login',
+          {
+            user_type: 'partner',
+            partner_id: existingUser.id
+          }
+        )
+
+        if (magicLinkResult.success) {
+          return NextResponse.json({
+            success: true,
+            message: 'A partner account with this email already exists. Magic link sent to your email.',
+            partner_id: existingUser.id,
+            email: email
+          })
+        } else {
+          return NextResponse.json({
+            success: false,
+            error: 'A partner account with this email already exists, but we could not send a login link. Please try logging in manually.'
+          }, { status: 400 })
+        }
+      } else {
+        // Email exists but is not a partner
+        return NextResponse.json({
+          success: false,
+          error: `This email is already registered as a ${existingUser.user_type}. Please use a different email or log in with your existing account.`
+        }, { status: 400 })
+      }
     }
 
     // Create partner user with pending status but temporary approval for access

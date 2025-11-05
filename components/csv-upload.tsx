@@ -42,7 +42,7 @@ interface UploadResult {
   message: string
   successfulRecords: number
   failedRecords: number
-  errors: ValidationError[]
+  errors: (ValidationError | string)[]
 }
 
 export default function CSVUpload() {
@@ -82,11 +82,17 @@ export default function CSVUpload() {
       const worksheet = workbook.Sheets[sheetName]
       const jsonData = XLSX.utils.sheet_to_json(worksheet) as CSVRow[]
 
-      setData(jsonData)
-      setPreview(jsonData.slice(0, 5)) // Show first 5 rows for preview
+      // Normalize phone numbers - convert to string if needed
+      const normalizedData = jsonData.map(row => ({
+        ...row,
+        phone: row.phone ? String(row.phone).trim() : ''
+      }))
+
+      setData(normalizedData)
+      setPreview(normalizedData.slice(0, 5)) // Show first 5 rows for preview
       
       // Validate data
-      const validationErrors = validateData(jsonData)
+      const validationErrors = validateData(normalizedData)
       setErrors(validationErrors)
       
       if (validationErrors.length > 0) {
@@ -178,9 +184,13 @@ export default function CSVUpload() {
     return emailRegex.test(email)
   }
 
-  const isValidPhone = (phone: string): boolean => {
+  const isValidPhone = (phone: string | null | undefined): boolean => {
+    if (!phone) return false
+    // Convert to string if it's a number or other type
+    const phoneStr = String(phone).trim()
+    if (!phoneStr) return false
     const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
-    return phoneRegex.test(phone.replace(/\s/g, ''))
+    return phoneRegex.test(phoneStr.replace(/\s/g, ''))
   }
 
   const handleUpload = async () => {
@@ -476,11 +486,23 @@ export default function CSVUpload() {
                     <div className="mt-3">
                       <strong className="text-red-700">Errors:</strong>
                       <ul className="list-disc list-inside mt-1 text-sm space-y-1">
-                        {uploadResult.errors.slice(0, 5).map((error, index) => (
-                          <li key={index} className="text-red-600">
-                            Row {error.row}: {error.field ? `${error.field} - ` : ''}{error.message}
-                          </li>
-                        ))}
+                        {uploadResult.errors.slice(0, 5).map((error, index) => {
+                          // Handle both string errors and object errors
+                          if (typeof error === 'string') {
+                            return (
+                              <li key={index} className="text-red-600">
+                                {error}
+                              </li>
+                            )
+                          } else {
+                            // Object format: { row, field?, message }
+                            return (
+                              <li key={index} className="text-red-600">
+                                Row {error.row || 'N/A'}: {error.field ? `${error.field} - ` : ''}{error.message || 'Unknown error'}
+                              </li>
+                            )
+                          }
+                        })}
                         {uploadResult.errors.length > 5 && (
                           <li className="text-red-600">... and {uploadResult.errors.length - 5} more errors</li>
                         )}

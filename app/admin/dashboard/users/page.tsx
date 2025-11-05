@@ -34,22 +34,31 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
-  // Fetch users on component mount
+  // Fetch users on component mount and when filters change
   useEffect(() => {
     fetchUsers()
-  }, [])
+  }, [userTypeFilter])
 
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/users')
+      const params = new URLSearchParams({
+        type: userTypeFilter === 'all' ? 'all' : userTypeFilter,
+        limit: '100'
+      })
+      
+      const response = await fetch(`/api/admin/users?${params}`, {
+        credentials: 'include'
+      })
+      
       if (response.ok) {
         const data = await response.json()
         // Handle the new API response structure
-        const usersData = data.users || data || []
+        const usersData = data.users || []
         setUsers(Array.isArray(usersData) ? usersData : [])
       } else {
-        toast.error('Failed to fetch users')
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Failed to fetch users')
         setUsers([]) // Ensure users is always an array
       }
     } catch (error) {
@@ -63,11 +72,55 @@ export default function UsersPage() {
 
   const handleUserStatusChange = async (userId: string, newStatus: string) => {
     try {
-      // This would be replaced with actual API call
-      setUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, status: newStatus, is_active: newStatus === 'active' } : user
-      ))
-      toast.success(`User status updated to ${newStatus}`)
+      if (newStatus === 'suspended' || newStatus === 'banned') {
+        // Deactivate user
+        const response = await fetch('/api/admin/users', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            userId,
+            permanent: false
+          })
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          toast.success(data.message || `User ${newStatus} successfully`)
+          setUsers(prev => prev.map(user => 
+            user.id === userId ? { ...user, status: newStatus, is_active: false } : user
+          ))
+        } else {
+          toast.error(data.error || 'Failed to update user status')
+        }
+      } else {
+        // Reactivate user
+        const response = await fetch('/api/admin/users', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            userId,
+            action: 'reactivate'
+          })
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          toast.success(data.message || `User ${newStatus} successfully`)
+          setUsers(prev => prev.map(user => 
+            user.id === userId ? { ...user, status: newStatus, is_active: true } : user
+          ))
+        } else {
+          toast.error(data.error || 'Failed to update user status')
+        }
+      }
     } catch (error) {
       console.error('Error updating user status:', error)
       toast.error('Failed to update user status')
@@ -100,11 +153,31 @@ export default function UsersPage() {
     }
   }
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = async (userId: string, permanent: boolean = true) => {
     try {
-      // This would be replaced with actual API call to delete user and blacklist email
-      setUsers(prev => prev.filter(user => user.id !== userId))
-      toast.success('User deleted successfully. Email has been blacklisted.')
+      const response = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId,
+          permanent
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success(data.message || 'User deleted successfully')
+        // Remove user from list
+        setUsers(prev => prev.filter(user => user.id !== userId))
+        // Refresh the list
+        fetchUsers()
+      } else {
+        toast.error(data.error || 'Failed to delete user')
+      }
     } catch (error) {
       console.error('Error deleting user:', error)
       toast.error('Failed to delete user')
@@ -159,10 +232,13 @@ export default function UsersPage() {
 
   // Filter users based on search and filters
   const filteredUsers = Array.isArray(users) ? users.filter(user => {
-    const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = !searchTerm || 
+      user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesUserType = userTypeFilter === "all" || user.user_type === userTypeFilter
-    const matchesStatus = statusFilter === "all" || user.status === statusFilter
+    // Map is_active to status for filtering
+    const userStatus = user.is_active ? 'active' : (user.status || 'inactive')
+    const matchesStatus = statusFilter === "all" || userStatus === statusFilter
     
     return matchesSearch && matchesUserType && matchesStatus
   }) : []
@@ -340,7 +416,7 @@ export default function UsersPage() {
                     {getUserTypeBadge(user.user_type)}
                   </TableCell>
                   <TableCell>
-                    {getStatusBadge(user.status)}
+                    {getStatusBadge(user.is_active ? 'active' : (user.status || 'inactive'))}
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.is_verified ? "default" : "secondary"}>
@@ -479,10 +555,10 @@ export default function UsersPage() {
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() => handleDeleteUser(user.id)}
+                                      onClick={() => handleDeleteUser(user.id, true)}
                                       className="bg-red-600 hover:bg-red-700"
                                     >
-                                      Delete User
+                                      Permanently Delete
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>

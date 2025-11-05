@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { UserCheck, Search, Eye, Shield, Calendar, Mail, Phone, FileText, Star, AlertTriangle, CheckCircle, XCircle, Info } from "lucide-react"
+import { UserCheck, Search, Eye, Shield, Calendar, Mail, Phone, FileText, Star, AlertTriangle, CheckCircle, XCircle, Info, Trash2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
 import { useSearchParams } from 'next/navigation'
@@ -89,14 +89,29 @@ function TherapistsContent() {
       })
       if (response.ok) {
         const data = await response.json()
-        console.log('📋 Fetched therapists:', data.length)
-        setTherapists(data)
+        console.log('📋 Fetched therapists response:', data)
+        // Check if data is an array, if not, check if it's an error object
+        if (Array.isArray(data)) {
+          console.log('📋 Fetched therapists:', data.length)
+          setTherapists(data)
+        } else if (data.error) {
+          console.error('❌ API returned error:', data.error)
+          toast.error(data.error || 'Failed to fetch therapists')
+          setTherapists([])
+        } else {
+          console.warn('⚠️ Unexpected response format:', data)
+          setTherapists([])
+        }
       } else {
-        toast.error('Failed to fetch therapists')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('❌ API error response:', response.status, errorData)
+        toast.error(errorData.error || 'Failed to fetch therapists')
+        setTherapists([])
       }
     } catch (error) {
-      console.error('Error fetching therapists:', error)
+      console.error('❌ Error fetching therapists:', error)
       toast.error('Error loading therapists')
+      setTherapists([])
     } finally {
       setLoading(false)
     }
@@ -409,6 +424,42 @@ function TherapistsContent() {
   const cancelRateEdit = () => {
     setEditingRate(null)
     setNewRate('')
+  }
+
+  const handleDeleteTherapist = async (therapistId: string, therapistName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete ${therapistName}? This action cannot be undone and will delete:\n\n- All sessions with this therapist\n- Therapist availability\n- Therapist profile\n- Therapist enrollment\n- Therapist account from Supabase Auth\n\nTherapist will not be able to use this email to sign up again.`)) {
+      return
+    }
+
+    try {
+      setProcessingId(therapistId)
+      
+      const response = await fetch('/api/admin/therapists', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          therapistId,
+          permanent: true 
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(data.message || 'Therapist deleted successfully')
+        fetchTherapists()
+        triggerTherapistDataRefresh()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to delete therapist')
+      }
+    } catch (error) {
+      console.error('Error deleting therapist:', error)
+      toast.error('Error deleting therapist')
+    } finally {
+      setProcessingId(null)
+    }
   }
 
   if (loading) {
@@ -860,12 +911,13 @@ function TherapistsContent() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
+                    <div className="flex items-center gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
                       <DialogContent className="max-w-2xl">
                         <DialogHeader>
                           <DialogTitle>Therapist Details</DialogTitle>
@@ -1029,6 +1081,65 @@ function TherapistsContent() {
                         </div>
                       </DialogContent>
                     </Dialog>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          disabled={processingId === therapist.id}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Delete Therapist</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <Alert>
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription>
+                              <strong>Warning:</strong> This action will permanently delete the therapist and all associated data:
+                              <ul className="list-disc list-inside mt-2 space-y-1">
+                                <li>All sessions with this therapist</li>
+                                <li>Therapist availability schedule</li>
+                                <li>Therapist profile</li>
+                                <li>Therapist enrollment</li>
+                                <li>Therapist account from Supabase Auth</li>
+                              </ul>
+                              <p className="mt-2 font-semibold">This action cannot be undone.</p>
+                            </AlertDescription>
+                          </Alert>
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Therapist: <strong>{therapist.full_name}</strong> ({therapist.email})
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              onClick={(e) => {
+                                const dialog = e.currentTarget.closest('[role="dialog"]') as HTMLElement
+                                if (dialog) {
+                                  const trigger = dialog.querySelector('[data-state="open"]')?.previousElementSibling as HTMLButtonElement
+                                  if (trigger) trigger.click()
+                                }
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button 
+                              variant="destructive"
+                              onClick={() => handleDeleteTherapist(therapist.id, therapist.full_name)}
+                              disabled={processingId === therapist.id}
+                            >
+                              {processingId === therapist.id ? "Deleting..." : "Delete Permanently"}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

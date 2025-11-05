@@ -284,3 +284,281 @@ export async function sendMagicLinkEmail(email: string, verificationUrl: string,
     };
   }
 }
+
+/**
+ * Send booking confirmation email to user
+ */
+export async function sendBookingConfirmationToUser(
+  userEmail: string,
+  userName: string,
+  therapistName: string,
+  sessionDate: string,
+  sessionTime: string,
+  duration: number,
+  sessionType: string,
+  sessionUrl?: string,
+  calendarIcs?: string
+) {
+  const transporter = createTransporter();
+  
+  if (!transporter) {
+    console.warn('Email transporter not available - skipping booking confirmation email');
+    return { success: false, error: 'Email service not configured' };
+  }
+  
+  const senderEmail = process.env.SENDER_EMAIL || 'noreply@thequietherapy.live';
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/dashboard/sessions`;
+  
+  // Format date and time nicely
+  const dateObj = new Date(sessionDate);
+  const formattedDate = dateObj.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  const formattedTime = new Date(`2000-01-01T${sessionTime}`).toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  });
+  
+  const mailOptions = {
+    from: `The Quiet Therapy <${senderEmail}>`,
+    to: userEmail,
+    subject: `✅ Your Therapy Session is Confirmed - ${formattedDate}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">✅ Session Confirmed!</h1>
+        </div>
+        
+        <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+            Hi ${userName},
+          </p>
+          
+          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+            Your therapy session has been successfully booked! We're excited to support you on your journey.
+          </p>
+          
+          <div style="background: white; border-left: 4px solid #667eea; padding: 20px; margin: 20px 0; border-radius: 5px;">
+            <h3 style="color: #1f2937; margin-top: 0;">Session Details</h3>
+            <table style="width: 100%; color: #374151;">
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600;">Therapist:</td>
+                <td style="padding: 8px 0;">${therapistName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600;">Date:</td>
+                <td style="padding: 8px 0;">${formattedDate}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600;">Time:</td>
+                <td style="padding: 8px 0;">${formattedTime}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600;">Duration:</td>
+                <td style="padding: 8px 0;">${duration} minutes</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600;">Type:</td>
+                <td style="padding: 8px 0; text-transform: capitalize;">${sessionType}</td>
+              </tr>
+            </table>
+          </div>
+          
+          ${sessionUrl ? `
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${sessionUrl}" style="display: inline-block; background-color: #667eea; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px;">
+              🎥 Join Session Room
+            </a>
+          </div>
+          ` : ''}
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${dashboardUrl}" style="display: inline-block; background-color: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px;">
+              📅 View in Dashboard
+            </a>
+          </div>
+          
+          ${calendarIcs ? `
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="data:text/calendar;charset=utf-8,${encodeURIComponent(calendarIcs)}" download="therapy-session.ics" style="display: inline-block; background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px;">
+              📆 Add to Calendar
+            </a>
+            <p style="color: #6b7280; font-size: 14px; margin-top: 10px;">
+              Click to add this session to your calendar app and set a reminder to check your dashboard
+            </p>
+          </div>
+          ` : ''}
+          
+          <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 5px;">
+            <p style="color: #92400e; margin: 0; font-size: 14px;">
+              <strong>💡 Reminder:</strong> Please check your dashboard before the session to access the meeting room and any important updates.
+            </p>
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            If you need to reschedule or cancel, please visit your dashboard or contact us.
+          </p>
+          
+          <p style="color: #6b7280; font-size: 14px;">
+            Best regards,<br>
+            <strong>The Quiet Therapy Team</strong>
+          </p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Booking confirmation email sent to user:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ Failed to send booking confirmation email to user:', error);
+    return { success: false, error: 'Failed to send email' };
+  }
+}
+
+/**
+ * Send booking confirmation email to therapist
+ */
+export async function sendBookingConfirmationToTherapist(
+  therapistEmail: string,
+  therapistName: string,
+  userName: string,
+  userEmail: string,
+  sessionDate: string,
+  sessionTime: string,
+  duration: number,
+  sessionType: string,
+  notes?: string,
+  sessionUrl?: string,
+  calendarIcs?: string
+) {
+  const transporter = createTransporter();
+  
+  if (!transporter) {
+    console.warn('Email transporter not available - skipping booking confirmation email');
+    return { success: false, error: 'Email service not configured' };
+  }
+  
+  const senderEmail = process.env.SENDER_EMAIL || 'noreply@thequietherapy.live';
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/therapist/dashboard/sessions`;
+  
+  // Format date and time nicely
+  const dateObj = new Date(sessionDate);
+  const formattedDate = dateObj.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  const formattedTime = new Date(`2000-01-01T${sessionTime}`).toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  });
+  
+  const mailOptions = {
+    from: `The Quiet Therapy <${senderEmail}>`,
+    to: therapistEmail,
+    subject: `📅 New Session Booking - ${userName} - ${formattedDate}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">📅 New Session Booking</h1>
+        </div>
+        
+        <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+            Hi ${therapistName},
+          </p>
+          
+          <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+            You have a new therapy session booked. Please review the details below.
+          </p>
+          
+          <div style="background: white; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0; border-radius: 5px;">
+            <h3 style="color: #1f2937; margin-top: 0;">Session Details</h3>
+            <table style="width: 100%; color: #374151;">
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600;">Client:</td>
+                <td style="padding: 8px 0;">${userName} (${userEmail})</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600;">Date:</td>
+                <td style="padding: 8px 0;">${formattedDate}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600;">Time:</td>
+                <td style="padding: 8px 0;">${formattedTime}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600;">Duration:</td>
+                <td style="padding: 8px 0;">${duration} minutes</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600;">Type:</td>
+                <td style="padding: 8px 0; text-transform: capitalize;">${sessionType}</td>
+              </tr>
+              ${notes ? `
+              <tr>
+                <td style="padding: 8px 0; font-weight: 600; vertical-align: top;">Notes:</td>
+                <td style="padding: 8px 0;">${notes}</td>
+              </tr>
+              ` : ''}
+            </table>
+          </div>
+          
+          ${sessionUrl ? `
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${sessionUrl}" style="display: inline-block; background-color: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px;">
+              🎥 Join Session Room
+            </a>
+          </div>
+          ` : ''}
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${dashboardUrl}" style="display: inline-block; background-color: #6366f1; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px;">
+              📋 View in Dashboard
+            </a>
+          </div>
+          
+          ${calendarIcs ? `
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="data:text/calendar;charset=utf-8,${encodeURIComponent(calendarIcs)}" download="therapy-session.ics" style="display: inline-block; background-color: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px;">
+              📆 Add to Calendar
+            </a>
+            <p style="color: #6b7280; font-size: 14px; margin-top: 10px;">
+              Click to add this session to your calendar app and set a reminder to check your dashboard
+            </p>
+          </div>
+          ` : ''}
+          
+          <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 5px;">
+            <p style="color: #1e40af; margin: 0; font-size: 14px;">
+              <strong>💡 Reminder:</strong> Please check your dashboard before the session to access the meeting room and review client information.
+            </p>
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            Best regards,<br>
+            <strong>The Quiet Therapy Team</strong>
+          </p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Booking confirmation email sent to therapist:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ Failed to send booking confirmation email to therapist:', error);
+    return { success: false, error: 'Failed to send email' };
+  }
+}

@@ -53,14 +53,19 @@ export default function PartnerEnrollmentPage() {
 
       const result = await response.json()
 
-      if (result.success) {
+      // Check both response status and success field
+      if (!response.ok || !result.success) {
+        console.error("Partner enrollment failed:", result.error || result.message)
+        const errorMessage = result.error || result.message || "Failed to create partner account. Please try again."
+        alert(`Enrollment failed: ${errorMessage}`)
+        return
+      }
+
+      // Only show success if response is OK and success is true
+      if (result.success && response.ok) {
         console.log("Partner enrollment successful, magic link sent")
         setEnrollmentEmail(formData.email)
         setShowSuccessModal(true)
-      } else {
-        console.error("Partner enrollment failed:", result.error)
-        // Handle error - you might want to show an error message
-        alert(`Enrollment failed: ${result.error}`)
       }
     } catch (error) {
       console.error("Error during partner enrollment:", error)
