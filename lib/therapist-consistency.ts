@@ -75,15 +75,23 @@ export class TherapistConsistencyManager {
       console.log(`🔄 TherapistConsistencyManager: Approving ${email}`)
 
       // Get enrollment data first to get therapist details
-      const { data: enrollmentData } = await supabase
+      // Handle duplicates by getting the most recent one (or any approved one if exists)
+      const { data: allEnrollmentsData, error: checkEnrollmentsError } = await supabase
         .from('therapist_enrollments')
         .select('*')
         .eq('email', email)
-        .single()
+        .order('created_at', { ascending: false })
 
-      if (!enrollmentData) {
+      if (checkEnrollmentsError || !allEnrollmentsData || allEnrollmentsData.length === 0) {
         console.error('❌ Enrollment not found for:', email)
         return { success: false, error: 'Therapist enrollment not found' }
+      }
+
+      // Use the most recent enrollment, or an approved one if it exists
+      const enrollmentData = allEnrollmentsData.find(e => e.status === 'approved') || allEnrollmentsData[0]
+      
+      if (allEnrollmentsData.length > 1) {
+        console.warn(`⚠️ Found ${allEnrollmentsData.length} enrollments for ${email}. Using most recent one for approval.`)
       }
 
       // Get user_id first for therapist_profiles update
@@ -140,7 +148,16 @@ export class TherapistConsistencyManager {
         console.log('✅ Updated existing user account')
       }
 
-      // Update therapist_enrollments table
+      // Update ALL therapist_enrollments records for this email (handles duplicates)
+      // We already have allEnrollmentsData from earlier, reuse it
+      const allEnrollments = allEnrollmentsData.map(e => ({ id: e.id, status: e.status, is_active: e.is_active }))
+
+      // If there are multiple enrollments, we need to handle them
+      if (allEnrollments && allEnrollments.length > 1) {
+        console.warn(`⚠️ Found ${allEnrollments.length} duplicate enrollments for ${email}. Updating all to approved.`)
+      }
+
+      // Update ALL enrollments for this email (handles duplicates)
       const { error: enrollmentError } = await supabase
         .from('therapist_enrollments')
         .update({ 
@@ -172,6 +189,38 @@ export class TherapistConsistencyManager {
         }
         
         return { success: false, error: `Enrollments table update failed: ${enrollmentError.message}` }
+      }
+
+      // Clean up duplicate enrollments: Keep only the most recent approved one
+      // Delete older duplicate enrollments if there are multiple
+      if (allEnrollments && allEnrollments.length > 1) {
+        console.log(`🧹 Cleaning up ${allEnrollments.length - 1} duplicate enrollment(s) for ${email}`)
+        
+        // Get the most recent approved enrollment ID
+        const { data: latestEnrollment } = await supabase
+          .from('therapist_enrollments')
+          .select('id')
+          .eq('email', email)
+          .eq('status', 'approved')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (latestEnrollment) {
+          // Delete all other enrollments (keep only the latest approved one)
+          const { error: deleteError } = await supabase
+            .from('therapist_enrollments')
+            .delete()
+            .eq('email', email)
+            .neq('id', latestEnrollment.id)
+
+          if (deleteError) {
+            console.warn('⚠️ Failed to delete duplicate enrollments (non-critical):', deleteError)
+            // Don't fail the approval if cleanup fails
+          } else {
+            console.log(`✅ Cleaned up ${allEnrollments.length - 1} duplicate enrollment(s)`)
+          }
+        }
       }
 
       // Update therapist_profiles table (CRITICAL for booking API)

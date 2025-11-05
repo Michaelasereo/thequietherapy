@@ -106,19 +106,52 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     console.log('✅ User found:', user.email)
 
     // Then check therapist_enrollments for approval status (source of truth)
-    const { data: enrollment, error: enrollmentError } = await supabase
+    // Handle duplicates by getting the most recent approved enrollment
+    const { data: enrollments, error: enrollmentError } = await supabase
       .from('therapist_enrollments')
-      .select('id, status, is_active')
+      .select('id, status, is_active, created_at')
       .eq('email', user.email)
       .eq('status', 'approved')
       .eq('is_active', true)
-      .single()
+      .order('created_at', { ascending: false })
+      .limit(1)
 
-    if (enrollmentError || !enrollment) {
+    if (enrollmentError || !enrollments || enrollments.length === 0) {
       console.error('❌ Enrollment query error:', enrollmentError)
+      
+      // Check if there are any enrollments at all (for better error message)
+      const { data: allEnrollments } = await supabase
+        .from('therapist_enrollments')
+        .select('id, status, is_active')
+        .eq('email', user.email)
+      
+      if (allEnrollments && allEnrollments.length > 0) {
+        const pendingEnrollments = allEnrollments.filter(e => e.status === 'pending')
+        const inactiveEnrollments = allEnrollments.filter(e => !e.is_active)
+        
+        if (pendingEnrollments.length > 0) {
+          console.error('❌ Therapist enrollment is pending approval')
+          throw new NotFoundError('Therapist enrollment is pending admin approval')
+        } else if (inactiveEnrollments.length > 0) {
+          console.error('❌ Therapist enrollment is not active')
+          throw new NotFoundError('Therapist enrollment is not active')
+        }
+      }
+      
       throw new NotFoundError('Therapist not found or not available')
     }
 
+    // If there are multiple enrollments, warn about duplicates
+    const { data: allEnrollments } = await supabase
+      .from('therapist_enrollments')
+      .select('id, status')
+      .eq('email', user.email)
+
+    if (allEnrollments && allEnrollments.length > 1) {
+      console.warn(`⚠️ Found ${allEnrollments.length} enrollments for ${user.email}. Using most recent approved one.`)
+    }
+
+    const enrollment = enrollments[0]
     console.log('✅ Therapist enrollment verified:', enrollment.status)
 
     // Use user data as therapist data
@@ -339,8 +372,68 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // 10. Credit deduction handled atomically inside the SQL function
 
-    // 11. TODO: Send confirmation emails/notifications
-    // await sendBookingConfirmation(user, therapist, session)
+    // 11. Send confirmation emails to user and therapist with calendar integration
+    try {
+      // Get full session details for email
+      const { data: fullSession, error: sessionError } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .single()
+
+      if (!sessionError && fullSession) {
+        // Generate calendar event
+        const { generateCalendarEvent } = await import('@/lib/calendar')
+        const sessionStartTime = new Date(fullSession.start_time)
+        const sessionEndTime = new Date(fullSession.end_time)
+        
+        const calendarIcs = generateCalendarEvent({
+          title: `Therapy Session with ${therapist.full_name}`,
+          description: `Therapy session with ${therapist.full_name}. Please check your dashboard before the session to access the meeting room.`,
+          startTime: sessionStartTime,
+          endTime: sessionEndTime,
+          location: 'Online - Check dashboard for meeting room',
+          organizerEmail: process.env.SENDER_EMAIL || 'noreply@thequietherapy.live',
+          attendeeEmails: [userEmail, therapist.email],
+          reminderMinutes: 60, // 1 hour before
+        })
+
+        // Send email to user
+        const { sendBookingConfirmationToUser } = await import('@/lib/email')
+        await sendBookingConfirmationToUser(
+          userEmail,
+          userName,
+          therapist.full_name,
+          session_date,
+          start_time,
+          duration,
+          session_type,
+          fullSession.session_url || fullSession.daily_room_url,
+          calendarIcs
+        )
+
+        // Send email to therapist
+        const { sendBookingConfirmationToTherapist } = await import('@/lib/email')
+        await sendBookingConfirmationToTherapist(
+          therapist.email,
+          therapist.full_name,
+          userName,
+          userEmail,
+          session_date,
+          start_time,
+          duration,
+          session_type,
+          notes,
+          fullSession.session_url || fullSession.daily_room_url,
+          calendarIcs
+        )
+
+        console.log('✅ Confirmation emails sent to user and therapist')
+      }
+    } catch (emailError) {
+      // Don't fail the booking if email fails
+      console.error('⚠️ Failed to send confirmation emails:', emailError)
+    }
 
     console.log('✅ Session booked successfully:', sessionId)
 

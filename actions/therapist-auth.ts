@@ -80,17 +80,67 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Check if enrollment already exists
-    const { data: existingEnrollment } = await supabase
+    // Check if enrollment already exists (with duplicate prevention)
+    // This prevents duplicate enrollments from React Strict Mode or double submissions
+    const { data: existingEnrollments, error: checkError } = await supabase
       .from('therapist_enrollments')
-      .select('id')
+      .select('id, created_at')
       .eq('email', email.toLowerCase())
-      .single()
+      .order('created_at', { ascending: false })
+      .limit(1)
 
-    if (existingEnrollment) {
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing enrollment:', checkError)
+      return {
+        success: false,
+        error: 'Database error while checking existing enrollment. Please try again.'
+      }
+    }
+
+    // Check if enrollment was created in the last 5 seconds (prevents duplicate submissions)
+    if (existingEnrollments && existingEnrollments.length > 0) {
+      const enrollment = existingEnrollments[0]
+      const enrollmentTime = new Date(enrollment.created_at).getTime()
+      const now = Date.now()
+      const timeDiff = now - enrollmentTime
+      
+      // If enrollment was created less than 5 seconds ago, it's likely a duplicate
+      if (timeDiff < 5000) {
+        console.warn('⚠️ Duplicate enrollment attempt detected (created', timeDiff, 'ms ago)')
+        return {
+          success: false,
+          error: 'An enrollment with this email was just created. Please wait a moment and try again.'
+        }
+      }
+      
+      // Otherwise, it's an old enrollment
       return {
         success: false,
         error: 'An enrollment with this email already exists. Please use the login page.'
+      }
+    }
+
+    // Final duplicate check right before insert (race condition protection)
+    const { data: lastCheck, error: lastCheckError } = await supabase
+      .from('therapist_enrollments')
+      .select('id, created_at')
+      .eq('email', email.toLowerCase())
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (!lastCheckError && lastCheck && lastCheck.length > 0) {
+      const enrollment = lastCheck[0]
+      const enrollmentTime = new Date(enrollment.created_at).getTime()
+      const now = Date.now()
+      const timeDiff = now - enrollmentTime
+      
+      // If enrollment was created less than 5 seconds ago, it's a duplicate
+      if (timeDiff < 5000) {
+        console.warn('⚠️ Duplicate enrollment prevented at last check (created', timeDiff, 'ms ago)')
+        return {
+          success: false,
+          error: 'An enrollment with this email was just created. Please wait a moment and try again.'
+        }
       }
     }
 
@@ -112,6 +162,21 @@ export async function therapistEnrollAction(prevState: any, formData: FormData) 
       })
 
     if (enrollmentError) {
+      // Check if it's a unique constraint violation (email already exists)
+      const isDuplicateError = enrollmentError.code === '23505' && (
+        enrollmentError.message?.includes('email') || 
+        enrollmentError.message?.includes('therapist_enrollments_email_key') ||
+        enrollmentError.details?.includes('email')
+      )
+
+      if (isDuplicateError) {
+        console.warn('⚠️ Duplicate enrollment prevented by database constraint (email unique)')
+        return {
+          success: false,
+          error: 'An enrollment with this email already exists. Please wait a moment and try again, or use the login page if you already enrolled.'
+        }
+      }
+
       console.error('Error creating enrollment:', enrollmentError)
       return {
         success: false,

@@ -301,9 +301,18 @@ export class AvailabilityManager {
       // 1. Check if therapist is active and verified
       const therapistStatus = await this.getTherapistStatus(therapistId);
       if (therapistStatus !== 'active') {
+        // Get more specific error message
+        const statusDetails = await this.getTherapistStatusDetails(therapistId);
+        const errorMessage = statusDetails.message || 'Therapist is not available for bookings';
         conflicts.push({
           type: 'unavailable_time',
-          message: 'Therapist is not available for bookings'
+          message: errorMessage
+        });
+        console.error('❌ Therapist availability check failed:', {
+          therapistId,
+          status: therapistStatus,
+          details: statusDetails,
+          message: errorMessage
         });
         return { available: false, conflicts };
       }
@@ -397,24 +406,145 @@ export class AvailabilityManager {
       }
 
       // Check if therapist enrollment is approved
-      const { data: enrollment, error: enrollmentError } = await this.supabase
+      // Handle duplicates by getting the most recent approved enrollment
+      const { data: enrollments, error: enrollmentError } = await this.supabase
         .from('therapist_enrollments')
-        .select('id, status, is_active')
+        .select('id, status, is_active, created_at')
         .eq('email', user.email)
         .eq('status', 'approved')
         .eq('is_active', true)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (enrollmentError || !enrollment) {
-        console.log('❌ Therapist enrollment not approved:', enrollmentError);
+      if (enrollmentError || !enrollments || enrollments.length === 0) {
+        console.log('❌ Therapist enrollment not approved:', {
+          error: enrollmentError,
+          email: user.email,
+          enrollmentsFound: enrollments?.length || 0
+        });
+        
+        // Check if there are any enrollments at all (for better debugging)
+        const { data: allEnrollments } = await this.supabase
+          .from('therapist_enrollments')
+          .select('id, status, is_active')
+          .eq('email', user.email);
+        
+        if (allEnrollments && allEnrollments.length > 0) {
+          console.log('🔍 Found enrollments but none are approved/active:', {
+            total: allEnrollments.length,
+            statuses: allEnrollments.map(e => ({ status: e.status, is_active: e.is_active }))
+          });
+        } else {
+          console.log('🔍 No enrollments found for therapist email:', user.email);
+        }
+        
         return 'inactive';
       }
+
+      // If there are multiple enrollments, warn about duplicates
+      const { data: allEnrollments } = await this.supabase
+        .from('therapist_enrollments')
+        .select('id, status')
+        .eq('email', user.email);
+
+      if (allEnrollments && allEnrollments.length > 1) {
+        console.warn(`⚠️ Found ${allEnrollments.length} enrollments for ${user.email}. Using most recent approved one.`);
+      }
+
+      const enrollment = enrollments[0];
 
       // If both checks pass, therapist is active
       return 'active';
     } catch (error) {
-      console.error('❌ Error getting therapist status:', error);
+      console.error('❌ Error checking therapist status:', error);
       return 'inactive';
+    }
+  }
+
+  /**
+   * Get detailed therapist status information for better error messages
+   */
+  private async getTherapistStatusDetails(therapistId: string): Promise<{ message: string; details: any }> {
+    try {
+      // Check user status
+      const { data: user, error: userError } = await this.supabase
+        .from('users')
+        .select('id, email, user_type, is_active, is_verified')
+        .eq('id', therapistId)
+        .single();
+
+      if (userError || !user) {
+        return {
+          message: 'Therapist account not found',
+          details: { error: userError }
+        };
+      }
+
+      if (user.user_type !== 'therapist') {
+        return {
+          message: `User is not a therapist (user_type: ${user.user_type})`,
+          details: { user_type: user.user_type }
+        };
+      }
+
+      if (!user.is_active) {
+        return {
+          message: 'Therapist account is not active',
+          details: { is_active: user.is_active }
+        };
+      }
+
+      if (!user.is_verified) {
+        return {
+          message: 'Therapist account is not verified',
+          details: { is_verified: user.is_verified }
+        };
+      }
+
+      // Check enrollment status (handle duplicates)
+      const { data: enrollments, error: enrollmentError } = await this.supabase
+        .from('therapist_enrollments')
+        .select('id, status, is_active, created_at')
+        .eq('email', user.email)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (enrollmentError || !enrollments || enrollments.length === 0) {
+        return {
+          message: 'Therapist enrollment not found or not approved',
+          details: { 
+            error: enrollmentError,
+            enrollment_status: 'not found'
+          }
+        };
+      }
+
+      const enrollment = enrollments[0];
+
+      if (enrollment.status !== 'approved') {
+        return {
+          message: `Therapist enrollment is not approved (status: ${enrollment.status})`,
+          details: { enrollment_status: enrollment.status }
+        };
+      }
+
+      if (!enrollment.is_active) {
+        return {
+          message: 'Therapist enrollment is not active',
+          details: { enrollment_is_active: enrollment.is_active }
+        };
+      }
+
+      return {
+        message: 'Therapist is active',
+        details: { status: 'active' }
+      };
+    } catch (error) {
+      console.error('❌ Error getting therapist status details:', error);
+      return {
+        message: 'Error checking therapist status',
+        details: { error: error instanceof Error ? error.message : 'Unknown error' }
+      };
     }
   }
 
