@@ -163,33 +163,48 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     console.log('✅ Therapist found:', therapist.full_name)
 
-    // 4. Check if user has available credits (only 'user' type has credits)
-    // Only individual users have credits, not therapists or partners
+    // 4. Check if user has available credits
+    // Query user_credits table directly - get ALL credits for user regardless of user_type
+    // This handles cases where credits might be stored with 'user', 'individual', or any other type
+    logWithRequestId(requestId, 'info', 'Checking user credits', { userId })
+    
     const { data: userCredits, error: creditsError } = await supabase
       .from('user_credits')
-      .select('*')
+      .select('credits_balance, user_type')
       .eq('user_id', userId)
-      .eq('user_type', 'user')  // Only 'user' type has credits
-
-    console.log('🔍 DEBUG: Credit check results:', {
-      userId,
-      userCredits,
-      creditsError,
-      creditsFound: userCredits?.length || 0,
-      totalBalance: userCredits?.[0]?.credits_balance || 0
-    })
+      // Don't filter by user_type - get ALL credits for this user regardless of type
+      // This ensures we find credits even if they're stored with unexpected user_type values
 
     if (creditsError) {
       console.error('❌ Error checking user credits:', creditsError)
+      logWithRequestId(requestId, 'error', 'Credit check failed', { error: creditsError.message })
       throw new Error('Error checking user credits')
     }
 
-    // Check if user has credits (should be only one record with user_type = 'user')
-    const totalBalance = userCredits?.[0]?.credits_balance || 0
+    // Calculate total credits from all matching records (sum all credits regardless of user_type)
+    const totalCredits = userCredits && userCredits.length > 0
+      ? userCredits.reduce((sum: number, credit: any) => {
+          const balance = credit.credits_balance || 0
+          return sum + balance
+        }, 0)
+      : 0
 
-    if (!userCredits || userCredits.length === 0 || totalBalance < 1) {
+    console.log('🔍 DEBUG: Credit check results:', {
+      userId,
+      totalCredits,
+      recordsFound: userCredits?.length || 0,
+      creditsDetails: userCredits?.map((c: any) => ({ 
+        user_type: c.user_type, 
+        credits_balance: c.credits_balance 
+      })) || []
+    })
+
+    if (!userCredits || userCredits.length === 0 || totalCredits < 1) {
+      logWithRequestId(requestId, 'warn', 'No credits available', { userId, totalCredits, recordsFound: userCredits?.length || 0 })
       throw new ValidationError('You need to purchase a session package before booking. Please buy credits first.')
     }
+
+    logWithRequestId(requestId, 'info', 'Credits verified', { userId, totalCredits })
 
     // 5. Create session datetime objects with GMT+1 timezone
     const sessionDateTime = new Date(`${session_date}T${start_time}:00+01:00`)
@@ -303,7 +318,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // 8. Create the session atomically with credit deduction and notifications
     console.log('🔍 Creating session atomically with credit deduction...')
-    const { data: createdSessions, error: rpcError } = await supabase
+    const { data: createdSessions, error: bookingRpcError } = await supabase
       .rpc('create_session_with_credit_deduction', {
         p_user_id: userId,
         p_therapist_id: therapist_id,
@@ -315,34 +330,34 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         p_title: `Therapy Session - ${userName}`
       })
 
-    if (rpcError) {
+    if (bookingRpcError) {
       // Map known constraint and business errors to proper responses
-      const msg = rpcError.message || ''
+      const msg = bookingRpcError.message || ''
       
       // ✅ ENHANCED: Log full error details for debugging
       console.error('❌ Atomic booking error:', {
-        message: rpcError.message,
-        code: rpcError.code,
-        details: rpcError.details,
-        hint: rpcError.hint,
-        fullError: JSON.stringify(rpcError, null, 2)
+        message: bookingRpcError.message,
+        code: bookingRpcError.code,
+        details: bookingRpcError.details,
+        hint: bookingRpcError.hint,
+        fullError: JSON.stringify(bookingRpcError, null, 2)
       })
       
       // Log to console for debugging with full details
       console.error('🔍 Full RPC error details:', {
-        message: rpcError.message,
-        code: rpcError.code,
-        details: rpcError.details,
-        hint: rpcError.hint,
-        fullError: JSON.stringify(rpcError, null, 2)
+        message: bookingRpcError.message,
+        code: bookingRpcError.code,
+        details: bookingRpcError.details,
+        hint: bookingRpcError.hint,
+        fullError: JSON.stringify(bookingRpcError, null, 2)
       })
       
       // ✅ NEW: Check if it's the ambiguous column error
-      if (msg.includes('ambiguous') || msg.includes('column reference') || rpcError.code === '42702') {
+      if (msg.includes('ambiguous') || msg.includes('column reference') || bookingRpcError.code === '42702') {
         console.error('⚠️ AMBIGUOUS COLUMN ERROR DETECTED!')
         console.error('⚠️ This means the database function needs to be updated.')
         console.error('⚠️ Run the SQL script: fix-booking-ambiguous-id-complete.sql in Supabase SQL Editor')
-        console.error('⚠️ Full error:', rpcError)
+        console.error('⚠️ Full error:', bookingRpcError)
       }
       
       if (msg.includes('Booking conflict') || msg.includes('sessions_no_overlap_per_therapist') || msg.includes('conflict')) {
@@ -362,11 +377,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const errorBody = {
         error: 'Failed to create session',
         message: msg,
-        code: rpcError.code,
-        details: rpcError.details,
-        hint: rpcError.hint,
-        fullError: JSON.stringify(rpcError, null, 2), // ✅ Include full error for frontend console
-        isAmbiguousColumnError: msg.includes('ambiguous') || msg.includes('column reference') || rpcError.code === '42702',
+        code: bookingRpcError.code,
+        details: bookingRpcError.details,
+        hint: bookingRpcError.hint,
+        fullError: JSON.stringify(bookingRpcError, null, 2), // ✅ Include full error for frontend console
+        isAmbiguousColumnError: msg.includes('ambiguous') || msg.includes('column reference') || bookingRpcError.code === '42702',
         requestId
       }
       console.error('❌ Returning error response:', errorBody)

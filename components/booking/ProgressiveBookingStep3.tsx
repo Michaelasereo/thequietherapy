@@ -59,11 +59,12 @@ export default function ProgressiveBookingStep3({
     // Call the original onNext with the selected slot and mark that booking is already complete
     if (selectedSlot) {
       // Mark booking as complete and pass confirmation data
+      // Type assertion needed because TimeSlot doesn't include these properties
       onNext({
         ...selectedSlot,
         bookingAlreadyComplete: true,
         confirmation: confirmation
-      })
+      } as TimeSlot & { bookingAlreadyComplete: boolean; confirmation: any })
     }
   }
 
