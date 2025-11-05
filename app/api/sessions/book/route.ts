@@ -244,13 +244,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const availabilityManager = new AvailabilityManager()
     
     // Check availability (therapist is already validated above - skip redundant validation)
-    const availabilityCheck = await availabilityManager.isSlotAvailable(
-      therapist_id,
-      session_date,
-      start_time,
-      duration,
-      true // Skip therapist validation since we already validated above
-    )
+    let availabilityCheck
+    try {
+      availabilityCheck = await availabilityManager.isSlotAvailable(
+        therapist_id,
+        session_date,
+        start_time,
+        duration,
+        true // Skip therapist validation since we already validated above
+      )
+    } catch (availabilityError) {
+      console.error('❌ Error in availability check:', {
+        error: availabilityError,
+        therapist_id,
+        session_date,
+        start_time,
+        duration,
+        errorMessage: availabilityError instanceof Error ? availabilityError.message : String(availabilityError),
+        errorStack: availabilityError instanceof Error ? availabilityError.stack : undefined
+      })
+      throw new Error(`Availability check failed: ${availabilityError instanceof Error ? availabilityError.message : String(availabilityError)}`)
+    }
 
     console.log('🔍 DEBUG: Availability check results:', {
       available: availabilityCheck.available,
