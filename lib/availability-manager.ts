@@ -354,6 +354,16 @@ export class AvailabilityManager {
       const dayOfWeek = new Date(date).getDay();
       const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const dayName = dayNames[dayOfWeek];
+      
+      // Defensive check: ensure standardHours exists and has the day
+      if (!weeklyAvailability.standardHours || !weeklyAvailability.standardHours[dayName]) {
+        conflicts.push({
+          type: 'unavailable_time',
+          message: 'Therapist is not available on this day'
+        });
+        return { available: false, conflicts };
+      }
+      
       const dayAvailability = weeklyAvailability.standardHours[dayName];
 
       if (!dayAvailability || !dayAvailability.enabled) {
@@ -379,16 +389,28 @@ export class AvailabilityManager {
         return { available: false, conflicts };
       }
 
-      // 5. Check for overrides
-      const overrides = await this.getAvailabilityOverrides(therapistId, date);
+      // 5. Check for overrides (with error handling)
+      let overrides: any[] = [];
+      try {
+        overrides = await this.getAvailabilityOverrides(therapistId, date);
+      } catch (error) {
+        console.error('❌ Error fetching availability overrides:', error);
+        // Continue without overrides - don't block booking
+      }
       const overrideConflict = this.checkOverrideConflicts(startTime, duration, overrides);
       if (overrideConflict) {
         conflicts.push(overrideConflict);
         return { available: false, conflicts };
       }
 
-      // 6. Check for existing bookings
-      const existingBookings = await this.getBookedSlots(therapistId, date);
+      // 6. Check for existing bookings (with error handling)
+      let existingBookings: any[] = [];
+      try {
+        existingBookings = await this.getBookedSlots(therapistId, date);
+      } catch (error) {
+        console.error('❌ Error fetching existing bookings:', error);
+        // Continue without bookings check - don't block booking (database will enforce constraints)
+      }
       const bookingConflict = this.checkBookingConflicts(startTime, duration, existingBookings);
       if (bookingConflict) {
         conflicts.push(bookingConflict);
@@ -811,24 +833,42 @@ export class AvailabilityManager {
     duration: number, 
     dayAvailability: any
   ): boolean {
-    const endTime = this.addMinutesToTime(startTime, duration);
+    try {
+      const endTime = this.addMinutesToTime(startTime, duration);
 
-    // Check generalHours first
-    if (dayAvailability.generalHours) {
-      const { start, end } = dayAvailability.generalHours;
-      return startTime >= start && endTime <= end;
+      // Check generalHours first (most common)
+      if (dayAvailability.generalHours) {
+        const { start, end } = dayAvailability.generalHours;
+        if (start && end) {
+          return startTime >= start && endTime <= end;
+        }
+      }
+
+      // Check customSlots (new format)
+      if (dayAvailability.customSlots && Array.isArray(dayAvailability.customSlots)) {
+        return dayAvailability.customSlots.some((slot: any) => 
+          slot.isAvailable !== false && 
+          startTime >= slot.start && 
+          endTime <= slot.end
+        );
+      }
+
+      // Check timeSlots (legacy format)
+      if (dayAvailability.timeSlots && Array.isArray(dayAvailability.timeSlots)) {
+        return dayAvailability.timeSlots.some((slot: any) => 
+          slot.type === 'available' && 
+          startTime >= slot.start && 
+          endTime <= slot.end
+        );
+      }
+      
+      // If no availability structure found, return false (not available)
+      console.warn('⚠️ No availability structure found for day:', dayAvailability);
+      return false;
+    } catch (error) {
+      console.error('❌ Error checking time within availability:', error);
+      return false; // Fail safe - return false if check fails
     }
-
-    // Check timeSlots
-    if (dayAvailability.timeSlots) {
-      return dayAvailability.timeSlots.some((slot: any) => 
-        slot.type === 'available' && 
-        startTime >= slot.start && 
-        endTime <= slot.end
-      );
-    }
-
-    return false;
   }
 
   /**
