@@ -51,9 +51,71 @@ export async function GET(request: NextRequest) {
 
     console.log('📅 Day Calculation:', { date, dayOfWeek, dayName });
 
-    // Use AvailabilityService to get therapist availability (handles both new and old formats)
-    const weeklyAvailability = await AvailabilityService.getTherapistAvailability(therapistId);
-    console.log('📊 AvailabilityService Result:', weeklyAvailability);
+    // Use AvailabilityManager to get therapist availability (handles both new and old formats)
+    // Create server client for AvailabilityManager
+    const supabase = createServerClient();
+    let weeklyAvailability: any = null;
+    try {
+      const { AvailabilityManager } = await import('@/lib/availability-manager');
+      const availabilityManager = new AvailabilityManager();
+      // Inject server supabase client into AvailabilityManager
+      (availabilityManager as any).supabase = supabase;
+      weeklyAvailability = await availabilityManager.getTherapistAvailability(therapistId);
+      console.log('📊 AvailabilityManager Result:', weeklyAvailability);
+    } catch (availabilityError) {
+      console.error('❌ Error fetching therapist availability:', availabilityError);
+      // Try direct query as fallback
+      try {
+        const { data, error } = await supabase
+          .from('availability_weekly_schedules')
+          .select('weekly_availability')
+          .eq('therapist_id', therapistId)
+          .eq('is_active', true)
+          .single();
+        
+        if (!error && data) {
+          weeklyAvailability = data.weekly_availability;
+          console.log('✅ Fallback: Direct query succeeded');
+        } else {
+          console.log('⚠️ No availability found, returning empty slots');
+          return NextResponse.json({
+            success: true,
+            date,
+            therapist_id: therapistId,
+            slots: [],
+            total_slots: 0,
+            source: 'availability_service',
+            message: 'No availability configured for this therapist'
+          }, { 
+            status: 200,
+            headers: {
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          });
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback query also failed:', fallbackError);
+        return NextResponse.json({
+          success: true,
+          date,
+          therapist_id: therapistId,
+          slots: [],
+          total_slots: 0,
+          source: 'availability_service',
+          message: 'No availability configured for this therapist',
+          error: availabilityError instanceof Error ? availabilityError.message : 'Unknown error'
+        }, { 
+          status: 200,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
+      }
+    }
 
     let availableSlots: any[] = [];
 
@@ -81,54 +143,82 @@ export async function GET(request: NextRequest) {
 
     // Check existing bookings for this date
     // Include all statuses that indicate a slot is taken
-    const supabase = createServerClient();
-    const { data: existingBookings } = await supabase
+    // Reuse the supabase client created earlier
+    // IMPORTANT: Get ALL sessions for this therapist, then filter by date/time
+    // This ensures we catch all bookings regardless of status
+    const { data: existingBookings, error: bookingsError } = await supabase
       .from('sessions')
-      .select('start_time, end_time, scheduled_date, scheduled_time, session_date, session_time, status, duration_minutes')
+      .select('id, start_time, end_time, scheduled_date, scheduled_time, session_date, session_time, status, duration_minutes')
       .eq('therapist_id', therapistId)
-      .in('status', [
-        'pending_approval',  // Custom sessions awaiting approval
-        'scheduled',         // Regular scheduled sessions
-        'confirmed',         // Confirmed sessions
-        'in_progress',       // Sessions currently happening
-        'completed'          // Include completed sessions for same-day filtering
-      ]);
+      .not('status', 'eq', 'cancelled') // Exclude cancelled sessions
+      .not('status', 'eq', 'rejected'); // Exclude rejected sessions
+    
+    if (bookingsError) {
+      console.error('❌ Error fetching existing bookings:', bookingsError);
+    }
 
-    console.log('📅 Existing Bookings:', existingBookings);
+    console.log('📅 Existing Bookings (all):', existingBookings?.length || 0);
 
     // Remove already booked slots
     if (existingBookings && existingBookings.length > 0) {
       // Filter bookings to only those on the selected date
+      // IMPORTANT: Check multiple date fields and timezone conversions to catch ALL bookings
       const bookingsOnThisDate = existingBookings.filter(booking => {
-        // Check multiple possible date fields to catch all bookings
-        const bookingDate = booking.scheduled_date || booking.session_date;
-        const bookingTime = booking.scheduled_time || booking.session_time;
-        
-        // If we have explicit date/time fields, use those
-        if (bookingDate && bookingTime) {
-          return bookingDate === date;
+        // Skip cancelled/rejected sessions - they don't block slots
+        if (booking.status === 'cancelled' || booking.status === 'rejected') {
+          return false;
         }
         
-        // Otherwise, extract date from start_time (convert to GMT+1)
+        // Check multiple possible date fields to catch all bookings
+        const bookingDate = booking.scheduled_date || booking.session_date;
+        
+        // If we have explicit date field, use it directly
+        if (bookingDate) {
+          // Normalize date format (handle both YYYY-MM-DD and other formats)
+          const normalizedBookingDate = bookingDate.split('T')[0]; // Remove time if present
+          const normalizedTargetDate = date.split('T')[0];
+          if (normalizedBookingDate === normalizedTargetDate) {
+            return true;
+          }
+        }
+        
+        // Also check start_time for date matching (convert to GMT+1)
         if (booking.start_time) {
-          const bookingStartTime = new Date(booking.start_time);
-          const gmt1String = toGMT1(bookingStartTime);
-          const bookingDateStr = gmt1String.split(', ')[0]; // Extract date part (MM/DD/YYYY)
-          // Convert MM/DD/YYYY to YYYY-MM-DD for comparison
-          const [month, day, year] = bookingDateStr.split('/');
-          const bookingDateFormatted = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-          return bookingDateFormatted === date;
+          try {
+            const bookingStartTime = new Date(booking.start_time);
+            if (!isNaN(bookingStartTime.getTime())) {
+              const gmt1String = toGMT1(bookingStartTime);
+              const bookingDateStr = gmt1String.split(', ')[0]; // Extract date part (MM/DD/YYYY)
+              // Convert MM/DD/YYYY to YYYY-MM-DD for comparison
+              const [month, day, year] = bookingDateStr.split('/');
+              const bookingDateFormatted = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              if (bookingDateFormatted === date) {
+                return true;
+              }
+            }
+          } catch (dateError) {
+            console.warn('⚠️ Error parsing booking date:', booking.start_time, dateError);
+          }
         }
         
         return false;
       });
       
-      console.log('📅 Bookings on selected date:', bookingsOnThisDate);
+      console.log('📅 Bookings on selected date:', bookingsOnThisDate.length, 'bookings');
+      console.log('📅 Booking details:', bookingsOnThisDate.map(b => ({
+        id: b.id,
+        status: b.status,
+        scheduled_date: b.scheduled_date,
+        scheduled_time: b.scheduled_time,
+        session_date: b.session_date,
+        session_time: b.session_time,
+        start_time: b.start_time
+      })));
       
       availableSlots = availableSlots.filter(slot => {
         const isBooked = bookingsOnThisDate.some(booking => {
-          // Skip cancelled sessions (they don't block slots)
-          if (booking.status === 'cancelled') {
+          // Skip cancelled/rejected sessions (they don't block slots)
+          if (booking.status === 'cancelled' || booking.status === 'rejected') {
             return false;
           }
           
@@ -136,7 +226,8 @@ export async function GET(request: NextRequest) {
           // Only block completed sessions if they're on the same day and time hasn't passed yet
           if (booking.status === 'completed') {
             const now = new Date();
-            const bookingEnd = booking.start_time ? new Date(booking.start_time) : null;
+            const bookingEnd = booking.end_time ? new Date(booking.end_time) : 
+                              (booking.start_time ? new Date(new Date(booking.start_time).getTime() + (booking.duration_minutes || 60) * 60000) : null);
             // Only block if the session ended very recently (within last 15 minutes)
             if (bookingEnd && (now.getTime() - bookingEnd.getTime()) > 15 * 60 * 1000) {
               return false;
@@ -151,13 +242,15 @@ export async function GET(request: NextRequest) {
           const slotEndMinAdjusted = slotEndMin % 60;
           const slotEndTime = `${String(slotEndHour).padStart(2, '0')}:${String(slotEndMinAdjusted).padStart(2, '0')}`;
           
-          // Try to match against explicit time fields first
+          // Try to match against explicit time fields first (most reliable)
           const bookingTime = booking.scheduled_time || booking.session_time;
           if (bookingTime) {
-            // Exact match
-            const matches = bookingTime === slot.start_time;
+            // Normalize time format (remove seconds if present)
+            const normalizedBookingTime = bookingTime.substring(0, 5); // HH:MM
+            const normalizedSlotTime = slot.start_time.substring(0, 5); // HH:MM
+            const matches = normalizedBookingTime === normalizedSlotTime;
             if (matches) {
-              console.log(`🚫 Slot ${slot.start_time} is booked by session with status: ${booking.status}`);
+              console.log(`🚫 Slot ${slot.start_time} is booked by session ${booking.id} (status: ${booking.status})`);
             }
             return matches;
           }
