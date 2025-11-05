@@ -28,51 +28,51 @@ interface AdminSidebarProps {
 const navigation = [
   {
     name: 'Dashboard',
-    href: '/admin',
+    href: '/admin/dashboard',
     icon: LayoutDashboard,
     description: 'Overview and analytics'
   },
   {
     name: 'Users',
-    href: '/admin/users',
+    href: '/admin/dashboard/users',
     icon: Users,
     description: 'Individual users',
     badge: 'Active'
   },
   {
     name: 'Therapists',
-    href: '/admin/therapists',
+    href: '/admin/dashboard/therapists',
     icon: UserCheck,
     description: 'Therapist management',
     badge: 'Approval'
   },
   {
     name: 'Partners',
-    href: '/admin/partners',
+    href: '/admin/dashboard/partners',
     icon: Building2,
     description: 'Corporate partners'
   },
   {
     name: 'Sessions',
-    href: '/admin/sessions',
+    href: '/admin/dashboard/sessions',
     icon: FileText,
     description: 'Session management'
   },
   {
     name: 'Analytics',
-    href: '/admin/analytics',
+    href: '/admin/dashboard/analytics',
     icon: BarChart3,
     description: 'Platform insights'
   },
   {
     name: 'Reports',
-    href: '/admin/reports',
+    href: '/admin/dashboard/reports',
     icon: AlertTriangle,
     description: 'Issues and reports'
   },
   {
     name: 'Settings',
-    href: '/admin/settings',
+    href: '/admin/dashboard/settings',
     icon: Settings,
     description: 'System configuration'
   }
@@ -116,7 +116,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
         {navigation.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
           return (
             <Link
               key={item.name}

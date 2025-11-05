@@ -96,12 +96,14 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Check if enrollment already exists
+    // Check if enrollment already exists (with more robust duplicate prevention)
+    // This prevents duplicate enrollments from React Strict Mode or double submissions
     const { data: existingEnrollment, error: checkError } = await supabase
       .from('therapist_enrollments')
-      .select('id')
+      .select('id, created_at')
       .eq('email', email.toLowerCase())
-      .single()
+      .order('created_at', { ascending: false })
+      .limit(1)
 
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('Error checking existing enrollment:', checkError)
@@ -111,7 +113,23 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    if (existingEnrollment) {
+    // Check if enrollment was created in the last 5 seconds (prevents duplicate submissions)
+    if (existingEnrollment && existingEnrollment.length > 0) {
+      const enrollment = existingEnrollment[0]
+      const enrollmentTime = new Date(enrollment.created_at).getTime()
+      const now = Date.now()
+      const timeDiff = now - enrollmentTime
+      
+      // If enrollment was created less than 5 seconds ago, it's likely a duplicate
+      if (timeDiff < 5000) {
+        console.warn('⚠️ Duplicate enrollment attempt detected (created', timeDiff, 'ms ago)')
+        return NextResponse.json({
+          success: false,
+          error: 'An enrollment with this email was just created. Please wait a moment and try again.'
+        }, { status: 400 })
+      }
+      
+      // Otherwise, it's an old enrollment
       return NextResponse.json({
         success: false,
         error: 'An enrollment with this email already exists. Please use the login page.'
@@ -275,6 +293,30 @@ export async function POST(request: NextRequest) {
     // This handles both column name variations
     insertData.licensed_qualification = licensedQualification || null
     
+    // Final duplicate check right before insert (race condition protection)
+    const { data: lastCheck, error: lastCheckError } = await supabase
+      .from('therapist_enrollments')
+      .select('id, created_at')
+      .eq('email', email.toLowerCase())
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (!lastCheckError && lastCheck && lastCheck.length > 0) {
+      const enrollment = lastCheck[0]
+      const enrollmentTime = new Date(enrollment.created_at).getTime()
+      const now = Date.now()
+      const timeDiff = now - enrollmentTime
+      
+      // If enrollment was created less than 5 seconds ago, it's a duplicate
+      if (timeDiff < 5000) {
+        console.warn('⚠️ Duplicate enrollment prevented at last check (created', timeDiff, 'ms ago)')
+        return NextResponse.json({
+          success: false,
+          error: 'An enrollment with this email was just created. Please wait a moment and try again.'
+        }, { status: 400 })
+      }
+    }
+
     console.log('📝 Attempting to insert enrollment data:', {
       email: insertData.email,
       full_name: insertData.full_name,
@@ -286,9 +328,11 @@ export async function POST(request: NextRequest) {
       dataKeys: Object.keys(insertData)
     })
     
-    const { error: enrollmentError } = await supabase
+    const { data: insertedEnrollment, error: enrollmentError } = await supabase
       .from('therapist_enrollments')
       .insert(insertData)
+      .select('id')
+      .single()
 
     if (enrollmentError) {
       console.error('❌ Error creating enrollment:', enrollmentError)
@@ -360,10 +404,11 @@ export async function POST(request: NextRequest) {
         userMessage = 'Database configuration issue. Please contact support with error code: DB_SCHEMA_ERROR'
         technicalDetails = `Missing column: ${errorMessage}`
       } else if (isConstraintError) {
-        // Check if it's email duplicate
+        // Check if it's email duplicate (this is the duplicate enrollment case)
         if (errorMessage.includes('email') || errorMessage.includes('therapist_enrollments_email_key')) {
-          userMessage = 'An enrollment with this email already exists. Please use the login page.'
-          technicalDetails = 'Email already enrolled'
+          console.warn('⚠️ Duplicate enrollment prevented by database constraint (email unique)')
+          userMessage = 'An enrollment with this email already exists. If you just submitted, please wait a moment.'
+          technicalDetails = 'Email already enrolled - duplicate prevented'
         } else if (errorMessage.includes('user_id') || errorMessage.includes('therapist_enrollments_user_id_key')) {
           userMessage = 'Database configuration error. Please run fix-enrollment-constraint.sql in Supabase.'
           technicalDetails = 'UNIQUE constraint on user_id preventing enrollment'

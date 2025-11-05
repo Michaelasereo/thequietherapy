@@ -41,6 +41,12 @@ export default function TherapistEnrollmentPage() {
   }
 
   const handleSubmit = async (data: any) => {
+    // Prevent duplicate submissions
+    if (isPending) {
+      console.warn('⚠️ Submission already in progress, ignoring duplicate request')
+      return
+    }
+
     // Check if email validation allows enrollment
     if (!emailStatus.canEnroll) {
       toast({

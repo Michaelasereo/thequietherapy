@@ -34,8 +34,8 @@ const AdminDashboardSidebar = memo(function AdminDashboardSidebar() {
     const fetchSidebarData = async () => {
       try {
         setLoading(true)
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-        const response = await fetch(`${baseUrl}/api/admin/sidebar-data`, {
+        // Use relative URL for API calls (works in both dev and production)
+        const response = await fetch('/api/admin/sidebar-data', {
           cache: 'no-store',
           credentials: 'include',
           headers: { 'Cache-Control': 'no-cache' }
@@ -49,6 +49,12 @@ const AdminDashboardSidebar = memo(function AdminDashboardSidebar() {
         }
       } catch (error) {
         console.error('Error fetching sidebar data:', error)
+        // Set default values on error to prevent UI issues
+        setSidebarData({
+          pendingActions: 0,
+          criticalAlerts: 0,
+          unreadNotifications: 0
+        })
       } finally {
         setLoading(false)
       }
@@ -58,7 +64,7 @@ const AdminDashboardSidebar = memo(function AdminDashboardSidebar() {
   }, []) // Empty dependency array to ensure it only runs once
 
   // Simple isActive function using pathname
-  const isActive = (href: string) => pathname === href
+  const isActive = (href: string) => pathname === href || pathname?.startsWith(href + '/')
 
   const handleLogout = async () => {
     // Add logout logic here
