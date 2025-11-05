@@ -21,24 +21,62 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id
     console.log('🔍 User ID:', userId)
 
-    // Get user's current credits (only 'user' type has credits)
-    // Only individual users have credits, not therapists or partners
-    const { data: credits, error: creditsError } = await supabase
+    // Get user's current credits directly from user_credits table (same as /api/user/credits)
+    // This ensures consistent credit calculation across all endpoints
+    const { data: creditRecords, error: creditsError } = await supabase
       .from('user_credits')
-      .select('*')
+      .select('id, credits_balance, credits_purchased, credits_used')
       .eq('user_id', userId)
-      .eq('user_type', 'user')  // Only 'user' type has credits
+      .in('user_type', ['user', 'individual']) // Check both types for compatibility
+      .order('created_at', { ascending: false })
 
-    console.log('🔍 Credits query result:', { credits, creditsError })
+    console.log('🔍 Credits query result:', { creditRecords, creditsError })
 
     if (creditsError) {
+      // PGRST116 = no rows found, which is okay
+      if (creditsError.code === 'PGRST116' || creditsError.message?.includes('No rows found')) {
+        console.log('ℹ️ No credit records found for user, returning 0 credits')
+        return successResponse({
+          total_credits: 0,
+          active_credits: [],
+          credit_history: [],
+          payment_history: [],
+          next_session_duration: 25,
+          timestamp: new Date().toISOString()
+        })
+      }
       console.error('❌ Error fetching credits:', creditsError)
       throw new Error('Failed to fetch credits')
     }
 
-    // Calculate total available credits (should be only one record with user_type = 'user')
-    let totalCredits = credits?.[0]?.credits_balance || 0
-    console.log('🔍 Total credits calculated:', totalCredits)
+    // Filter active and non-expired records (same logic as /api/user/credits)
+    const now = new Date()
+    const activeRecords = (creditRecords || []).filter((record: any) => {
+      // Only filter out expired credits if they have an expiration date
+      if (record?.expires_at) {
+        try {
+          const expiresAt = new Date(record.expires_at)
+          if (!isNaN(expiresAt.getTime()) && expiresAt <= now) {
+            return false // Credit has expired
+          }
+        } catch (dateError) {
+          // If date parsing fails, keep the record
+          return true
+        }
+      }
+      return true
+    })
+
+    // Calculate total credits from active records (same as /api/user/credits)
+    const totalCredits = activeRecords.reduce((sum: number, record: any) => {
+      return sum + (record.credits_balance || 0)
+    }, 0)
+    
+    console.log('🔍 Total credits calculated:', {
+      totalCredits,
+      rawCount: creditRecords?.length || 0,
+      activeCount: activeRecords.length
+    })
 
     // Get credit history
     const { data: creditHistory, error: historyError } = await supabase
@@ -67,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     const response = successResponse({
       total_credits: totalCredits,
-      active_credits: credits || [],
+      active_credits: activeRecords || [],
       credit_history: creditHistory || [],
       payment_history: paymentHistory || [],
       next_session_duration: totalCredits > 0 ? 35 : 25, // 35 min for paid, 25 min for free
