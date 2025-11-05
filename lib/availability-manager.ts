@@ -280,12 +280,15 @@ export class AvailabilityManager {
 
   /**
    * Check if a time slot is available for booking
+   * @param therapistId - The therapist user ID (must already be validated as active/verified)
+   * @param skipTherapistValidation - If true, skip therapist validation (use when already validated)
    */
   async isSlotAvailable(
     therapistId: string,
     date: string,
     startTime: string,
-    duration: number
+    duration: number,
+    skipTherapistValidation: boolean = false
   ): Promise<{ available: boolean; conflicts: AvailabilityConflict[] }> {
     try {
       const conflicts: AvailabilityConflict[] = [];
@@ -298,23 +301,28 @@ export class AvailabilityManager {
         }
       }
 
-      // 1. Check if therapist is active and verified
-      const therapistStatus = await this.getTherapistStatus(therapistId);
-      if (therapistStatus !== 'active') {
-        // Get more specific error message
-        const statusDetails = await this.getTherapistStatusDetails(therapistId);
-        const errorMessage = statusDetails.message || 'Therapist is not available for bookings';
-        conflicts.push({
-          type: 'unavailable_time',
-          message: errorMessage
-        });
-        console.error('❌ Therapist availability check failed:', {
-          therapistId,
-          status: therapistStatus,
-          details: statusDetails,
-          message: errorMessage
-        });
-        return { available: false, conflicts };
+      // 1. Check if therapist is active and verified (skip if already validated)
+      if (!skipTherapistValidation) {
+        const therapistStatus = await this.getTherapistStatus(therapistId);
+        if (therapistStatus !== 'active') {
+          // Get more specific error message
+          const statusDetails = await this.getTherapistStatusDetails(therapistId);
+          const errorMessage = statusDetails.message || 'Therapist is not available for bookings';
+          conflicts.push({
+            type: 'unavailable_time',
+            message: errorMessage
+          });
+          console.error('❌ Therapist availability check failed:', {
+            therapistId,
+            status: therapistStatus,
+            details: statusDetails,
+            message: errorMessage,
+            timestamp: new Date().toISOString()
+          });
+          return { available: false, conflicts };
+        }
+      } else {
+        console.log('✅ Skipping therapist validation (already validated in booking route)');
       }
 
       // 2. Check weekly availability
@@ -466,7 +474,7 @@ export class AvailabilityManager {
    */
   private async getTherapistStatusDetails(therapistId: string): Promise<{ message: string; details: any }> {
     try {
-      // Check user status
+      // Check user status - first try without filters to see if user exists at all
       const { data: user, error: userError } = await this.supabase
         .from('users')
         .select('id, email, user_type, is_active, is_verified')
@@ -474,9 +482,38 @@ export class AvailabilityManager {
         .single();
 
       if (userError || !user) {
+        console.error('❌ Therapist not found in users table:', {
+          therapistId,
+          error: userError,
+          errorCode: userError?.code,
+          errorMessage: userError?.message
+        });
+        
+        // Try to get more info - check if user exists with different criteria
+        const { data: anyUser } = await this.supabase
+          .from('users')
+          .select('id, email, user_type, is_active, is_verified')
+          .eq('id', therapistId)
+          .maybeSingle();
+        
+        if (anyUser) {
+          return {
+            message: `Therapist account exists but is not active/verified (user_type: ${anyUser.user_type}, is_active: ${anyUser.is_active}, is_verified: ${anyUser.is_verified})`,
+            details: { 
+              user: anyUser,
+              error: userError 
+            }
+          };
+        }
+        
         return {
-          message: 'Therapist account not found',
-          details: { error: userError }
+          message: 'Therapist account not found in users table',
+          details: { 
+            therapistId,
+            error: userError,
+            errorCode: userError?.code,
+            errorMessage: userError?.message
+          }
         };
       }
 

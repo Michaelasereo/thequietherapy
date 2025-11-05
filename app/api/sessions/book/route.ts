@@ -243,23 +243,44 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { AvailabilityManager } = await import('@/lib/availability-manager')
     const availabilityManager = new AvailabilityManager()
     
+    // Check availability (therapist is already validated above - skip redundant validation)
     const availabilityCheck = await availabilityManager.isSlotAvailable(
       therapist_id,
       session_date,
       start_time,
-      duration
+      duration,
+      true // Skip therapist validation since we already validated above
     )
 
     console.log('🔍 DEBUG: Availability check results:', {
       available: availabilityCheck.available,
-      conflicts: availabilityCheck.conflicts
+      conflicts: availabilityCheck.conflicts,
+      therapist_id,
+      therapist_email: user.email
     })
 
     if (!availabilityCheck.available) {
       const conflictMessage = availabilityCheck.conflicts
         .map(c => c.message)
         .join('; ')
-      console.log('❌ Availability conflicts found:', conflictMessage)
+      
+      console.error('❌ Availability conflicts found:', {
+        conflictMessage,
+        therapist_id,
+        therapist_email: user.email,
+        conflicts: availabilityCheck.conflicts
+      })
+      
+      // If the error is "Therapist account not found", this is a bug since we already validated
+      if (conflictMessage.includes('Therapist account not found')) {
+        console.error('🚨 BUG: Therapist was validated but availability check says not found!', {
+          therapist_id,
+          therapist_email: user.email,
+          user_id: user.id
+        })
+        throw new ConflictError(`Therapist validation error: ${conflictMessage}. Please contact support.`)
+      }
+      
       throw new ConflictError(`Time slot is not available: ${conflictMessage}`)
     }
 
