@@ -380,12 +380,14 @@ export default function BookingConfirmation({
       // 1. Validate input first
       if (!agreedToTerms) {
         setError("Please agree to the terms and conditions")
+        setLoading(false) // Reset loading state
         return
       }
 
       // 2. Check if user has credits
       if (userCredits === 0) {
         setError("You need to purchase a session package first. Please select a package and pay to continue.")
+        setLoading(false) // Reset loading state
         return
       }
 
@@ -393,17 +395,20 @@ export default function BookingConfirmation({
       const dateValidation = isValidBookingDate(selectedSlot.date, selectedSlot.start_time)
       if (!dateValidation.isValid) {
         setError(dateValidation.error || "Invalid booking date or time")
+        setLoading(false) // Reset loading state
         return
       }
 
       // 4. Validate required data
       if (!therapistId) {
         setError("Therapist information is missing. Please try again.")
+        setLoading(false) // Reset loading state
         return
       }
 
       if (!selectedSlot.date || !selectedSlot.start_time) {
         setError("Session date and time are required.")
+        setLoading(false) // Reset loading state
         return
       }
 
@@ -961,9 +966,15 @@ export default function BookingConfirmation({
         {/* Show different button based on credit status */}
         {!checkingCredits && userCredits > 0 && (
           <Button 
-            onClick={handleConfirmBooking}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              console.log('🔍 DEBUG: Confirm Booking button clicked')
+              handleConfirmBooking()
+            }}
             disabled={loading || !agreedToTerms || isPastDate(selectedSlot.date, selectedSlot.start_time)}
             className="bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-400"
+            type="button"
           >
             {loading ? (
               <>

@@ -58,7 +58,12 @@ export default function ProgressiveBookingStep3({
     console.log('🔍 DEBUG: Booking confirmation set, calling onNext...')
     // Call the original onNext with the selected slot and mark that booking is already complete
     if (selectedSlot) {
-      onNext(selectedSlot)
+      // Mark booking as complete and pass confirmation data
+      onNext({
+        ...selectedSlot,
+        bookingAlreadyComplete: true,
+        confirmation: confirmation
+      })
     }
   }
 
